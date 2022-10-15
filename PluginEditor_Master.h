@@ -202,23 +202,22 @@ class MixerPanel : public juce::Component
     
     void resized() override
     {
+        auto bottom_height = 80;
+        
         auto r = getLocalBounds();
-        auto fileListBounds = r.withTrimmedBottom(100);
+        auto fileListBounds = r.withTrimmedBottom(bottom_height);
         fadersViewport.setBounds(fileListBounds);
         faders.setSize(
                        faders.getWidth(),
                        fadersViewport.getHeight() - fadersViewport.getScrollBarThickness()
                        );
         
-        auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - 100);
-        auto center_x = bottomStripBounds.getCentreX();
+        auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
+        auto center = bottomStripBounds.getCentre();
         
-        auto playStopBounds = bottomStripBounds
-            .withRight(center_x)
-            .withLeft(center_x - 200);
-        auto randomizeBounds = bottomStripBounds
-            .withLeft(center_x)
-            .withRight(center_x + 200);
+        auto button_temp = juce::Rectangle(100, 50);
+        auto playStopBounds = button_temp.withCentre(center + juce::Point(50, 0)); 
+        auto randomizeBounds = button_temp.withCentre(center + juce::Point(-50, 0)); 
         
         auto switchBounds = bottomStripBounds.withWidth(200);
         targetVersusCurrentButton.setBounds(switchBounds);
