@@ -208,6 +208,22 @@ void ProcessorMaster::actionListenerCallback(const juce::String& message) {
         }
     }
 }
+void ProcessorMaster::randomizeGains() 
+{
+    auto* editor = (EditorMaster*)getActiveEditor();
+    for (auto& [_, channel] : state.channels)
+    {
+        auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
+        auto gain = slider_value_to_gain(slider_value);
+        channel.edited_gain = gain;
+        
+        if(editor)
+        {
+            editor->mixerPanel.setChannelGain(channel.id, gain);
+        }
+    }
+    sendGainToSlaves();
+}
 
 //==============================================================================
 // This creates new instances of the plugin..

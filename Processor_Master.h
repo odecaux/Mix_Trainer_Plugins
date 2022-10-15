@@ -156,6 +156,7 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
         
     }
     
+    void randomizeGains();
     GameState state;
     
     private:

@@ -158,9 +158,11 @@ class MixerPanel : public juce::Component
 {
     public:
     MixerPanel(std::unordered_map<int, ChannelState> channels, 
-               std::function<void(int, double)> onFaderMoved) : 
+               std::function<void(int, double)> onFaderMoved,
+               std::function<void()> onRandomizeClicked) : 
     faders(channelComponents),
-    onFaderMoved(std::move(onFaderMoved))
+    onFaderMoved(std::move(onFaderMoved)),
+    onRandomizeClicked(std::move(onRandomizeClicked))
     {
         for(const auto& [_, channel] : channels)
         {
@@ -179,8 +181,7 @@ class MixerPanel : public juce::Component
         
         randomizeButton.setButtonText("Randomize");
         randomizeButton.onClick = [this] {
-            //for (auto& channel : state.channels)
-            //    channel.targetValue = juce::Random::getSystemRandom().nextDouble();
+            this->onRandomizeClicked();
         };
         addAndMakeVisible(randomizeButton);
         
@@ -207,10 +208,8 @@ class MixerPanel : public juce::Component
         auto r = getLocalBounds();
         auto fileListBounds = r.withTrimmedBottom(bottom_height);
         fadersViewport.setBounds(fileListBounds);
-        faders.setSize(
-                       faders.getWidth(),
-                       fadersViewport.getHeight() - fadersViewport.getScrollBarThickness()
-                       );
+        faders.setSize(faders.getWidth(),
+                       fadersViewport.getHeight() - fadersViewport.getScrollBarThickness());
         
         auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
         auto center = bottomStripBounds.getCentre();
@@ -270,6 +269,7 @@ class MixerPanel : public juce::Component
     std::unordered_map<int, std::unique_ptr<ChannelComponent>> channelComponents = {};
     FaderRowComponent faders;
     std::function<void(int, double)> onFaderMoved;
+    std::function<void()> onRandomizeClicked;
     juce::Viewport fadersViewport;
     juce::TextButton playStopButton;
     juce::TextButton randomizeButton;
@@ -287,7 +287,9 @@ class EditorMaster : public juce::AudioProcessorEditor
     EditorMaster(ProcessorMaster& p)
         : audioProcessor(p), 
     AudioProcessorEditor(p),
-    mixerPanel(p.state.channels, [this](int id, double gain){audioProcessor.setGain(id, gain);})
+    mixerPanel(p.state.channels, 
+               [this](int id, double gain){audioProcessor.setGain(id, gain);},
+               [this](){audioProcessor.randomizeGains();})
     {
         addAndMakeVisible(mixerPanel);
         setSize(400, 300);
