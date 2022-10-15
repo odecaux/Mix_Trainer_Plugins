@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Processor_Master.h
+    Processor_Host.h
     Created: 16 Sep 2022 11:53:34am
     Author:  Octave
 
@@ -76,7 +76,7 @@ struct GameState
 
 //==============================================================================
 
-class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
+class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
 #if JucePlugin_Enable_ARA
 , public juce::AudioProcessorARAExtension
 #endif
@@ -85,8 +85,8 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
     void actionListenerCallback(const juce::String& message) override;
     
     //==============================================================================
-    ProcessorMaster();
-    ~ProcessorMaster() override;
+    ProcessorHost();
+    ~ProcessorHost() override;
     
     //==============================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -126,10 +126,10 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
         auto channel = state.channels.find(id);
         jassert(channel != state.channels.end());
         channel->second.edited_gain = newGain;
-        sendGainToSlaves();
+        sendGainToTracks();
     }
     
-    void sendGainToSlaves()
+    void sendGainToTracks()
     {
         
         for(const auto& [_, channel] : state.channels)
@@ -161,5 +161,5 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
     
     private:
     //==============================================================================
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorMaster)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorHost)
 };

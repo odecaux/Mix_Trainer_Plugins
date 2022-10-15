@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    PluginEditor_Master.h
+    PluginEditor_Host.h
     Created: 16 Sep 2022 9:09:26am
     Author:  Octave
 
@@ -280,11 +280,11 @@ class MixerPanel : public juce::Component
 
 
 
-class EditorMaster : public juce::AudioProcessorEditor
+class EditorHost : public juce::AudioProcessorEditor
 {
     public:
     
-    EditorMaster(ProcessorMaster& p)
+    EditorHost(ProcessorHost& p)
         : audioProcessor(p), 
     AudioProcessorEditor(p),
     mixerPanel(p.state.channels, 
@@ -295,7 +295,7 @@ class EditorMaster : public juce::AudioProcessorEditor
         setSize(400, 300);
         setResizable(true, false);
     }
-    ~EditorMaster() override {}
+    ~EditorHost() override {}
     
     void paint(juce::Graphics & g) override
     {
@@ -311,7 +311,7 @@ class EditorMaster : public juce::AudioProcessorEditor
     MixerPanel mixerPanel;
     
     private:
-    ProcessorMaster& audioProcessor;
+    ProcessorHost& audioProcessor;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorMaster)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorHost)
 };

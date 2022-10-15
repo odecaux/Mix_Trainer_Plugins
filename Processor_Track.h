@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    Processor_Slave.h
+    Processor_Track.h
     Created: 16 Sep 2022 11:53:19am
     Author:  Octave
 
@@ -16,7 +16,7 @@
 //==============================================================================
 /**
 */
-class ProcessorSlave : public juce::AudioProcessor, public juce::ActionListener
+class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
 #if JucePlugin_Enable_ARA
 , public juce::AudioProcessorARAExtension
 #endif
@@ -25,8 +25,8 @@ class ProcessorSlave : public juce::AudioProcessor, public juce::ActionListener
     // Inherited via ActionListener
     void actionListenerCallback(const juce::String& message) override;
     //==============================================================================
-    ProcessorSlave();
-    ~ProcessorSlave() override;
+    ProcessorTrack();
+    ~ProcessorTrack() override;
     
     //==============================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -67,5 +67,5 @@ class ProcessorSlave : public juce::AudioProcessor, public juce::ActionListener
     //==============================================================================
     int id;
     double gain;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorSlave)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorTrack)
 };

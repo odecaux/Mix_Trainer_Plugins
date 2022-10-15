@@ -1,7 +1,7 @@
 /*
   ==============================================================================
 
-    PluginEditor_Slave.h
+    PluginEditor_Track.h
     Created: 16 Sep 2022 9:09:15am
     Author:  Octave
 
@@ -9,23 +9,23 @@
 */
 
 #pragma once
-class EditorSlave : public juce::AudioProcessorEditor
+class EditorTrack : public juce::AudioProcessorEditor
 {
     public:
     
-    EditorSlave(ProcessorSlave& p, int id)
+    EditorTrack(ProcessorTrack& p, int id)
         : audioProcessor(p), AudioProcessorEditor(p), id(id)
     {
         // Make sure that before the constructor has finished, you've set the
         // editor's size to whatever you need it to be.
         label.setSize(120, 80);
-        label.setText("Slave", juce::dontSendNotification);
+        label.setText("Track", juce::dontSendNotification);
         label.setJustificationType(juce::Justification::centred);
         addAndMakeVisible(label);
         setSize(400, 300);
         setResizable(true, false);
     }
-    ~EditorSlave() override {
+    ~EditorTrack() override {
     }
     
     void paint(juce::Graphics& g) override
@@ -53,11 +53,11 @@ class EditorSlave : public juce::AudioProcessorEditor
     private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    ProcessorSlave& audioProcessor;
+    ProcessorTrack& audioProcessor;
     juce::Label label;
     int id;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorSlave)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorTrack)
         
         
 };

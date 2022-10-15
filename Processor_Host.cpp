@@ -1,18 +1,19 @@
 /*
   ==============================================================================
 
-    Processor_Slave.cpp
-    Created: 16 Sep 2022 11:54:42am
+    Processor_Host.cpp
+    Created: 16 Sep 2022 11:54:32am
     Author:  Octave
 
   ==============================================================================
 */
 
-#include "Processor_Slave.h"
-#include "PluginEditor_Slave.h"
+
+#include "Processor_Host.h"
+#include "PluginEditor_Host.h"
 
 //==============================================================================
-ProcessorSlave::ProcessorSlave()
+ProcessorHost::ProcessorHost()
 #ifndef JucePlugin_PreferredChannelConfigurations
 : AudioProcessor(BusesProperties()
 #if ! JucePlugin_IsMidiEffect
@@ -23,26 +24,21 @@ ProcessorSlave::ProcessorSlave()
 #endif
                  )
 #endif
-,
-id{juce::Random().nextInt()},
-gain{0.0f}
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("create ") + juce::String(id));
 }
 
-ProcessorSlave::~ProcessorSlave()
+ProcessorHost::~ProcessorHost()
 {
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("delete ") + juce::String(id));
 }
 
 //==============================================================================
-const juce::String ProcessorSlave::getName() const
+const juce::String ProcessorHost::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool ProcessorSlave::acceptsMidi() const
+bool ProcessorHost::acceptsMidi() const
 {
 #if JucePlugin_WantsMidiInput
     return true;
@@ -51,7 +47,7 @@ bool ProcessorSlave::acceptsMidi() const
 #endif
 }
 
-bool ProcessorSlave::producesMidi() const
+bool ProcessorHost::producesMidi() const
 {
 #if JucePlugin_ProducesMidiOutput
     return true;
@@ -60,7 +56,7 @@ bool ProcessorSlave::producesMidi() const
 #endif
 }
 
-bool ProcessorSlave::isMidiEffect() const
+bool ProcessorHost::isMidiEffect() const
 {
 #if JucePlugin_IsMidiEffect
     return true;
@@ -69,50 +65,50 @@ bool ProcessorSlave::isMidiEffect() const
 #endif
 }
 
-double ProcessorSlave::getTailLengthSeconds() const
+double ProcessorHost::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int ProcessorSlave::getNumPrograms()
+int ProcessorHost::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
     // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int ProcessorSlave::getCurrentProgram()
+int ProcessorHost::getCurrentProgram()
 {
     return 0;
 }
 
-void ProcessorSlave::setCurrentProgram(int index)
+void ProcessorHost::setCurrentProgram(int index)
 {
 }
 
-const juce::String ProcessorSlave::getProgramName(int index)
+const juce::String ProcessorHost::getProgramName(int index)
 {
     return {};
 }
 
-void ProcessorSlave::changeProgramName(int index, const juce::String& newName)
+void ProcessorHost::changeProgramName(int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void ProcessorSlave::prepareToPlay(double sampleRate, int samplesPerBlock)
+void ProcessorHost::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
 }
 
-void ProcessorSlave::releaseResources()
+void ProcessorHost::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool ProcessorSlave::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool ProcessorHost::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
 #if JucePlugin_IsMidiEffect
     juce::ignoreUnused(layouts);
@@ -137,67 +133,103 @@ bool ProcessorSlave::isBusesLayoutSupported(const BusesLayout& layouts) const
 }
 #endif
 
-void ProcessorSlave::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void ProcessorHost::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
-    buffer.applyGain(gain);
 }
 
 //==============================================================================
-bool ProcessorSlave::hasEditor() const
+bool ProcessorHost::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* ProcessorSlave::createEditor()
+juce::AudioProcessorEditor* ProcessorHost::createEditor()
 {
-    return new EditorSlave(*this, id);
+    return new EditorHost(*this);
 }
 
 //==============================================================================
-void ProcessorSlave::getStateInformation(juce::MemoryBlock& destData)
+void ProcessorHost::getStateInformation(juce::MemoryBlock& destData)
 {
     // You should use this method to store your parameters in the memory block.
     // You could do that either as raw data, or use the XML or ValueTree classes
     // as intermediaries to make it easy to save and load complex data.
 }
 
-void ProcessorSlave::setStateInformation(const void* data, int sizeInBytes)
+void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 {
     // You should use this method to restore your parameters from this memory block,
     // whose contents will have been created by the getStateInformation() call.
 }
-
-void ProcessorSlave::updateTrackProperties(const TrackProperties& properties)
-{
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("name ") + juce::String(id) + juce::String(" ") + properties.name);
-}
-
-
-void ProcessorSlave::actionListenerCallback(const juce::String& message)
-{
+void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
     jassert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
-    if(message_id != id)
-        return;
     
-    if(tokens[0] == "setGain")
-    {
-        gain = tokens[2].getDoubleValue();
-        if(auto* editor = (EditorSlave*)getActiveEditor())
+    auto* editor = (EditorHost*)getActiveEditor();
+    if (tokens[0] == "create") {
         {
-            editor->setText(juce::String(gain));
+            auto assertChannel = state.channels.find(message_id);
+            jassert(assertChannel == state.channels.end());
+        }
+        
+        auto slider_value = 0;
+        auto gain = slider_value_to_gain(slider_value);
+        
+        state.channels[message_id] = ChannelState{message_id, "", gain, gain};
+        //3) set random value
+        if(editor)
+        {
+            editor->mixerPanel.createChannel(message_id);
+        }
+    }
+    else if (tokens[0] == "delete") {
+        auto channel = state.channels.find(message_id);
+        jassert(channel != state.channels.end());
+        
+        if(editor)
+        {
+            editor->mixerPanel.removeChannel(message_id);
+        }
+        state.channels.erase(channel);
+    }
+    else if (tokens[0] == "name")
+    {
+        auto channel = state.channels.find(message_id);
+        jassert(channel != state.channels.end());
+        channel->second.name = tokens[2];
+        if(editor)
+        {
+            editor->mixerPanel.renameChannel(message_id, tokens[2]);
         }
     }
 }
+void ProcessorHost::randomizeGains() 
+{
+    auto* editor = (EditorHost*)getActiveEditor();
+    for (auto& [_, channel] : state.channels)
+    {
+        auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
+        auto gain = slider_value_to_gain(slider_value);
+        channel.edited_gain = gain;
+        
+        if(editor)
+        {
+            editor->mixerPanel.setChannelGain(channel.id, gain);
+        }
+    }
+    sendGainToTracks();
+}
+
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ProcessorSlave();
+    return new ProcessorHost();
 }
+
 
