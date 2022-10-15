@@ -11,8 +11,8 @@
 #pragma once
 class EditorSlave : public juce::AudioProcessorEditor
 {
-public:
-
+    public:
+    
     EditorSlave(ProcessorSlave& p, int id)
         : audioProcessor(p), AudioProcessorEditor(p), id(id)
     {
@@ -27,13 +27,13 @@ public:
     }
     ~EditorSlave() override {
     }
-
+    
     void paint(juce::Graphics& g) override
     {
         // (Our component is opaque, so we must completely fill the background with a solid colour)
         g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     }
-
+    
     void resized()
     {
         auto bounds = getLocalBounds();
@@ -42,23 +42,23 @@ public:
         // This is generally where you'll want to lay out the positions of any
         // subcomponents in your editor..
     }
-
+    
     void setText(const juce::String& text)
     {
         label.setText(text, juce::dontSendNotification);
         repaint(); //????
     }
-
-
-private:
+    
+    
+    private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     ProcessorSlave& audioProcessor;
     juce::Label label;
     int id;
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorSlave)
-
     
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorSlave)
+        
+        
 };
 

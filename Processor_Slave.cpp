@@ -187,7 +187,7 @@ void ProcessorSlave::actionListenerCallback(const juce::String& message)
     
     if(tokens[0] == "setGain")
     {
-        gain = tokens[2].getFloatValue();
+        gain = tokens[2].getDoubleValue();
         if(auto* editor = (EditorSlave*)getActiveEditor())
         {
             editor->setText(juce::String(gain));

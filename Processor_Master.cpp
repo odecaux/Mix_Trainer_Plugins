@@ -177,7 +177,10 @@ void ProcessorMaster::actionListenerCallback(const juce::String& message) {
             jassert(assertChannel == state.channels.end());
         }
         
-        state.channels[message_id] = ChannelState{message_id, "", 0.0001f, 0.0001f};
+        auto slider_value = 0;
+        auto gain = slider_value_to_gain(slider_value);
+        
+        state.channels[message_id] = ChannelState{message_id, "", gain, gain};
         //3) set random value
         if(editor)
         {

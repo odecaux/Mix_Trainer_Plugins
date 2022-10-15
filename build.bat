@@ -1,1 +1,1 @@
-cmake --build cmake-build
+pwsh -Command "$dir = (Resolve-Path ..\).tostring(); $dir = $dir + '\'; echo $dir; (cmake --build cmake-build) | foreach-object{ $_.replace($dir,'')}"

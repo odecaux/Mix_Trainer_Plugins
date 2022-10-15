@@ -66,6 +66,6 @@ class ProcessorSlave : public juce::AudioProcessor, public juce::ActionListener
     private:
     //==============================================================================
     int id;
-    float gain;
+    double gain;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorSlave)
 };

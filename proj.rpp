@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.68/win64" 1665762720
+<REAPER_PROJECT 0.1 "6.68/win64" 1665825881
   <NOTES 0 2
   >
   RIPPLE 0
@@ -101,7 +101,7 @@
     WAK 0 2
     BYPASS 0 0 0
     <JS analysis/loudness_meter ""
-      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -198.679797 -100 -100 -205.001668 -100 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -100 -100 -100 -100 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     >
     FLOATPOS 0 0 0 0
     FXID {C21F6A46-8AA5-470E-BE17-3D58C5CF61F4}
@@ -144,7 +144,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 0
+    SEL 1
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -165,31 +165,9 @@
         PAAAAAEAAAAAAAAAAAAAAEpVQ0VQcml2YXRlRGF0YQABAUJ5cGFzcwABAQMAHQAAAAAAAABKVUNFUHJpdmF0ZURhdGEAAAAAAAAAAA==
         AFByb2dyYW0gMQAQAAAA
       >
-      FLOAT 198 370 518 454
+      FLOATPOS 198 370 518 454
       FXID {0992DE5A-F54D-4BBC-BEAE-01E407A4572A}
       WAK 0 0
-    >
-    <ITEM
-      POSITION 4160
-      SNAPOFFS 0
-      LENGTH 455.60340136054424
-      LOOP 1
-      ALLTAKES 0
-      FADEIN 1 0.01 0 1 0 0 0
-      FADEOUT 1 0.01 0 1 0 0 0
-      MUTE 0 0
-      SEL 0
-      IGUID {A81E481D-54DB-4B21-A00C-123F38A4626D}
-      IID 1
-      NAME 16_Overheads.wav
-      VOLPAN 1 0 1 -1
-      SOFFS 0
-      PLAYRATE 1 1 0 -1 0 0.0025
-      CHANMODE 0
-      GUID {0106AA45-8128-4C70-9BCE-530D5CC4C03A}
-      <SOURCE WAVE
-        FILE "F:\MultiTracks\Forkupines_SugarFaith_Full\Forkupines_SugarFaith_Full\16_Overheads.wav"
-      >
     >
   >
   <TRACK {7C5B57EC-3E2A-44A6-AB94-A53C919B2F3A}
@@ -198,13 +176,13 @@
     BEAT -1
     AUTOMODE 0
     VOLPAN 1 0 -1 -1 1
-    MUTESOLO 1 0 0
+    MUTESOLO 0 0 0
     IPHASE 0
     PLAYOFFS 0 1
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -238,7 +216,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {BEB26B43-67FD-4E10-B802-12FA95ABBA90}
       IID 2
       NAME 17_DrumsRoom.wav
@@ -292,23 +270,23 @@
     <ITEM
       POSITION 4160
       SNAPOFFS 0
-      LENGTH 256.07727891156463
+      LENGTH 455.60340136054424
       LOOP 1
       ALLTAKES 0
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 0
-      IGUID {0A4BED91-0240-4262-925B-B284F6F09EBA}
-      IID 3
-      NAME 18_DrumsRoomOD.wav
+      SEL 1
+      IGUID {A81E481D-54DB-4B21-A00C-123F38A4626D}
+      IID 1
+      NAME 16_Overheads.wav
       VOLPAN 1 0 1 -1
       SOFFS 0
       PLAYRATE 1 1 0 -1 0 0.0025
       CHANMODE 0
-      GUID {7A5D5FD8-F9A6-4604-8CE1-154B059960DC}
+      GUID {0106AA45-8128-4C70-9BCE-530D5CC4C03A}
       <SOURCE WAVE
-        FILE "F:\MultiTracks\Forkupines_SugarFaith_Full\Forkupines_SugarFaith_Full\18_DrumsRoomOD.wav"
+        FILE "F:\MultiTracks\Forkupines_SugarFaith_Full\Forkupines_SugarFaith_Full\16_Overheads.wav"
       >
     >
   >

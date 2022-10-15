@@ -13,12 +13,52 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+static const double slider_values[] = {-100, -24, -16, -10, -4};
+
+#define DISCRETE_VALUE_COUNT 5
+#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
+
+
+double equal_double(double a, double b, double theta)
+{
+    return std::abs(a - b) < theta;
+}
+
+static double slider_value_to_db(int value)
+{
+    jassert(value < ArraySize(slider_values));
+    return slider_values[value];
+}
+
+
+static int db_to_slider_value(double db)
+{
+    for(int i = 0; i < ArraySize(slider_values); i++)
+    {
+        if(equal_double(db, slider_values[i], 0.001)) return i;
+    }
+    jassertfalse;
+    return -1;
+}
+
+static double slider_value_to_db(double value)
+{
+    int int_value = (int)value;
+    jassert((double)value == value);
+    return slider_value_to_db(int_value);
+}
+
+static double slider_value_to_gain(double value)
+{
+    return juce::Decibels::decibelsToGain(slider_value_to_db(value));
+}
+
 struct ChannelState
 {
     int id;
     juce::String name;
-    float edited_gain;
-    float target_gain;
+    double edited_gain;
+    double target_gain;
 };
 
 enum GameStep {
@@ -81,7 +121,7 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
     
-    void setGain(int id, float newGain)
+    void setGain(int id, double  newGain)
     {
         auto channel = state.channels.find(id);
         jassert(channel != state.channels.end());
@@ -94,7 +134,7 @@ class ProcessorMaster : public juce::AudioProcessor, public juce::ActionListener
         
         for(const auto& [_, channel] : state.channels)
         {
-            float gainToSend = channel.edited_gain;
+            double gainToSend = channel.edited_gain;
             /*switch(state.step)
             {
                 case Listening :

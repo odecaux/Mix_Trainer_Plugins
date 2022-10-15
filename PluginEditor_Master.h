@@ -13,35 +13,6 @@
 #include <algorithm>
 #include <functional>
 
-#define DISCRETE_VALUE_COUNT 5
-
-static double slider_value_to_db(int value)
-{
-    switch (value) {
-        case 0:
-        return -100.0;
-        case 1:
-        return -24;
-        case 2:
-        return -16;
-        case 3:
-        return -10;
-        case 4:
-        return -4;
-        default: {
-            jassertfalse;
-            return 0;
-        }
-    }
-}
-
-static double slider_value_to_db(double value)
-{
-    int int_value = (int)value;
-    jassert((double)value == value);
-    return slider_value_to_db(int_value);
-}
-
 class DecibelSlider : public juce::Slider
 {
     public:
@@ -62,7 +33,7 @@ class DecibelSlider : public juce::Slider
 class ChannelComponent : public juce::Component
 {
     public:
-    ChannelComponent(const juce::String &name, std::function<void(float)> onFaderChange)
+    ChannelComponent(const juce::String &name, std::function<void(double)> onFaderChange)
         : onFaderChange(onFaderChange)
     {
         label.setText(name, juce::NotificationType::dontSendNotification);
@@ -70,12 +41,12 @@ class ChannelComponent : public juce::Component
         
         fader.setSliderStyle(juce::Slider::SliderStyle::LinearBarVertical);
         fader.setTextBoxStyle(juce::Slider::TextBoxAbove, true, getWidth(), 20);
-        fader.setRange(0.0f, (double)(DISCRETE_VALUE_COUNT - 1), 1.0);
+        fader.setRange(0.0f, (double)(ArraySize(slider_values) - 1), 1.0);
         fader.setScrollWheelEnabled(false);
         
         fader.onValueChange = [this] {
             //jassert(locked == false);
-            targetValue = fader.getValue();
+            targetValue = slider_value_to_gain(fader.getValue());
             this->onFaderChange(targetValue);
         };
         
@@ -105,7 +76,14 @@ class ChannelComponent : public juce::Component
         label.setText(newName, juce::dontSendNotification);
     }
     
-    void lockTo(float value)
+    void setGain(double newGain)
+    {
+        auto db = juce::Decibels::gainToDecibels(newGain);
+        int slider_value = db_to_slider_value(db);
+        fader.setValue(slider_value, juce::dontSendNotification);
+    }
+    /*
+    void lockTo(double value)
     {
         jassert(locked == false);
         locked = true;
@@ -114,7 +92,7 @@ class ChannelComponent : public juce::Component
         fader.setEnabled(false);
     }
     
-    void unlock(float value)
+    void unlock(double value)
     {
         jassert(locked == true);
         locked = false;
@@ -122,14 +100,14 @@ class ChannelComponent : public juce::Component
         fader.setValue(value, juce::dontSendNotification);
         fader.setEnabled(true);
     }
-    
+    */
     private:
     juce::Label label;
     DecibelSlider fader;
-    std::function<void(float)> onFaderChange;
+    std::function<void(double)> onFaderChange;
     bool locked;
-    float targetValue;
-    float smoothing;
+    double targetValue;
+    double smoothing;
 };
 
 
@@ -179,10 +157,17 @@ class FaderRowComponent : public juce::Component
 class MixerPanel : public juce::Component
 {
     public:
-    MixerPanel(std::function<void(int, float)> onFaderMoved) : 
+    MixerPanel(std::unordered_map<int, ChannelState> channels, 
+               std::function<void(int, double)> onFaderMoved) : 
     faders(channelComponents),
     onFaderMoved(std::move(onFaderMoved))
     {
+        for(const auto& [_, channel] : channels)
+        {
+            createChannel(channel.id);
+            renameChannel(channel.id, channel.name);
+            setChannelGain(channel.id, channel.edited_gain);
+        }
         addAndMakeVisible(fadersViewport);
         fadersViewport.setScrollBarsShown(false, true);
         fadersViewport.setViewedComponent(&faders, false);
@@ -195,7 +180,7 @@ class MixerPanel : public juce::Component
         randomizeButton.setButtonText("Randomize");
         randomizeButton.onClick = [this] {
             //for (auto& channel : state.channels)
-            //    channel.targetValue = juce::Random::getSystemRandom().nextFloat();
+            //    channel.targetValue = juce::Random::getSystemRandom().nextDouble();
         };
         addAndMakeVisible(randomizeButton);
         
@@ -248,7 +233,7 @@ class MixerPanel : public juce::Component
             jassert(assertChannel == channelComponents.end());
         }
         
-        auto callback = [this, newChannelId] (float gain) {
+        auto callback = [this, newChannelId] (double gain) {
             onFaderMoved(newChannelId, gain);
         };
         
@@ -274,12 +259,18 @@ class MixerPanel : public juce::Component
     {
         auto &channel = channelComponents[id];
         channel->setName(newName);
-        resized();
+    }
+    
+    
+    void setChannelGain(int id, double newGain)
+    {
+        auto &channel = channelComponents[id];
+        channel->setGain(newGain);
     }
     
     std::unordered_map<int, std::unique_ptr<ChannelComponent>> channelComponents = {};
     FaderRowComponent faders;
-    std::function<void(int, float)> onFaderMoved;
+    std::function<void(int, double)> onFaderMoved;
     juce::Viewport fadersViewport;
     juce::TextButton playStopButton;
     juce::TextButton randomizeButton;
@@ -297,7 +288,7 @@ class EditorMaster : public juce::AudioProcessorEditor
     EditorMaster(ProcessorMaster& p)
         : audioProcessor(p), 
     AudioProcessorEditor(p),
-    mixerPanel([this](int id, float gain){audioProcessor.setGain(id, gain);})
+    mixerPanel(p.state.channels, [this](int id, double gain){audioProcessor.setGain(id, gain);})
     {
         addAndMakeVisible(mixerPanel);
         setSize(400, 300);
@@ -323,4 +314,3 @@ class EditorMaster : public juce::AudioProcessorEditor
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorMaster)
 };
-
