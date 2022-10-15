@@ -26,6 +26,7 @@ ProcessorHost::ProcessorHost()
 #endif
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
+    state.listening = User_Input;
 }
 
 ProcessorHost::~ProcessorHost()
@@ -208,6 +209,24 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
         }
     }
 }
+
+void ProcessorHost::toggleListeningState(bool isToggled)
+{
+    auto old_listening = state.listening;
+    if(isToggled)
+    {
+        //jassert(state.listening == User_Input);
+        state.listening = Target;
+    }
+    else
+    {
+        //jassert(state.listening == Target);
+        state.listening = User_Input;
+    }
+    if(old_listening != state.listening)
+        sendGainToTracks();
+}
+
 void ProcessorHost::randomizeGains() 
 {
     auto* editor = (EditorHost*)getActiveEditor();
@@ -215,14 +234,10 @@ void ProcessorHost::randomizeGains()
     {
         auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
         auto gain = slider_value_to_gain(slider_value);
-        channel.edited_gain = gain;
-        
-        if(editor)
-        {
-            editor->mixerPanel.setChannelGain(channel.id, gain);
-        }
+        channel.target_gain = gain;
     }
-    sendGainToTracks();
+    if(state.listening == Target)
+        sendGainToTracks();
 }
 
 //==============================================================================

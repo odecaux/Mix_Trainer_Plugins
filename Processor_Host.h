@@ -53,6 +53,11 @@ static double slider_value_to_gain(double value)
     return juce::Decibels::decibelsToGain(slider_value_to_db(value));
 }
 
+enum Listening {
+    Target,
+    User_Input
+};
+
 struct ChannelState
 {
     int id;
@@ -60,18 +65,19 @@ struct ChannelState
     double edited_gain;
     double target_gain;
 };
-
+/*
 enum GameStep {
     Listening,
     Editing,
     ShowingTruth,
     ShowingAnswer
 };
-
+*/
 struct GameState
 {
     std::unordered_map<int, ChannelState> channels;
-    GameStep step;
+    Listening listening;
+    //GameStep step;
 };
 
 //==============================================================================
@@ -121,7 +127,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
     
-    void setGain(int id, double  newGain)
+    void setUserGain(int id, double  newGain)
     {
         auto channel = state.channels.find(id);
         jassert(channel != state.channels.end());
@@ -131,10 +137,9 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     
     void sendGainToTracks()
     {
-        
         for(const auto& [_, channel] : state.channels)
         {
-            double gainToSend = channel.edited_gain;
+            double gainToSend = state.listening == User_Input ? channel.edited_gain : channel.target_gain;
             /*switch(state.step)
             {
                 case Listening :
@@ -153,9 +158,9 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
             auto message = juce::String("setGain ") + juce::String(channel.id) + " " + juce::String(gainToSend);
             juce::MessageManager::getInstance()->broadcastMessage(message);
         }
-        
     }
     
+    void toggleListeningState(bool isToggled);
     void randomizeGains();
     GameState state;
     

@@ -157,12 +157,15 @@ class FaderRowComponent : public juce::Component
 class MixerPanel : public juce::Component
 {
     public:
-    MixerPanel(std::unordered_map<int, ChannelState> channels, 
+    MixerPanel(std::unordered_map<int, ChannelState> channels,
+               Listening listening,
                std::function<void(int, double)> onFaderMoved,
-               std::function<void()> onRandomizeClicked) : 
+               std::function<void()> onRandomizeClicked,
+               std::function<void(bool)> onToggleClicked) : 
     faders(channelComponents),
     onFaderMoved(std::move(onFaderMoved)),
-    onRandomizeClicked(std::move(onRandomizeClicked))
+    onRandomizeClicked(std::move(onRandomizeClicked)),
+    onToggleClicked(onToggleClicked)
     {
         for(const auto& [_, channel] : channels)
         {
@@ -174,23 +177,18 @@ class MixerPanel : public juce::Component
         fadersViewport.setScrollBarsShown(false, true);
         fadersViewport.setViewedComponent(&faders, false);
         
-        playStopButton.setButtonText("Play/Stop");
-        playStopButton.onClick = [this] {
-        };
-        addAndMakeVisible(playStopButton);
-        
         randomizeButton.setButtonText("Randomize");
         randomizeButton.onClick = [this] {
             this->onRandomizeClicked();
         };
         addAndMakeVisible(randomizeButton);
         
-        targetVersusCurrentButton.setButtonText("Listen to target");
-        targetVersusCurrentButton.onStateChange = [this] {
-            //TODO does this need additionnal plumbing ?
-            //state.isTargetPlaying = targetVersusCurrentButton.getToggleState();
+        targetOrUserToggle.setToggleState(listening == Target ? true : false, juce::dontSendNotification);
+        targetOrUserToggle.setButtonText("Listen to target");
+        targetOrUserToggle.onStateChange = [this] {
+            this->onToggleClicked(targetOrUserToggle.getToggleState());
         };
-        addAndMakeVisible(targetVersusCurrentButton);
+        addAndMakeVisible(targetOrUserToggle);
         
     }
     
@@ -215,12 +213,10 @@ class MixerPanel : public juce::Component
         auto center = bottomStripBounds.getCentre();
         
         auto button_temp = juce::Rectangle(100, 50);
-        auto playStopBounds = button_temp.withCentre(center + juce::Point(50, 0)); 
         auto randomizeBounds = button_temp.withCentre(center + juce::Point(-50, 0)); 
         
-        auto switchBounds = bottomStripBounds.withWidth(200);
-        targetVersusCurrentButton.setBounds(switchBounds);
-        playStopButton.setBounds(playStopBounds);
+        auto toggleBounds = bottomStripBounds.withWidth(200);
+        targetOrUserToggle.setBounds(toggleBounds);
         randomizeButton.setBounds(randomizeBounds);
     }
     
@@ -270,10 +266,11 @@ class MixerPanel : public juce::Component
     FaderRowComponent faders;
     std::function<void(int, double)> onFaderMoved;
     std::function<void()> onRandomizeClicked;
+    std::function<void(bool)> onToggleClicked;
     juce::Viewport fadersViewport;
     juce::TextButton playStopButton;
     juce::TextButton randomizeButton;
-    juce::ToggleButton targetVersusCurrentButton; //TODO rename
+    juce::ToggleButton targetOrUserToggle;
     
     private:
 };
@@ -288,8 +285,10 @@ class EditorHost : public juce::AudioProcessorEditor
         : audioProcessor(p), 
     AudioProcessorEditor(p),
     mixerPanel(p.state.channels, 
-               [this](int id, double gain){audioProcessor.setGain(id, gain);},
-               [this](){audioProcessor.randomizeGains();})
+               p.state.listening,
+               [this](int id, double gain){audioProcessor.setUserGain(id, gain);},
+               [this](){audioProcessor.randomizeGains();},
+               [this](bool isToggled){audioProcessor.toggleListeningState(isToggled);})
     {
         addAndMakeVisible(mixerPanel);
         setSize(400, 300);
@@ -308,10 +307,11 @@ class EditorHost : public juce::AudioProcessorEditor
         mixerPanel.setBounds(getLocalBounds());
     }
     
-    MixerPanel mixerPanel;
     
     private:
     ProcessorHost& audioProcessor;
+    public:
+    MixerPanel mixerPanel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorHost)
 };
