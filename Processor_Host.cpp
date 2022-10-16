@@ -26,7 +26,7 @@ ProcessorHost::ProcessorHost()
 #endif
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
-    state.listening = User_Input;
+    state.step = Listening;
 }
 
 ProcessorHost::~ProcessorHost()
@@ -158,7 +158,7 @@ juce::AudioProcessorEditor* ProcessorHost::createEditor()
 //==============================================================================
 void ProcessorHost::getStateInformation(juce::MemoryBlock& destData)
 {
-    
+    juce::ignoreUnused(destData);
 }
 
 void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
@@ -178,15 +178,17 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
             jassert(assertChannel == state.channels.end());
         }
         
-        auto slider_value = 0;
-        auto gain = slider_value_to_gain(slider_value);
+        auto target_gain = randomGain();
+        auto edit_gain = slider_value_to_gain(0);
         
-        state.channels[message_id] = ChannelState{message_id, "", gain, gain};
+        state.channels[message_id] = ChannelState{message_id, "", edit_gain, target_gain};
         //3) set random value
         if(editor)
         {
-            editor->mixerPanel.createChannel(message_id);
+            editor->mixerPanel.createFader(state.channels[message_id], state.step);
         }
+        broadcastAllGains();
+        
     }
     else if (tokens[0] == "delete") {
         auto channel = state.channels.find(message_id);
@@ -194,7 +196,7 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
         
         if(editor)
         {
-            editor->mixerPanel.removeChannel(message_id);
+            editor->mixerPanel.removeFader(message_id);
         }
         state.channels.erase(channel);
     }
@@ -205,7 +207,7 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
         
         if(editor)
         {
-            editor->mixerPanel.renameChannel(message_id, tokens[2]);
+            editor->mixerPanel.renameFader(message_id, tokens[2]);
         }
     }
     else if (tokens[0] == "frequencyRange")
@@ -216,34 +218,64 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     }
 }
 
-void ProcessorHost::toggleListeningState(bool isToggled)
+void ProcessorHost::toggleInputOrTarget(bool isOn) //TODO rename isOn
 {
-    auto old_listening = state.listening;
-    if(isToggled)
+    jassert(state.step != Begin);
+    auto old_step = state.step;
+    
+    if(isOn && state.step == Editing)
     {
-        //jassert(state.listening == User_Input);
-        state.listening = Target;
+        state.step = Listening;
     }
-    else
+    else if(isOn && state.step == ShowingAnswer)
     {
-        //jassert(state.listening == Target);
-        state.listening = User_Input;
+        state.step = ShowingTruth;
     }
-    if(old_listening != state.listening)
-        sendGainToTracks();
+    else if(!isOn && state.step == Listening)
+    {
+        state.step = Editing;
+    }
+    else if(!isOn && state.step == ShowingTruth){
+        state.step = ShowingAnswer;
+    }
+    
+    auto* editor = (EditorHost*)getActiveEditor();
+    if(old_step != state.step)
+    {
+        broadcastAllGains();
+        if(editor)
+            editor->mixerPanel.updateGameStep(state.step, state.channels);
+    }
 }
 
-void ProcessorHost::randomizeGains() 
-{
-    //auto* editor = (EditorHost*)getActiveEditor();
-    for (auto& [_, channel] : state.channels)
+void ProcessorHost::nextClicked(){
+    switch(state.step)
     {
-        auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
-        auto gain = slider_value_to_gain(slider_value);
-        channel.target_gain = gain;
+        case Begin :
+        jassertfalse; //not implemented yet
+        break;
+        case Listening :
+        case Editing :
+        {
+            state.step = ShowingTruth;
+        }break;
+        case ShowingTruth : 
+        case ShowingAnswer :
+        {
+            for (auto& [_, channel] : state.channels)
+            {
+                channel.target_gain = randomGain();
+                channel.edited_gain = 0.0;
+            }
+            state.step = Listening;
+        }break;
     }
-    if(state.listening == Target)
-        sendGainToTracks();
+    broadcastAllGains();
+    auto* editor = (EditorHost*)getActiveEditor();
+    if(editor)
+    {
+        editor->mixerPanel.updateGameStep(state.step, state.channels);
+    }
 }
 
 //==============================================================================

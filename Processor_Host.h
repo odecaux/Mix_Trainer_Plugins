@@ -13,11 +13,9 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-static const double slider_values[] = {-100, -24, -16, -10, -4};
+static const double slider_values[] = {-100, -12, -9, -6, -3};
 
-#define DISCRETE_VALUE_COUNT 5
 #define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
-
 
 double equal_double(double a, double b, double theta)
 {
@@ -41,14 +39,26 @@ static int db_to_slider_value(double db)
     return -1;
 }
 
+static int gain_to_slider_value(double gain)
+{ 
+    return db_to_slider_value(juce::Decibels::gainToDecibels(gain));
+}
+
 static double slider_value_to_gain(int value)
 {
     return juce::Decibels::decibelsToGain(slider_value_to_db(value));
 }
 
-enum Listening {
-    Target,
-    User_Input
+enum Action {
+    
+};
+
+enum GameStep {
+    Begin,
+    Listening,
+    Editing,
+    ShowingTruth,
+    ShowingAnswer
 };
 
 struct ChannelState
@@ -60,19 +70,12 @@ struct ChannelState
     float minFrequency;
     float maxFrequency;
 };
-/*
-enum GameStep {
-    Listening,
-    Editing,
-    ShowingTruth,
-    ShowingAnswer
-};
-*/
+
+
 struct GameState
 {
     std::unordered_map<int, ChannelState> channels;
-    Listening listening;
-    //GameStep step;
+    GameStep step;
 };
 
 //==============================================================================
@@ -127,21 +130,24 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         auto channel = state.channels.find(id);
         jassert(channel != state.channels.end());
         channel->second.edited_gain = newGain;
-        sendGainToTracks();
+        broadcastAllGains();
     }
     
-    void sendGainToTracks()
+    void broadcastAllGains()
     {
         for(const auto& [_, channel] : state.channels)
         {
-            double gainToSend = state.listening == User_Input ? channel.edited_gain : channel.target_gain;
-            /*switch(state.step)
+            double gainToSend;
+            switch(state.step)
             {
+                case Begin :
+                gainToSend = 0.0;
+                break;
                 case Listening :
                 gainToSend = channel.target_gain;
                 break;
                 case Editing :
-                gainToSend = channel.target_gain;
+                gainToSend = channel.edited_gain;
                 break;
                 case ShowingTruth : 
                 gainToSend = channel.target_gain;
@@ -149,14 +155,35 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
                 case ShowingAnswer :
                 gainToSend = channel.edited_gain;
                 break;
-            }*/
-            auto message = juce::String("setGain ") + juce::String(channel.id) + " " + juce::String(gainToSend);
-            juce::MessageManager::getInstance()->broadcastMessage(message);
+                default :
+                gainToSend = 0.0;
+                jassertfalse;
+                break;
+            }
+            sendGainMessage(channel.id, gainToSend);
         }
     }
     
-    void toggleListeningState(bool isToggled);
-    void randomizeGains();
+    void sendGainMessage(int id, double gainToSend)
+    {
+        auto message = juce::String("setGain ") + juce::String(id) + " " + juce::String(gainToSend);
+        juce::MessageManager::getInstance()->broadcastMessage(message);
+    }
+    
+    void nextClicked();
+    double randomGain()
+    {
+        auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
+        return slider_value_to_gain(slider_value);
+    }
+    void toggleInputOrTarget(bool isOn);
+    
+    void renameChannel(int id, juce::String newName)
+    {
+        state.channels[id].name = newName;
+        //TODO propagate to the track
+    }
+    
     GameState state;
     
     private:
