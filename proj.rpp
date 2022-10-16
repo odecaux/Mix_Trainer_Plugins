@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.68/win64" 1665837219
+<REAPER_PROJECT 0.1 "6.68/win64" 1665913907
   <NOTES 0 2
   >
   RIPPLE 0
@@ -101,7 +101,7 @@
     WAK 0 2
     BYPASS 0 0 0
     <JS analysis/loudness_meter ""
-      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -31.241607 -100 -194.645645 -31.119012 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -100 -100 -100 -100 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     >
     FLOATPOS 0 0 0 0
     FXID {C21F6A46-8AA5-470E-BE17-3D58C5CF61F4}
@@ -165,7 +165,7 @@
         PAAAAAEAAAAAAAAAAAAAAEpVQ0VQcml2YXRlRGF0YQABAUJ5cGFzcwABAQMAHQAAAAAAAABKVUNFUHJpdmF0ZURhdGEAAAAAAAAAAA==
         AFByb2dyYW0gMQAQAAAA
       >
-      FLOAT 46 279 518 454
+      FLOAT 46 279 919 454
       FXID {D4E7F6C4-E00A-4F45-9519-64C62B9E44CA}
       WAK 0 0
     >
@@ -203,7 +203,7 @@
         PAAAAAEAAAAAAAAAAAAAAEpVQ0VQcml2YXRlRGF0YQABAUJ5cGFzcwABAQMAHQAAAAAAAABKVUNFUHJpdmF0ZURhdGEAAAAAAAAAAA==
         AFByb2dyYW0gMQAQAAAA
       >
-      FLOAT 768 186 518 454
+      FLOATPOS 768 186 518 454
       FXID {D3A81460-6ADD-49FC-9347-42FB87F07A7A}
       WAK 0 0
     >

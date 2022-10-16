@@ -63,9 +63,28 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     
     void updateTrackProperties(const TrackProperties& properties) override;
     
-    private:
+    void frequencyRangeChanged(float newMin, float newMax)
+    {
+        minFrequency = newMin;
+        maxFrequency = newMax;
+        broadcastFrequencies();
+    }
+    
+    void broadcastFrequencies()
+    {
+        juce::String message = 
+            juce::String("frequencyRange ") + 
+            juce::String(id) + " " + 
+            juce::String(minFrequency) + " " + 
+            juce::String(maxFrequency);
+        juce::MessageManager::getInstance()->broadcastMessage(message);
+    }
+    
     //==============================================================================
     int id;
     double gain;
+    float minFrequency;
+    float maxFrequency;
+    private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorTrack)
 };

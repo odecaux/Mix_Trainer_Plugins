@@ -20,7 +20,7 @@ class DecibelSlider : public juce::Slider
     
     juce::String getTextFromValue(double value) override
     {
-        return juce::Decibels::toString(slider_value_to_db(value));
+        return juce::Decibels::toString(slider_value_to_db((int)value));
     }
     
     private:
@@ -46,7 +46,7 @@ class ChannelComponent : public juce::Component
         
         fader.onValueChange = [this] {
             //jassert(locked == false);
-            targetValue = slider_value_to_gain(fader.getValue());
+            targetValue = slider_value_to_gain((int)fader.getValue());
             this->onFaderChange(targetValue);
         };
         

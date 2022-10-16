@@ -84,22 +84,24 @@ int ProcessorHost::getCurrentProgram()
 
 void ProcessorHost::setCurrentProgram(int index)
 {
+    juce::ignoreUnused(index);
 }
 
 const juce::String ProcessorHost::getProgramName(int index)
 {
+    juce::ignoreUnused(index);
     return {};
 }
 
 void ProcessorHost::changeProgramName(int index, const juce::String& newName)
 {
+    juce::ignoreUnused(index, newName);
 }
 
 //==============================================================================
 void ProcessorHost::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
 void ProcessorHost::releaseResources()
@@ -136,9 +138,10 @@ bool ProcessorHost::isBusesLayoutSupported(const BusesLayout& layouts) const
 
 void ProcessorHost::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    juce::ignoreUnused(buffer, midiMessages);
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    //auto totalNumInputChannels = getTotalNumInputChannels();
+    //auto totalNumOutputChannels = getTotalNumOutputChannels();
 }
 
 //==============================================================================
@@ -155,15 +158,12 @@ juce::AudioProcessorEditor* ProcessorHost::createEditor()
 //==============================================================================
 void ProcessorHost::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    juce::ignoreUnused(destData);
 }
 
 void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    juce::ignoreUnused(data, sizeInBytes);
 }
 void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
@@ -200,13 +200,19 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     }
     else if (tokens[0] == "name")
     {
-        auto channel = state.channels.find(message_id);
-        jassert(channel != state.channels.end());
-        channel->second.name = tokens[2];
+        auto &channel = state.channels[message_id];
+        channel.name = tokens[2];
+        
         if(editor)
         {
             editor->mixerPanel.renameChannel(message_id, tokens[2]);
         }
+    }
+    else if (tokens[0] == "frequencyRange")
+    {
+        auto &channel = state.channels[message_id];
+        channel.minFrequency = tokens[2].getFloatValue();
+        channel.maxFrequency = tokens[3].getFloatValue();
     }
 }
 
@@ -229,7 +235,7 @@ void ProcessorHost::toggleListeningState(bool isToggled)
 
 void ProcessorHost::randomizeGains() 
 {
-    auto* editor = (EditorHost*)getActiveEditor();
+    //auto* editor = (EditorHost*)getActiveEditor();
     for (auto& [_, channel] : state.channels)
     {
         auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);

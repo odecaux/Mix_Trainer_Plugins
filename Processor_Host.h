@@ -41,14 +41,7 @@ static int db_to_slider_value(double db)
     return -1;
 }
 
-static double slider_value_to_db(double value)
-{
-    int int_value = (int)value;
-    jassert((double)value == value);
-    return slider_value_to_db(int_value);
-}
-
-static double slider_value_to_gain(double value)
+static double slider_value_to_gain(int value)
 {
     return juce::Decibels::decibelsToGain(slider_value_to_db(value));
 }
@@ -64,6 +57,8 @@ struct ChannelState
     juce::String name;
     double edited_gain;
     double target_gain;
+    float minFrequency;
+    float maxFrequency;
 };
 /*
 enum GameStep {

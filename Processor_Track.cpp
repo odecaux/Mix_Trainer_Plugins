@@ -25,10 +25,13 @@ ProcessorTrack::ProcessorTrack()
 #endif
 ,
 id{juce::Random().nextInt()},
-gain{0.0f}
+gain{0.0f},
+minFrequency{20},
+maxFrequency{20000}
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
     juce::MessageManager::getInstance()->broadcastMessage(juce::String("create ") + juce::String(id));
+    broadcastFrequencies();
 }
 
 ProcessorTrack::~ProcessorTrack()
@@ -87,15 +90,18 @@ int ProcessorTrack::getCurrentProgram()
 
 void ProcessorTrack::setCurrentProgram(int index)
 {
+    juce::ignoreUnused(index);
 }
 
 const juce::String ProcessorTrack::getProgramName(int index)
 {
+    juce::ignoreUnused(index);
     return {};
 }
 
 void ProcessorTrack::changeProgramName(int index, const juce::String& newName)
 {
+    juce::ignoreUnused(index, newName);
 }
 
 //==============================================================================
@@ -103,6 +109,7 @@ void ProcessorTrack::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
+    juce::ignoreUnused(sampleRate, samplesPerBlock);
 }
 
 void ProcessorTrack::releaseResources()
@@ -139,10 +146,11 @@ bool ProcessorTrack::isBusesLayoutSupported(const BusesLayout& layouts) const
 
 void ProcessorTrack::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
+    juce::ignoreUnused(midiMessages);
     juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-    buffer.applyGain(gain);
+    //auto totalNumInputChannels = getTotalNumInputChannels();
+    //auto totalNumOutputChannels = getTotalNumOutputChannels();
+    buffer.applyGain(static_cast<float>(gain));
 }
 
 //==============================================================================
@@ -153,21 +161,18 @@ bool ProcessorTrack::hasEditor() const
 
 juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 {
-    return new EditorTrack(*this, id);
+    return new EditorTrack(*this, id, minFrequency, maxFrequency);
 }
 
 //==============================================================================
 void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
+    juce::ignoreUnused(destData);
 }
 
 void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
+    juce::ignoreUnused(data, sizeInBytes);
 }
 
 void ProcessorTrack::updateTrackProperties(const TrackProperties& properties)
@@ -188,10 +193,6 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
     if(tokens[0] == "setGain")
     {
         gain = tokens[2].getDoubleValue();
-        if(auto* editor = (EditorTrack*)getActiveEditor())
-        {
-            editor->setText(juce::String(gain));
-        }
     }
 }
 //==============================================================================
