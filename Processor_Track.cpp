@@ -167,12 +167,20 @@ juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 //==============================================================================
 void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
 {
-    juce::ignoreUnused(destData);
+    juce::MemoryOutputStream out (destData, false);
+    out.writeFloat(minFrequency);
+    out.writeFloat(maxFrequency);
+    out.writeInt(0);
 }
 
 void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 {
-    juce::ignoreUnused(data, sizeInBytes);
+    if(sizeInBytes > 0)
+    {
+        jassert(sizeInBytes == 12);
+        minFrequency = ((const float*)data)[0];
+        maxFrequency = ((const float*)data)[1];
+    }
 }
 
 void ProcessorTrack::updateTrackProperties(const TrackProperties& properties)

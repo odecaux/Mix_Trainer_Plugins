@@ -158,7 +158,7 @@ juce::AudioProcessorEditor* ProcessorHost::createEditor()
 //==============================================================================
 void ProcessorHost::getStateInformation(juce::MemoryBlock& destData)
 {
-    juce::ignoreUnused(destData);
+    
 }
 
 void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
