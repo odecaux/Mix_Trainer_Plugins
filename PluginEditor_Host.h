@@ -180,8 +180,7 @@ class FaderRowComponent : public juce::Component
 class MixerPanel : public juce::Component
 {
     public:
-    MixerPanel(std::unordered_map<int, ChannelState> channels,
-               GameStep step,
+    MixerPanel(const GameState &state,
                std::function<void(int, double)> onFaderMoved,
                std::function<void(int, const juce::String&)> onNameChanged,
                std::function<void()> onNextClicked,
@@ -195,9 +194,9 @@ class MixerPanel : public juce::Component
         topLabel.setJustificationType (juce::Justification::centred);
         addAndMakeVisible(topLabel);
         
-        for(const auto& [_, channel] : channels)
+        for(const auto& [_, channel] : state.channels)
         {
-            createFader(channel, step);
+            createFader(channel, state.step);
         }
         addAndMakeVisible(fadersViewport);
         fadersViewport.setScrollBarsShown(false, true);
@@ -223,7 +222,9 @@ class MixerPanel : public juce::Component
         targetMixButton.setRadioGroupId (1000);
         userMixButton.setRadioGroupId (1000);
         
-        updateGameStep(step, channels);
+        addAndMakeVisible(scoreLabel);
+        
+        updateGameUI(state);
     }
     
     //==============================================================================
@@ -239,8 +240,13 @@ class MixerPanel : public juce::Component
         auto top_height = 20;
         auto r = getLocalBounds();
         
-        auto topLabelBounds = r.withHeight(top_height);
+        auto topBounds = r.withHeight(top_height);
+        
+        auto topLabelBounds = topBounds;
         topLabel.setBounds(topLabelBounds);
+        
+        auto scoreLabelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
+        scoreLabel.setBounds(scoreLabelBounds);
         
         auto fadersBounds = r.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
         fadersViewport.setBounds(fadersBounds);
@@ -302,17 +308,18 @@ class MixerPanel : public juce::Component
         fader->setName(newName);
     }
     
-    void updateGameStep(GameStep newStep, std::unordered_map<int, ChannelState> channelStates)
+    void updateGameUI(const GameState& new_state)
     {
-        targetMixButton.setToggleState(newStep == Listening || 
-                                       newStep == ShowingTruth, 
+        targetMixButton.setToggleState(new_state.step == Listening || 
+                                       new_state.step == ShowingTruth, 
                                        juce::dontSendNotification);
         
-        for(auto& [id, fader] : faderComponents)
-            fader->updateStep(newStep, channelStates[id]);
+        for(auto& [id, fader] : faderComponents){
+            const ChannelState &channel = new_state.channels.at(id);
+            fader->updateStep(new_state.step, channel);
+        }
         
-        
-        switch(newStep)
+        switch(new_state.step)
         {
             case Begin : jassertfalse; break;
             case Listening :
@@ -324,16 +331,19 @@ class MixerPanel : public juce::Component
             case ShowingTruth :
             case ShowingAnswer : 
             {
-                topLabel.setText("Result", juce::dontSendNotification);
+                topLabel.setText("Results", juce::dontSendNotification);
                 nextButton.setButtonText("Next");
             }break;
         };
+        
+        scoreLabel.setText(juce::String("Score : ") + juce::String(new_state.score), juce::dontSendNotification);
     }
     
     private:
     std::unordered_map<int, std::unique_ptr<FaderComponent>> faderComponents = {};
     FaderRowComponent fadersRow;
     juce::Label topLabel;
+    juce::Label scoreLabel;
     juce::Viewport fadersViewport;
     juce::TextButton nextButton;
     
@@ -355,8 +365,7 @@ class EditorHost : public juce::AudioProcessorEditor
     EditorHost(ProcessorHost& p)
         : audioProcessor(p), 
     AudioProcessorEditor(p),
-    mixerPanel(p.state.channels, 
-               p.state.step,
+    mixerPanel(p.state,
                [this](int id, double gain){audioProcessor.setUserGain(id, gain);},
                [this](int id, const juce::String &newName){audioProcessor.renameChannel(id, newName);},
                [this](){ audioProcessor.nextClicked(); /* TODO insert state assert debug*/ },

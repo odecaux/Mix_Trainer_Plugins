@@ -27,6 +27,7 @@ ProcessorHost::ProcessorHost()
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
     state.step = Listening;
+    state.score = 0;
 }
 
 ProcessorHost::~ProcessorHost()
@@ -244,7 +245,7 @@ void ProcessorHost::toggleInputOrTarget(bool isOn) //TODO rename isOn
     {
         broadcastAllDSP();
         if(editor)
-            editor->mixerPanel.updateGameStep(state.step, state.channels);
+            editor->mixerPanel.updateGameUI(state);
     }
 }
 
@@ -257,11 +258,19 @@ void ProcessorHost::nextClicked(){
         case Listening :
         case Editing :
         {
+            for (auto& [_, channel] : state.channels)
+            {
+                
+                if(channel.target_gain == channel.edited_gain)
+                {
+                    state.score++;
+                }
+            }
             state.step = ShowingTruth;
         }break;
         case ShowingTruth : 
         case ShowingAnswer :
-        {
+        { 
             for (auto& [_, channel] : state.channels)
             {
                 channel.target_gain = randomGain();
@@ -274,7 +283,7 @@ void ProcessorHost::nextClicked(){
     auto* editor = (EditorHost*)getActiveEditor();
     if(editor)
     {
-        editor->mixerPanel.updateGameStep(state.step, state.channels);
+        editor->mixerPanel.updateGameUI(state);
     }
 }
 

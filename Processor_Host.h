@@ -85,6 +85,7 @@ struct GameState
 {
     std::unordered_map<int, ChannelState> channels;
     GameStep step;
+    int score;
 };
 
 //==============================================================================
@@ -184,7 +185,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void nextClicked();
     double randomGain()
     {
-        auto slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
+        int slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
         return slider_value_to_gain(slider_value);
     }
     void toggleInputOrTarget(bool isOn);
