@@ -8,7 +8,7 @@
   ==============================================================================
 */
 
-
+#include "shared.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
@@ -187,7 +187,7 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
         {
             editor->mixerPanel.createFader(state.channels[message_id], state.step);
         }
-        broadcastAllGains();
+        broadcastAllDSP();
         
     }
     else if (tokens[0] == "delete") {
@@ -213,8 +213,8 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     else if (tokens[0] == "frequencyRange")
     {
         auto &channel = state.channels[message_id];
-        channel.minFrequency = tokens[2].getFloatValue();
-        channel.maxFrequency = tokens[3].getFloatValue();
+        channel.minFreq = tokens[2].getFloatValue();
+        channel.maxFreq = tokens[3].getFloatValue();
     }
 }
 
@@ -242,7 +242,7 @@ void ProcessorHost::toggleInputOrTarget(bool isOn) //TODO rename isOn
     auto* editor = (EditorHost*)getActiveEditor();
     if(old_step != state.step)
     {
-        broadcastAllGains();
+        broadcastAllDSP();
         if(editor)
             editor->mixerPanel.updateGameStep(state.step, state.channels);
     }
@@ -270,7 +270,7 @@ void ProcessorHost::nextClicked(){
             state.step = Listening;
         }break;
     }
-    broadcastAllGains();
+    broadcastAllDSP();
     auto* editor = (EditorHost*)getActiveEditor();
     if(editor)
     {
