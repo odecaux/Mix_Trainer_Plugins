@@ -11,6 +11,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_CXX_STANDARD 20)
+
 project(MixTrainer VERSION 0.0.1)
 
 find_package(JUCE CONFIG REQUIRED)
@@ -34,7 +35,8 @@ juce_add_plugin(MixTrainer_Host
 
 target_sources(MixTrainer_Host
     PRIVATE
-        Processor_Host.cpp)
+        Processor_Host.cpp
+        Game.cpp)
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC

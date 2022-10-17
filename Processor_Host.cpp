@@ -8,7 +8,10 @@
   ==============================================================================
 */
 
+#include <juce_audio_processors/juce_audio_processors.h>
+
 #include "shared.h"
+#include "Game.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
@@ -28,6 +31,7 @@ ProcessorHost::ProcessorHost()
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
     state.step = Listening;
     state.score = 0;
+    game = std::make_unique<MixerGame>(*this, state);
 }
 
 ProcessorHost::~ProcessorHost()
@@ -153,7 +157,7 @@ bool ProcessorHost::hasEditor() const
 
 juce::AudioProcessorEditor* ProcessorHost::createEditor()
 {
-    return new EditorHost(*this);
+    return new EditorHost(*this, game->createUI());
 }
 
 //==============================================================================
@@ -172,118 +176,24 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     jassert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
     
-    auto* editor = (EditorHost*)getActiveEditor();
-    if (tokens[0] == "create") {
-        {
-            auto assertChannel = state.channels.find(message_id);
-            jassert(assertChannel == state.channels.end());
-        }
-        
-        auto target_gain = randomGain();
-        auto edit_gain = slider_value_to_gain(0);
-        
-        state.channels[message_id] = ChannelState{message_id, "", edit_gain, target_gain};
-        //3) set random value
-        if(editor)
-        {
-            editor->mixerPanel.createFader(state.channels[message_id], state.step);
-        }
-        broadcastAllDSP();
-        
+    if (tokens[0] == "create") 
+    {
+        game->createChannel(message_id);
     }
-    else if (tokens[0] == "delete") {
-        auto channel = state.channels.find(message_id);
-        jassert(channel != state.channels.end());
-        
-        if(editor)
-        {
-            editor->mixerPanel.removeFader(message_id);
-        }
-        state.channels.erase(channel);
+    else if (tokens[0] == "delete") 
+    {
+       game->deleteChannel(message_id);
     }
     else if (tokens[0] == "name")
     {
-        auto &channel = state.channels[message_id];
-        channel.name = tokens[2];
-        
-        if(editor)
-        {
-            editor->mixerPanel.renameFader(message_id, tokens[2]);
-        }
+        game->renameChannelFromTrack(message_id, tokens[2]);
     }
+    //TODO more infos from the channel ?
     else if (tokens[0] == "frequencyRange")
     {
-        auto &channel = state.channels[message_id];
-        channel.minFreq = tokens[2].getFloatValue();
-        channel.maxFreq = tokens[3].getFloatValue();
-    }
-}
-
-void ProcessorHost::toggleInputOrTarget(bool isOn) //TODO rename isOn
-{
-    jassert(state.step != Begin);
-    auto old_step = state.step;
-    
-    if(isOn && state.step == Editing)
-    {
-        state.step = Listening;
-    }
-    else if(isOn && state.step == ShowingAnswer)
-    {
-        state.step = ShowingTruth;
-    }
-    else if(!isOn && state.step == Listening)
-    {
-        state.step = Editing;
-    }
-    else if(!isOn && state.step == ShowingTruth){
-        state.step = ShowingAnswer;
-    }
-    
-    auto* editor = (EditorHost*)getActiveEditor();
-    if(old_step != state.step)
-    {
-        broadcastAllDSP();
-        if(editor)
-            editor->mixerPanel.updateGameUI(state);
-    }
-}
-
-void ProcessorHost::nextClicked(){
-    switch(state.step)
-    {
-        case Begin :
-        jassertfalse; //not implemented yet
-        break;
-        case Listening :
-        case Editing :
-        {
-            for (auto& [_, channel] : state.channels)
-            {
-                
-                if(channel.target_gain == channel.edited_gain)
-                {
-                    state.score++;
-                }
-            }
-            state.step = ShowingTruth;
-        }break;
-        case ShowingTruth : 
-        case ShowingAnswer :
-        { 
-            for (auto& [_, channel] : state.channels)
-            {
-                channel.target_gain = randomGain();
-                channel.edited_gain = 0.0;
-            }
-            state.step = Listening;
-        }break;
-    }
-    broadcastAllDSP();
-    auto* editor = (EditorHost*)getActiveEditor();
-    if(editor)
-    {
-        editor->mixerPanel.updateGameUI(state);
+        auto minFreq = tokens[2].getFloatValue();
+        auto maxFreq = tokens[3].getFloatValue();
+        game->changeFrequencyRange(message_id, minFreq, maxFreq);
     }
 }
 

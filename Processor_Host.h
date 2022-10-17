@@ -10,84 +10,6 @@
 
 #pragma once
 
-
-#include <juce_audio_processors/juce_audio_processors.h>
-
-static const double slider_values[] = {-100, -12, -9, -6, -3};
-
-#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
-
-double equal_double(double a, double b, double theta)
-{
-    return std::abs(a - b) < theta;
-}
-
-static double slider_value_to_db(int value)
-{
-    jassert(value < ArraySize(slider_values));
-    return slider_values[value];
-}
-
-
-static int db_to_slider_value(double db)
-{
-    for(int i = 0; i < ArraySize(slider_values); i++)
-    {
-        if(equal_double(db, slider_values[i], 0.001)) return i;
-    }
-    jassertfalse;
-    return -1;
-}
-
-static int gain_to_slider_value(double gain)
-{ 
-    return db_to_slider_value(juce::Decibels::gainToDecibels(gain));
-}
-
-static double slider_value_to_gain(int value)
-{
-    return juce::Decibels::decibelsToGain(slider_value_to_db(value));
-}
-
-enum Action {
-    
-};
-
-enum GameStep {
-    Begin,
-    Listening,
-    Editing,
-    ShowingTruth,
-    ShowingAnswer
-};
-
-struct ChannelState
-{
-    int id;
-    juce::String name;
-    double edited_gain;
-    double target_gain;
-    float minFreq;
-    float maxFreq;
-    //- unused 
-    double target_low_shelf_gain;
-    double target_low_shelf_freq;
-    double target_high_shelf_gain;
-    double target_high_shelf_freq;
-    
-    double edited_low_shelf_gain;
-    double edited_low_shelf_freq;
-    double edited_high_shelf_gain;
-    double edited_high_shelf_freq;
-};
-
-struct GameState
-{
-    std::unordered_map<int, ChannelState> channels;
-    GameStep step;
-    int score;
-};
-
 //==============================================================================
 
 class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
@@ -135,13 +57,6 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
     
-    void setUserGain(int id, double  newGain)
-    {
-        auto channel = state.channels.find(id);
-        jassert(channel != state.channels.end());
-        channel->second.edited_gain = newGain;
-        broadcastAllDSP();
-    }
     
     void broadcastAllDSP()
     {
@@ -182,21 +97,15 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         juce::MessageManager::getInstance()->broadcastMessage(message);
     }
     
-    void nextClicked();
-    double randomGain()
+    void uiIsBeingDestroyed()
     {
-        int slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
-        return slider_value_to_gain(slider_value);
+        jassert(game);
+        game->deleteUI();
     }
-    void toggleInputOrTarget(bool isOn);
-    
-    void renameChannel(int id, juce::String newName)
-    {
-        state.channels[id].name = newName;
-        //TODO propagate to the track
-    }
-    
+
     GameState state;
+    std::unique_ptr<GameImplementation> game;
+
     
     private:
     //==============================================================================
