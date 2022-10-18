@@ -88,8 +88,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
             sendDSPMessage(channel.id, dsp);
         }
     }
-    
-    
+      
     void sendDSPMessage(int id, ChannelDSPState dsp)
     {
         auto message = juce::String("setDSP ") + juce::String(id) + " " + juce::String::toHexString((void*)&dsp, sizeof(dsp), 0);
@@ -104,7 +103,6 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
 
     GameState state;
     std::unique_ptr<GameImplementation> game;
-
     
     private:
     //==============================================================================

@@ -31,7 +31,9 @@ ProcessorHost::ProcessorHost()
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
     state.step = Begin;
     state.score = 0;
-    game = std::make_unique<MixerGame>(*this, state);
+    
+
+    //game = std::make_unique<MixerGame>(*this, state);
 }
 
 ProcessorHost::~ProcessorHost()
@@ -170,6 +172,7 @@ void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 {
     juce::ignoreUnused(data, sizeInBytes);
 }
+
 void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     

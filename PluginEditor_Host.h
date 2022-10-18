@@ -10,14 +10,43 @@
 
 #pragma once
 
+class MainMenu : public juce::Component
+{
+public :
+    MainMenu(std::function<void()> onMainButtonClick) : 
+        onMainButtonClick(std::move(onMainButtonClick))
+    {
+        button.setSize(40, 40);
+        button.onClick = [this] {
+            this->onMainButtonClick();
+        };
+        addAndMakeVisible(button);
+    }
+    
+    void paint(juce::Graphics &g) override
+    {
+        juce::ignoreUnused(g);
+    }
+
+    void resized() override
+    {
+        auto bounds = getLocalBounds();
+        button.setCentrePosition(bounds.getCentre());
+    }
+
+private :
+    juce::TextButton button;
+    std::function < void() > onMainButtonClick;
+};
+
 
 class EditorHost : public juce::AudioProcessorEditor
 {
-    public:
+public:
     
-    EditorHost(ProcessorHost& p, 
-               juce::Component *mainPanel) : 
-        AudioProcessorEditor(p), 
+    EditorHost(ProcessorHost& p,
+               juce::Component *mainPanel) :
+        AudioProcessorEditor(p),
         audio_processor(p),
         mainPanel(mainPanel)
     {
@@ -25,7 +54,8 @@ class EditorHost : public juce::AudioProcessorEditor
         setSize(960, 540);
         addAndMakeVisible(*this->mainPanel);
     }
-    ~EditorHost() override {
+    ~EditorHost() override
+    {
         removeChildComponent(mainPanel);
         mainPanel = nullptr;
         audio_processor.uiIsBeingDestroyed();
@@ -41,7 +71,7 @@ class EditorHost : public juce::AudioProcessorEditor
         mainPanel->setBounds(getLocalBounds());
     }
     
-    public:
+public:
     juce::Component *mainPanel;
     ProcessorHost &audio_processor;
     
