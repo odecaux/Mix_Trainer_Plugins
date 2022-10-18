@@ -33,7 +33,7 @@ ProcessorHost::ProcessorHost()
     state.score = 0;
     
 
-    //game = std::make_unique<MixerGame>(*this, state);
+    game = std::make_unique<MixerGame>(*this, state);
 }
 
 ProcessorHost::~ProcessorHost()

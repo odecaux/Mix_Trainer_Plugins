@@ -101,6 +101,10 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         game->deleteUI();
     }
 
+    void backToMainMenu()
+    {
+    }
+
     GameState state;
     std::unique_ptr<GameImplementation> game;
     

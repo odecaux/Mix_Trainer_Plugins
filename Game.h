@@ -82,7 +82,8 @@ class ProcessorHost;
 struct UIImplementation : public juce::Component
 {
     UIImplementation(std::function<void()>&& onNextClicked,
-                     std::function<void(bool)> && onToggleClicked);
+                     std::function<void(bool)> && onToggleClicked,
+                     std::function<void()> && onBackClicked);
     virtual ~UIImplementation() {}
     void updateGameUI_Generic(const GameState &state);
     void paint(juce::Graphics& g) override;
@@ -96,6 +97,7 @@ struct UIImplementation : public juce::Component
             
     juce::Label topLabel;
     juce::Label scoreLabel;
+    juce::TextButton backButton;
             
     juce::TextButton nextButton;
     juce::ToggleButton targetMixButton;
@@ -103,6 +105,7 @@ struct UIImplementation : public juce::Component
             
     std::function<void()> onNextClicked;
     std::function<void(bool)> onToggleClicked;
+    std::function<void()> onBackClicked;
 };
 
 struct GameImplementation {
@@ -133,6 +136,7 @@ struct GameImplementation {
     void changeFrequencyRange(int id, float new_min, float new_max);
     void toggleInputOrTarget(bool isOn);
     void nextClicked();
+    void backClicked();
 };
 
 
@@ -260,7 +264,6 @@ private:
     //double smoothing;
 };
 
-
 class FaderRowComponent : public juce::Component
 {
 public:
@@ -308,6 +311,7 @@ struct MixerUI : public UIImplementation
     MixerUI(GameState &state,
                std::function<void()> &&onNextClicked,
                std::function<void(bool)> &&onToggleClicked,
+               std::function<void()> &&onBackClicked,
                std::function<void(int, double)> &&onFaderMoved,
                std::function<void(int, const juce::String&)> && onEditedName);
     virtual ~MixerUI() {}

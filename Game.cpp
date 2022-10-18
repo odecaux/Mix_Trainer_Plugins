@@ -116,20 +116,30 @@ void GameImplementation::nextClicked(){
     audioProcessor.broadcastAllDSP();
     if(game_ui)
         game_ui->updateGameUI(state);
-    
+}
+
+void GameImplementation::backClicked()
+{
+    audioProcessor.backToMainMenu();
 }
 
 
 UIImplementation::UIImplementation(std::function < void() > && onNextClicked,
-                                   std::function < void(bool) > && onToggleClicked)
+                                   std::function < void(bool) > && onToggleClicked,
+                                   std::function < void() > && onBackClicked)
 :
     onNextClicked(std::move(onNextClicked)),
-    onToggleClicked(std::move(onToggleClicked))
+    onToggleClicked(std::move(onToggleClicked)),
+    onBackClicked(std::move(onBackClicked))
 {
     {
         topLabel.setJustificationType (juce::Justification::centred);
         addAndMakeVisible(topLabel);
-        
+        backButton.setButtonText("Back");
+        backButton.onClick = [this] {
+            this->onBackClicked();
+        };
+        addAndMakeVisible(backButton);
         addAndMakeVisible(scoreLabel);
     }
     {
@@ -214,27 +224,34 @@ void UIImplementation::resized()
             
     auto topBounds = r.withHeight(top_height);
             
-    auto topLabelBounds = topBounds;
-    topLabel.setBounds(topLabelBounds);
-            
-    auto scoreLabelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
-    scoreLabel.setBounds(scoreLabelBounds);
-            
+    {
+        auto topLabelBounds = topBounds.withTrimmedLeft(90).withTrimmedRight(90);
+        topLabel.setBounds(topLabelBounds);
+     
+        auto backButtonBounds = topBounds.withWidth(90);
+        backButton.setBounds(backButtonBounds);
+
+        auto scoreLabelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
+        scoreLabel.setBounds(scoreLabelBounds);
+    }
+
     auto gameBounds = r.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
     resized_child(gameBounds);
+    
+    {
+        auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
+        auto center = bottomStripBounds.getCentre();
+    
+        auto button_temp = juce::Rectangle(100, bottom_height - 10);
+        auto nextBounds = button_temp.withCentre(center);
+        nextButton.setBounds(nextBounds);
             
-    auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
-    auto center = bottomStripBounds.getCentre();
-            
-    auto button_temp = juce::Rectangle(100, bottom_height - 10);
-    auto nextBounds = button_temp.withCentre(center); 
-    nextButton.setBounds(nextBounds);
-            
-    auto toggleBounds = bottomStripBounds.withWidth(100);
-    auto targetMixBounds = toggleBounds.withHeight(bottom_height / 2);
-    auto userMixBounds = targetMixBounds.translated(0, bottom_height / 2);
-    targetMixButton.setBounds(targetMixBounds);
-    userMixButton.setBounds(userMixBounds);
+        auto toggleBounds = bottomStripBounds.withWidth(100);
+        auto targetMixBounds = toggleBounds.withHeight(bottom_height / 2);
+        auto userMixBounds = targetMixBounds.translated(0, bottom_height / 2);
+        targetMixButton.setBounds(targetMixBounds);
+        userMixButton.setBounds(userMixBounds);
+    }
 }
 
 MixerGame::MixerGame(ProcessorHost &audioProcessor, GameState &state)
@@ -287,6 +304,7 @@ UIImplementation *MixerGame::createUI()
         state,
         [this]() { nextClicked(); /* TODO insert state assert debug*/ },
         [this](bool isToggled) { toggleInputOrTarget(isToggled); },
+        [this]() { backClicked(); },
         [this](int id, double gain) { editGain(id, gain); },
         [this](int id, const juce::String &newName) { renameChannelFromUI(id, newName); }
     );
@@ -296,10 +314,11 @@ UIImplementation *MixerGame::createUI()
 MixerUI::MixerUI(GameState &state,
            std::function<void()> &&onNextClicked,
            std::function<void(bool)> &&onToggleClicked,
+           std::function<void()> &&onBackClicked,
            std::function<void(int, double)> &&onFaderMoved,
            std::function<void(int, const juce::String&)> &&onEditedName)
 :
-    UIImplementation(std::move(onNextClicked), std::move(onToggleClicked)),
+    UIImplementation(std::move(onNextClicked), std::move(onToggleClicked), std::move(onBackClicked)),
     fadersRow(faderComponents),
     onFaderMoved(std::move(onFaderMoved)),
     onEditedName(std::move(onEditedName))
