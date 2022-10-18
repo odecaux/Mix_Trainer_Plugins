@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <N10X>
 	<Workspace>
-		<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,</IncludeFilter>
-		<ExcludeFilter>*track.*,*host.*,game.*,</ExcludeFilter>
+		<IncludeFilter>*Track.*,</IncludeFilter>
+		<ExcludeFilter></ExcludeFilter>
 		<SyncFiles>true</SyncFiles>
 		<Recursive>false</Recursive>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
-		<BuildCommand>build_all.bat</BuildCommand>
+		<BuildCommand>build_track.bat</BuildCommand>
 		<RebuildCommand></RebuildCommand>
 		<BuildFileCommand></BuildFileCommand>
 		<CleanCommand></CleanCommand>
 		<BuildWorkingDirectory></BuildWorkingDirectory>
 		<RunCommand></RunCommand>
-		<DebugCommand>reaper.rdbg</DebugCommand>
+		<DebugCommand></DebugCommand>
 		<ExePathCommand></ExePathCommand>
 		<DebugSln></DebugSln>
 		<Configurations>
@@ -41,13 +41,6 @@
 				<Defines></Defines>
 			</Platform>
 		</ConfigProperties>
-		<Children>
-			<WorkspaceReference>
-				<Path>Host.10x</Path>
-			</WorkspaceReference>
-			<WorkspaceReference>
-				<Path>Track.10x</Path>
-			</WorkspaceReference>
-		</Children>
+		<Children></Children>
 	</Workspace>
 </N10X>

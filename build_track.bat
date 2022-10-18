@@ -1,0 +1,1 @@
+pwsh -Command "$dir = (Resolve-Path .\).tostring(); $dir = $dir + '\'; echo $dir; (cmake --build cmake-build --target MixTrainer_Track) | foreach-object{ $_.replace($dir,'')} | foreach-object{ $_.replace($dir,'')}"
