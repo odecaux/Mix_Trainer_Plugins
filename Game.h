@@ -214,7 +214,12 @@ public:
     {
         switch(newStep)
         {
-            case Begin : jassertfalse; break;
+            case Begin :
+            {
+                fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
+                fader.setEnabled(true);
+                fader.setVisible(true);
+            } break;
             case Listening :
             {
                 fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
@@ -240,6 +245,7 @@ public:
                 fader.setVisible(true);
             }break;
         };
+
         step = newStep;
         repaint();
     }

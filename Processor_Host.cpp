@@ -29,7 +29,7 @@ ProcessorHost::ProcessorHost()
 #endif
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
-    state.step = Listening;
+    state.step = Begin;
     state.score = 0;
     game = std::make_unique<MixerGame>(*this, state);
 }
@@ -203,5 +203,3 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ProcessorHost();
 }
-
-

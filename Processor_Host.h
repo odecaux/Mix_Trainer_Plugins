@@ -66,8 +66,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
             switch(state.step)
             {
                 case Begin : {
-                    dsp = {0.0};
-                    jassertfalse;
+                    dsp = { .gain = channel.edited_gain };
                 } break;
                 case Listening : {
                     dsp = { .gain = channel.target_gain };
