@@ -1,13 +1,5 @@
 # Example Audio Plugin CMakeLists.txt
 
-# To get started on a new plugin, copy this entire folder (containing this file and C++ sources) to
-# a convenient location, and then start making modifications.
-
-# The first line of any CMake project should be a call to `cmake_minimum_required`, which checks
-# that the installed CMake will be able to understand the following CMakeLists, and ensures that
-# CMake's behaviour is compatible with the named version. This is a standard CMake command, so more
-# information can be found in the CMake docs.
-
 cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -31,7 +23,6 @@ juce_add_plugin(MixTrainer_Host
     PLUGIN_CODE MTH0
     FORMATS AU VST3
     PRODUCT_NAME "MixTrainer Host")
-
 
 target_sources(MixTrainer_Host
     PRIVATE
@@ -67,7 +58,6 @@ juce_add_plugin(MixTrainer_Track
     PLUGIN_CODE MTT0
     FORMATS AU VST3
     PRODUCT_NAME "MixTrainer Track")
-
 
 target_sources(MixTrainer_Track
     PRIVATE
