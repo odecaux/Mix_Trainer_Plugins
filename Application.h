@@ -1,6 +1,10 @@
 
 struct Settings{
-    int random;
+    float difficulty;
+};
+
+struct Stats {
+    int total_score;
 };
 
 class ProcessorHost;
@@ -69,6 +73,8 @@ private:
 #if 0
     GameState state;
 #endif
+    Settings settings;
+    Stats stats;
     PanelType type;
     ProcessorHost &host;
     EditorHost *editor;

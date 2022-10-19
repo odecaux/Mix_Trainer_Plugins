@@ -37,10 +37,13 @@ void Application::toSettings()
     jassert(type == PanelType::MainMenu);
     type = PanelType::Settings;
     jassert(editor);
-
-    std::unique_ptr < juce::Component > main_menu =
-        std::make_unique < SettingsMenu > ([this] { toMainMenu(); });
-    editor->changePanel(std::move(main_menu));
+    
+    std::unique_ptr < juce::Component > settings_menu =
+        std::make_unique < SettingsMenu > (
+        [this] { toMainMenu(); },
+        [this] (double new_value) { settings.difficulty = (float)new_value; });
+    editor->changePanel(std::move(settings_menu));
+   
 }
 
 void Application::onEditorDelete()
@@ -63,9 +66,10 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             });
         } break;
         case PanelType::Settings : {
-            panel = std::make_unique < SettingsMenu > ([this] {
-                toMainMenu();
-            });
+            panel = std::make_unique < SettingsMenu > (
+                [this] { toMainMenu(); },
+                [this] (double new_value) { settings.difficulty = (float)new_value; }
+            );
         } break;
     }
     editor->changePanel(std::move(panel));

@@ -53,8 +53,8 @@ struct ChannelState
     juce::String name;
     double edited_gain;
     double target_gain;
-    float minFreq;
-    float maxFreq;
+    float min_freq;
+    float max_freq;
     //- unused 
     double target_low_shelf_gain;
     double target_low_shelf_freq;
@@ -287,11 +287,11 @@ public:
     {
         int x_offset = 0;
         auto bounds = getLocalBounds();
-        auto topLeft = bounds.getTopLeft();
+        auto top_left = bounds.getTopLeft();
         //draw in order
         for (auto& [_, fader] : faderComponents)
         {
-            fader->setTopLeftPosition(topLeft + juce::Point<int>(x_offset, 0));
+            fader->setTopLeftPosition(top_left + juce::Point<int>(x_offset, 0));
             fader->setSize(fader_width, bounds.getHeight());
             x_offset += fader_width;
         }
