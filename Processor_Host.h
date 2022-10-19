@@ -12,6 +12,7 @@
 
 //==============================================================================
 
+
 class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
 #if JucePlugin_Enable_ARA
 , public juce::AudioProcessorARAExtension
@@ -57,58 +58,20 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
     
-    
-    void broadcastAllDSP()
+#if 0
+    void broadcastAllDSP(const std::unordered_map<int, ChannelDSPState> &dsp_states)
     {
-        for(const auto& [_, channel] : state.channels)
+        for (const auto &[id, state] : dsp_states)
         {
-            ChannelDSPState dsp;
-            switch(state.step)
-            {
-                case Begin : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                case Listening : {
-                    dsp = { .gain = channel.target_gain };
-                } break;
-                case Editing : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                case ShowingTruth : { 
-                    dsp = { .gain = channel.target_gain };
-                } break;
-                case ShowingAnswer : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                default : {
-                    dsp = { .gain = 0.0 };
-                    jassertfalse;
-                } break;
-            }
-            sendDSPMessage(channel.id, dsp);
+            auto message = juce::String("setDSP ") + juce::String(id) + " " + juce::String::toHexString((void*)&state, sizeof(state), 0);
+            juce::MessageManager::getInstance()->broadcastMessage(message);
         }
     }
-      
-    void sendDSPMessage(int id, ChannelDSPState dsp)
-    {
-        auto message = juce::String("setDSP ") + juce::String(id) + " " + juce::String::toHexString((void*)&dsp, sizeof(dsp), 0);
-        juce::MessageManager::getInstance()->broadcastMessage(message);
-    }
+#endif
     
-    void uiIsBeingDestroyed()
-    {
-        jassert(game);
-        game->deleteUI();
-    }
-
-    void backToMainMenu()
-    {
-    }
-
-    GameState state;
-    std::unique_ptr<GameImplementation> game;
-    
+    Application app;
     private:
+    
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ProcessorHost)
 };

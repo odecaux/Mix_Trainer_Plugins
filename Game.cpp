@@ -1,8 +1,12 @@
+#if 0
+
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "shared.h"
 #include "Game.h"
-#include "Processor_Host.h"
+#include "MainMenu.h"
 #include "PluginEditor_Host.h"
+#include "Application.h"
+#include "Processor_Host.h"
 
 double randomGain()
 {
@@ -10,55 +14,6 @@ double randomGain()
     return slider_value_to_gain(slider_value);
 }
 
-void GameImplementation::createChannel(int id)
-{
-    {
-        auto assertChannel = state.channels.find(id);
-        jassert(assertChannel == state.channels.end());
-    }
-    
-    state.channels[id] = generateChannel(id);
-        
-    audioProcessor.broadcastAllDSP();
-    if(game_ui)
-        game_ui->createChannelUI(state.channels[id], state.step);
-}
-    
-void GameImplementation::deleteChannel(int id)
-{
-    auto channel = state.channels.find(id);
-    jassert(channel != state.channels.end());
-        
-    if(game_ui)
-    {
-        game_ui->deleteChannelUI(id);
-    }
-        
-    //TODO virtual
-    state.channels.erase(channel);
-}
-    
-void GameImplementation::renameChannelFromUI(int id, juce::String newName)
-{
-    state.channels[id].name = newName;
-    //TODO propagate to the track
-}
-    
-void GameImplementation::renameChannelFromTrack(int id, const juce::String &new_name)
-{
-    auto &channel = state.channels[id];
-    channel.name = new_name;
-        
-    if(game_ui)
-        game_ui->renameChannel(id, new_name);
-}
-    
-void GameImplementation::changeFrequencyRange(int id, float new_min, float new_max)
-{
-    auto &channel = state.channels[id];
-    channel.minFreq = new_min;
-    channel.maxFreq = new_max;
-}
     
 void GameImplementation::toggleInputOrTarget(bool isOn)
 {
@@ -85,7 +40,7 @@ void GameImplementation::toggleInputOrTarget(bool isOn)
 
     if(old_step != state.step)
     {
-        audioProcessor.broadcastAllDSP();
+        app.broadcastAllDSP();
         //virtual
         if(game_ui)
             game_ui->updateGameUI(state);
@@ -113,14 +68,14 @@ void GameImplementation::nextClicked(){
             state.step = Listening;
         }break;
     }
-    audioProcessor.broadcastAllDSP();
+    app.broadcastAllDSP();
     if(game_ui)
         game_ui->updateGameUI(state);
 }
 
 void GameImplementation::backClicked()
 {
-    audioProcessor.backToMainMenu();
+    app.toMainMenu();
 }
 
 
@@ -254,8 +209,8 @@ void UIImplementation::resized()
     }
 }
 
-MixerGame::MixerGame(ProcessorHost &audioProcessor, GameState &state)
-: GameImplementation(audioProcessor, state)
+MixerGame::MixerGame(Application &app, GameState &state)
+: GameImplementation(app, state)
 {}
     
 ChannelState MixerGame::generateChannel(int id)
@@ -294,13 +249,13 @@ void MixerGame::editGain(int id, double new_gain)
     auto channel = state.channels.find(id);
     jassert(channel != state.channels.end());
     channel->second.edited_gain = new_gain;
-    audioProcessor.broadcastAllDSP();
+    app.broadcastAllDSP();
 }
     
-UIImplementation *MixerGame::createUI()
+std::unique_ptr<UIImplementation> MixerGame::createUI()
 {
     jassert(game_ui == nullptr);
-    game_ui = std::make_unique<MixerUI>(
+    auto new_game_ui = std::make_unique<MixerUI>(
         state,
         [this]() { nextClicked(); /* TODO insert state assert debug*/ },
         [this](bool isToggled) { toggleInputOrTarget(isToggled); },
@@ -308,7 +263,8 @@ UIImplementation *MixerGame::createUI()
         [this](int id, double gain) { editGain(id, gain); },
         [this](int id, const juce::String &newName) { renameChannelFromUI(id, newName); }
     );
-    return game_ui.get();
+    game_ui = new_game_ui.get();
+    return new_game_ui;
 }
 
 MixerUI::MixerUI(GameState &state,
@@ -390,3 +346,6 @@ void MixerUI::updateGameUI(const GameState &new_state)
     
     updateGameUI_Generic(new_state);
 }
+
+
+#endif 

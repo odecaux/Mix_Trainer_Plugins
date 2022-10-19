@@ -11,7 +11,13 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "shared.h"
+
+#if 0
 #include "Game.h"
+#endif
+
+#include "MainMenu.h"
+#include "Application.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
@@ -27,13 +33,10 @@ ProcessorHost::ProcessorHost()
 #endif
                  )
 #endif
+,
+    app(*this)
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
-    state.step = Begin;
-    state.score = 0;
-    
-
-    game = std::make_unique<MixerGame>(*this, state);
 }
 
 ProcessorHost::~ProcessorHost()
@@ -159,7 +162,9 @@ bool ProcessorHost::hasEditor() const
 
 juce::AudioProcessorEditor* ProcessorHost::createEditor()
 {
-    return new EditorHost(*this, game->createUI());
+    auto *editor = new EditorHost(*this, [&] { app.onEditorDelete(); });
+    app.initialiseEditorUI(editor);
+    return editor;
 }
 
 //==============================================================================
@@ -176,28 +181,31 @@ void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
+#if 0
     jassert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
     
     if (tokens[0] == "create") 
     {
-        game->createChannel(message_id);
+        app.createChannel(message_id);
     }
     else if (tokens[0] == "delete") 
     {
-       game->deleteChannel(message_id);
+       app.deleteChannel(message_id);
     }
     else if (tokens[0] == "name")
     {
-        game->renameChannelFromTrack(message_id, tokens[2]);
+        app.renameChannelFromTrack(message_id, tokens[2]);
     }
     //TODO more infos from the channel ?
     else if (tokens[0] == "frequencyRange")
     {
         auto minFreq = tokens[2].getFloatValue();
         auto maxFreq = tokens[3].getFloatValue();
-        game->changeFrequencyRange(message_id, minFreq, maxFreq);
+        app.changeFrequencyRange(message_id, minFreq, maxFreq);
     }
+
+#endif 
 }
 
 //==============================================================================

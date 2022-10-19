@@ -27,7 +27,8 @@ juce_add_plugin(MixTrainer_Host
 target_sources(MixTrainer_Host
     PRIVATE
         Processor_Host.cpp
-        Game.cpp)
+        Game.cpp
+        Application.cpp)
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC

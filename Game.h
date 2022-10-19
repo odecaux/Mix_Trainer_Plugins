@@ -108,13 +108,16 @@ struct UIImplementation : public juce::Component
     std::function<void()> onBackClicked;
 };
 
+class Application;
+
 struct GameImplementation {
-    ProcessorHost &audioProcessor;
+    Application &app;
     GameState &state;
-    std::unique_ptr<UIImplementation> game_ui = nullptr;
+    UIImplementation *game_ui = nullptr;
     
-    GameImplementation(ProcessorHost &audioProcessor, GameState &state) 
-    : audioProcessor(audioProcessor), state(state)
+    GameImplementation(Application &app, 
+                       GameState &state) 
+    : app(app), state(state)
     {}
     virtual ~GameImplementation() {}
 
@@ -122,18 +125,13 @@ struct GameImplementation {
     virtual int awardPoints() = 0;
     virtual void generateNewRound() = 0;
 
-    virtual UIImplementation *createUI() = 0;
+    virtual std::unique_ptr<UIImplementation> createUI() = 0;
 
     void deleteUI() {
         jassert(game_ui != nullptr);
-        game_ui.reset();
+        game_ui = nullptr;
     }
     
-    void createChannel(int id);
-    void deleteChannel(int id);
-    void renameChannelFromUI(int id, juce::String newName);
-    void renameChannelFromTrack(int id, const juce::String &new_name);
-    void changeFrequencyRange(int id, float new_min, float new_max);
     void toggleInputOrTarget(bool isOn);
     void nextClicked();
     void backClicked();
@@ -159,10 +157,10 @@ class FaderComponent : public juce::Component
 public:
     FaderComponent(const ChannelState &state,
                    GameStep step,
-                   std::function<void(double)> onFaderChange,
-                   std::function<void(const juce::String&)> onEditedName)
-    : onFaderChange(onFaderChange),
-        onEditedName(onEditedName)
+                   std::function<void(double)> &&onFaderChange,
+                   std::function<void(const juce::String&)> &&onEditedName)
+    : onFaderChange(std::move(onFaderChange)),
+        onEditedName(std::move(onEditedName))
     {
         label.setText(state.name, juce::NotificationType::dontSendNotification);
         label.setEditable(true);
@@ -331,13 +329,13 @@ struct MixerUI : public UIImplementation
 
 
 struct MixerGame : public GameImplementation {
-    MixerGame(ProcessorHost &audioProcessor, GameState &state);
+    MixerGame(Application &app, GameState &state);
     virtual ~MixerGame() {} 
 
     ChannelState generateChannel(int id) override;
     int awardPoints() override;
     void generateNewRound() override;
-    UIImplementation *createUI() override;
+    std::unique_ptr<UIImplementation> createUI() override;
     
     void editGain(int id, double new_gain);
 };

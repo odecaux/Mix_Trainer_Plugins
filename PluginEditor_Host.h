@@ -10,55 +10,24 @@
 
 #pragma once
 
-class MainMenu : public juce::Component
-{
-public :
-    MainMenu(std::function<void()> onMainButtonClick) : 
-        onMainButtonClick(std::move(onMainButtonClick))
-    {
-        button.setSize(40, 40);
-        button.onClick = [this] {
-            this->onMainButtonClick();
-        };
-        addAndMakeVisible(button);
-    }
-    
-    void paint(juce::Graphics &g) override
-    {
-        juce::ignoreUnused(g);
-    }
-
-    void resized() override
-    {
-        auto bounds = getLocalBounds();
-        button.setCentrePosition(bounds.getCentre());
-    }
-
-private :
-    juce::TextButton button;
-    std::function < void() > onMainButtonClick;
-};
-
-
 class EditorHost : public juce::AudioProcessorEditor
 {
 public:
     
-    EditorHost(ProcessorHost& p,
-               juce::Component *mainPanel) :
+    EditorHost(ProcessorHost& p, std::function<void()> &&onEditorClose) :
         AudioProcessorEditor(p),
         audio_processor(p),
-        mainPanel(mainPanel)
+        onEditorClose(std::move(onEditorClose))
     {
         setResizable(true, false);
         setSize(960, 540);
-        addAndMakeVisible(*this->mainPanel);
     }
     ~EditorHost() override
     {
-        removeChildComponent(mainPanel);
-        mainPanel = nullptr;
-        audio_processor.uiIsBeingDestroyed();
+        jassert(current_panel);
+        removeChildComponent(current_panel.get());
+        //mainPanel = nullptr;
+        //audio_processor.uiIsBeingDestroyed();
     }
     
     void paint(juce::Graphics & g) override
@@ -68,12 +37,27 @@ public:
     
     void resized() override
     {
-        mainPanel->setBounds(getLocalBounds());
+        if(current_panel) //NOTE feels like a hack, anyway it should only happen in the initialization
+            current_panel->setBounds(getLocalBounds());
+        else
+            jassert(!initialized);
     }
     
+    void changePanel(std::unique_ptr<juce::Component> new_panel)
+    {
+        initialized = true;
+        if(current_panel)
+            removeChildComponent(current_panel.get());
+        current_panel = std::move(new_panel);
+        addAndMakeVisible(*current_panel);
+        resized();
+    }
+
 public:
-    juce::Component *mainPanel;
+    std::unique_ptr<juce::Component> current_panel;
     ProcessorHost &audio_processor;
+    std::function < void() > onEditorClose;
+    bool initialized = false;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorHost)
 };
