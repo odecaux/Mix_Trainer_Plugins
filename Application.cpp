@@ -28,8 +28,27 @@ void Application::toMainMenu()
     jassert(editor);
         
     std::unique_ptr < juce::Component > main_menu =
-        std::make_unique < MainMenu > ([this] { toSettings(); });
+        std::make_unique < MainMenu > (
+        [this] { toGame(); },
+            [this] { toStats(); },
+                [this ] { toSettings(); });
     editor->changePanel(std::move(main_menu));
+}
+
+
+void Application::toGame()
+{
+}
+
+void Application::toStats()
+{
+    jassert(type == PanelType::MainMenu);
+    type = PanelType::Stats;
+    jassert(editor);
+    
+    std::unique_ptr < juce::Component > settings_menu =
+        std::make_unique < StatsMenu > ([this] { toMainMenu(); }, stats);
+    editor->changePanel(std::move(settings_menu));
 }
 
 void Application::toSettings()
@@ -39,12 +58,11 @@ void Application::toSettings()
     jassert(editor);
     
     std::unique_ptr < juce::Component > settings_menu =
-        std::make_unique < SettingsMenu > (
-        [this] { toMainMenu(); },
-        [this] (double new_value) { settings.difficulty = (float)new_value; });
+        std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);
     editor->changePanel(std::move(settings_menu));
    
 }
+
 
 void Application::onEditorDelete()
 {
@@ -61,15 +79,16 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
     switch (type)
     {
         case PanelType::MainMenu : {
-            panel = std::make_unique < MainMenu > ([this] {
-                toSettings();
-            });
+            panel = std::make_unique < MainMenu > (
+                [this] { toGame(); },
+                [this] { toStats(); },
+                [this ] { toSettings(); });
         } break;
         case PanelType::Settings : {
-            panel = std::make_unique < SettingsMenu > (
-                [this] { toMainMenu(); },
-                [this] (double new_value) { settings.difficulty = (float)new_value; }
-            );
+            panel = std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);
+        } break;
+        case PanelType::Stats : {
+            panel = std::make_unique < StatsMenu > ([this] { toMainMenu(); }, stats);
         } break;
     }
     editor->changePanel(std::move(panel));

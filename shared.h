@@ -16,5 +16,13 @@ struct ChannelDSPState{
 };
 
 
+struct Settings{
+    float difficulty;
+};
+
+struct Stats {
+    int total_score;
+};
+
 
 #endif //SHARED_H

@@ -26,8 +26,7 @@ public:
     {
         jassert(current_panel);
         removeChildComponent(current_panel.get());
-        //mainPanel = nullptr;
-        //audio_processor.uiIsBeingDestroyed();
+        onEditorClose();
     }
     
     void paint(juce::Graphics & g) override

@@ -1,11 +1,4 @@
 
-struct Settings{
-    float difficulty;
-};
-
-struct Stats {
-    int total_score;
-};
 
 class ProcessorHost;
 class EditorHost;
@@ -18,6 +11,8 @@ public:
     void initialiseEditorUI(EditorHost *new_editor);
     void onEditorDelete();
     void toMainMenu();
+    void toGame();
+    void toStats();
     void toSettings();
 
     /*
@@ -68,13 +63,14 @@ private:
     enum class PanelType{
         MainMenu,
         Game,
-        Settings
+        Settings,
+        Stats
     };
 #if 0
     GameState state;
 #endif
-    Settings settings;
-    Stats stats;
+    Settings settings = { 0.0f };
+    Stats stats = { 0 };
     PanelType type;
     ProcessorHost &host;
     EditorHost *editor;
