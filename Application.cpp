@@ -42,7 +42,7 @@ void Application::toGame()
     jassert(editor);
     jassert(!game);
 
-    game = std::make_unique < DemoGame > (*this, channels);
+    game = std::make_unique < ChannelNamesDemo > (*this, channels);
     auto game_ui = game->createUI();
     
     std::unique_ptr < juce::Component > game_panel =
@@ -174,7 +174,7 @@ void Application::renameChannelFromUI(int id, juce::String newName)
     
     if (game) {
         jassert(type == PanelType::Game);
-        game->onChannelDelete(id);
+        //game->onChannelDelete(id);
     }
     //TODO propagate to the track
 }

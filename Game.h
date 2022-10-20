@@ -159,22 +159,63 @@ struct GameUI_Panel : public juce::Component
 
 
 
-struct DemoGameUI : public GameUI
+struct ChannelNamesDemoUI : public GameUI
 {
-    DemoGameUI(int initial_channel_count) {
-        channel_count_label.setJustificationType(juce::Justification::centred);
-        channel_count_label.setText(juce::String(initial_channel_count), juce::dontSendNotification);
-        addAndMakeVisible(channel_count_label);
+    ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos) 
+    {
+        for (const auto& [id, info] : channel_infos)
+        {
+            auto [it, result] = channel_names.emplace(id, std::make_unique<juce::Label>());
+            jassert(result);
+            auto &new_label = it->second;
+            new_label->setText(info.name, juce::dontSendNotification);
+            new_label->setJustificationType(juce::Justification::left);
+            addAndMakeVisible(new_label.get());
+        }
     }
-    virtual ~DemoGameUI() {}
+
+    virtual ~ChannelNamesDemoUI() {}
 
     void resized() override {
-        channel_count_label.setBounds(getLocalBounds());
+        auto bounds = getLocalBounds();
+        auto label_bounds = bounds.withHeight(50);
+        for (auto &[id, channel] : channel_names)
+        {
+            channel->setBounds(label_bounds);
+            label_bounds.translate(0, 50);
+        }
     }
 
-    void updateChannelCount(int new_channel_count)
+    //NOTE solution 1) keeping them in sync
+    //solution 2) passing in the map and rebuilding the childs everytime
+
+    void addLabel(int id, const juce::String name)
     {
-        channel_count_label.setText(juce::String(new_channel_count), juce::dontSendNotification);
+        {
+            auto assertChannel = channel_names.find(id);
+            jassert(assertChannel == channel_names.end());
+        }
+        auto [it, result] = channel_names.emplace(id, std::make_unique<juce::Label>());
+        jassert(result);
+        auto &new_label = it->second;
+        new_label->setText(name, juce::dontSendNotification);
+        new_label->setJustificationType(juce::Justification::left);
+        addAndMakeVisible(new_label.get());
+        resized();
+    }
+    
+    void removeLabel(int id)
+    {
+        const auto channel_to_remove = channel_names.find(id);
+        jassert(channel_to_remove != channel_names.end());
+        removeChildComponent(channel_to_remove->second.get());
+        channel_names.erase(channel_to_remove);
+        resized();
+    }
+
+    void changeLabelText(int id, const juce::String name)
+    {
+        channel_names[id]->setText(name, juce::dontSendNotification);
     }
 #if 0
     void resizedChild(juce::Rectangle<int> bounds) override;
@@ -183,23 +224,23 @@ struct DemoGameUI : public GameUI
     void renameChannel(int id, const juce::String &newName) override;
     //void updateGameUI(GameStep step) override;
 #endif
-    juce::Label channel_count_label;
+    std::unordered_map < int, std::unique_ptr<juce::Label>> channel_names;
 };
 
 
-struct DemoGame : public Game
+struct ChannelNamesDemo : public Game
 {
-    DemoGame(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
+    ChannelNamesDemo(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
     : Game(app, channel_infos)
     {
         channel_count = channel_infos.size();
     }
-    virtual ~DemoGame() {} 
+    virtual ~ChannelNamesDemo() {} 
     
     std::unique_ptr < GameUI > createUI() override
     {
         jassert(game_ui == nullptr);
-        auto new_ui = std::make_unique < DemoGameUI > ((int)channel_infos.size());
+        auto new_ui = std::make_unique < ChannelNamesDemoUI > (channel_infos);
         game_ui = new_ui.get();
         return new_ui;
     }
@@ -208,7 +249,7 @@ struct DemoGame : public Game
         channel_count++;
         if (auto *ui = getUI())
         {
-            ui->updateChannelCount(channel_count);
+            ui->addLabel(id, channel_infos[id].name);
         }
     }
     void onChannelDelete(int id) override {
@@ -216,16 +257,23 @@ struct DemoGame : public Game
         jassert(channel_count >= 0);
         if (auto *ui = getUI())
         {
-            ui->updateChannelCount(channel_count);
+            ui->removeLabel(id);
+        }
+    }
+    
+    void onChannelRenamedFromTrack(int id, const juce::String& new_name) override {
+        if (auto *ui = getUI())
+        {
+            ui->changeLabelText(id, new_name);
         }
     }
     int channel_count;
 
-    DemoGameUI * getUI()
+    ChannelNamesDemoUI * getUI()
     {
         if (game_ui)
         {
-            auto * ui = dynamic_cast<DemoGameUI*>(game_ui);
+            auto * ui = dynamic_cast<ChannelNamesDemoUI*>(game_ui);
             jassert(ui);
             return ui;
         }
