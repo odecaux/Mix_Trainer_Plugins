@@ -12,10 +12,8 @@
 
 #include "shared.h"
 
-#if 0
-#include "Game.h"
-#endif
 
+#include "Game.h"
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"

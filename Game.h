@@ -49,12 +49,8 @@ enum GameStep {
 
 struct ChannelState
 {
-    int id;
-    juce::String name;
     double edited_gain;
     double target_gain;
-    float min_freq;
-    float max_freq;
     //- unused 
     double target_low_shelf_gain;
     double target_low_shelf_freq;
@@ -67,70 +63,41 @@ struct ChannelState
     double edited_high_shelf_freq;
 };
 
-struct GameImplementation;
-
-struct GameState
+struct ChannelInfos
 {
-    std::unordered_map<int, ChannelState> channels;
-    GameStep step;
-    int score;
-    GameImplementation *impl;
+    int id;
+    juce::String name;
+    float min_freq;
+    float max_freq;
 };
+
+struct Game;
 
 class ProcessorHost;
-
-struct UIImplementation : public juce::Component
-{
-    UIImplementation(std::function<void()>&& onNextClicked,
-                     std::function<void(bool)> && onToggleClicked,
-                     std::function<void()> && onBackClicked);
-    virtual ~UIImplementation() {}
-    void updateGameUI_Generic(const GameState &state);
-    void paint(juce::Graphics& g) override;
-    void resized() override;
-
-    virtual void resized_child(juce::Rectangle<int> bounds) = 0;
-    virtual void createChannelUI(const ChannelState& channel, GameStep step) = 0;
-    virtual void deleteChannelUI(int id) = 0;
-    virtual void renameChannel(int id, const juce::String &newName) = 0;
-    virtual void updateGameUI(const GameState &state) = 0;
-            
-    juce::Label topLabel;
-    juce::Label scoreLabel;
-    juce::TextButton backButton;
-            
-    juce::TextButton nextButton;
-    juce::ToggleButton targetMixButton;
-    juce::ToggleButton userMixButton;
-            
-    std::function<void()> onNextClicked;
-    std::function<void(bool)> onToggleClicked;
-    std::function<void()> onBackClicked;
-};
-
 class Application;
 
-struct GameImplementation {
-    Application &app;
-    GameState &state;
-    UIImplementation *game_ui = nullptr;
-    
-    GameImplementation(Application &app, 
-                       GameState &state) 
-    : app(app), state(state)
-    {}
-    virtual ~GameImplementation() {}
+struct GameUI;
 
+struct Game {
+    Application &app;
+    GameUI *game_ui = nullptr;
+    std::unordered_map<int, ChannelInfos> &channel_infos;
+    //GameStep step;
+    //int score;
+    
+    Game(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
+    : app(app), channel_infos(channel_infos)
+    {}
+    virtual ~Game() {}
+
+#if 0
     virtual ChannelState generateChannel(int id) = 0;
     virtual int awardPoints() = 0;
     virtual void generateNewRound() = 0;
+#endif
+    virtual std::unique_ptr<GameUI> createUI() = 0;
 
-    virtual std::unique_ptr<UIImplementation> createUI() = 0;
-
-    void deleteUI() {
-        jassert(game_ui != nullptr);
-        game_ui = nullptr;
-    }
+    void deleteUI();
     
     void toggleInputOrTarget(bool isOn);
     void nextClicked();
@@ -138,6 +105,87 @@ struct GameImplementation {
 };
 
 
+struct GameUI : public juce::Component
+{
+    GameUI() {}
+    virtual ~GameUI() {}
+
+#if 0
+    virtual void createChannelUI(const ChannelInfos& channel_infos, GameStep step) = 0;
+    virtual void deleteChannelUI(int id) = 0;
+    virtual void renameChannel(int id, const juce::String &newName) = 0;
+    //virtual void updateGameUI(const GameState &state) = 0;
+#endif
+};
+
+
+struct GameUI_Panel : public juce::Component
+{
+    GameUI_Panel(std::function < void() > && onNextClicked,
+                 std::function < void(bool) > && onToggleClicked,
+                 std::function < void() > && onBackClicked,
+                 std::unique_ptr < GameUI > game_ui);
+    
+    //~GameUI_Panel() {}
+    //void updateGameUI_Generic(const GameState &state);
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+#if 0
+    virtual void resizedChild(juce::Rectangle<int> bounds) = 0;
+    virtual void createChannelUI(const ChannelInfos& channel_infos, GameStep step) = 0;
+    virtual void deleteChannelUI(int id) = 0;
+    virtual void renameChannel(int id, const juce::String &newName) = 0;
+    //virtual void updateGameUI(const GameState &state) = 0;
+#endif
+    juce::Label top_label;
+    juce::Label score_label;
+    juce::TextButton back_button;
+            
+    juce::TextButton next_button;
+    juce::ToggleButton target_mix_button;
+    juce::ToggleButton user_mix_button;
+
+    std::unique_ptr < GameUI > game_ui;
+};
+
+
+
+struct DemoGameUI : public GameUI
+{
+    DemoGameUI() {}
+    virtual ~DemoGameUI() {}
+#if 0
+    void resizedChild(juce::Rectangle<int> bounds) override;
+    void createChannelUI(const ChannelInfos& channel, GameStep step) override;
+    void deleteChannelUI(int id) override;
+    void renameChannel(int id, const juce::String &newName) override;
+    //void updateGameUI(GameStep step) override;
+#endif
+    juce::Label channel_count_label;
+};
+
+
+struct DemoGame : public Game
+{
+    DemoGame(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
+    : Game(app, channel_infos)
+    {}
+    virtual ~DemoGame() {} 
+    
+    std::unique_ptr < GameUI > createUI() override
+    {
+        return std::make_unique < DemoGameUI > ();
+    }
+#if 0
+    ChannelState generateChannel(int id) override;
+    int awardPoints() override;
+    void generateNewRound() override;
+    int channel_count;
+#endif
+};
+
+#if 0
 class DecibelSlider : public juce::Slider
 {
 public:
@@ -147,22 +195,26 @@ public:
     {
         return juce::Decibels::toString(slider_value_to_db((int)value));
     }
-    
-private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DecibelSlider)
+};
+
+enum FaderStep {
+    FaderStep_Editing,
+    FaderStep_Hiding,
+    FaderStep_Showing
 };
 
 class FaderComponent : public juce::Component
 {
 public:
-    FaderComponent(const ChannelState &state,
-                   GameStep step,
+    FaderComponent(double inital_gain,
+                   FaderStep initial_step,
+                   const juce::String &name,
                    std::function<void(double)> &&onFaderChange,
                    std::function<void(const juce::String&)> &&onEditedName)
     : onFaderChange(std::move(onFaderChange)),
         onEditedName(std::move(onEditedName))
     {
-        label.setText(state.name, juce::NotificationType::dontSendNotification);
+        label.setText(name, juce::NotificationType::dontSendNotification);
         label.setEditable(true);
         label.onTextChange = [this] {
             this->onEditedName(label.getText());
@@ -186,7 +238,7 @@ public:
         };
         addAndMakeVisible(fader);
         
-        updateStep(step, state);
+        update(initial_step, initial_gain);
     }
     
     
@@ -207,48 +259,36 @@ public:
         g.drawRoundedRectangle(r.toFloat(), 5.0f, 2.0f);
     }
     
-    void setName(const juce::String& newName)
+    void setName(const juce::String& new_name)
     {
-        label.setText(newName, juce::dontSendNotification);
+        label.setText(new_name, juce::dontSendNotification);
     }
     
-    void updateStep(GameStep newStep, const ChannelState &state)
+    void update(FaderStep new_step, double new_gain)
     {
-        switch(newStep)
+        switch (new_step)
         {
-            case Begin :
+            case FaderStep_Editing :
             {
-                fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
+                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
                 fader.setEnabled(true);
                 fader.setVisible(true);
             } break;
-            case Listening :
+            case FaderStep_Hiding :
             {
-                fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
+                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
                 fader.setEnabled(false);
                 fader.setVisible(false);
-            }break;
-            case Editing :
+            } break;
+            case FaderStep_Showing :
             {
-                fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
-                fader.setEnabled(true);
-                fader.setVisible(true);
-            }break;
-            case ShowingTruth :
-            {
-                fader.setValue(gain_to_slider_value(state.target_gain), juce::dontSendNotification);
+                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
                 fader.setEnabled(false);
                 fader.setVisible(true);
-            }break;
-            case ShowingAnswer : 
-            {
-                fader.setValue(gain_to_slider_value(state.edited_gain), juce::dontSendNotification);
-                fader.setEnabled(false);
-                fader.setVisible(true);
-            }break;
-        };
+            } break;
+        }
 
-        step = newStep;
+        step = new_step;
         repaint();
     }
     
@@ -257,7 +297,7 @@ private:
     DecibelSlider fader;
     std::function<void(double)> onFaderChange;
     std::function<void(const juce::String&)> onEditedName;
-    GameStep step;
+    FaderStep step;
     //double targetValue;
     //double smoothing;
 };
@@ -266,13 +306,13 @@ class FaderRowComponent : public juce::Component
 {
 public:
     FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& faderComponents)
-    : faderComponents(faderComponents)
+    : faders(faders)
     {
     }
     
     void adjustWidth() 
     {
-        setSize(fader_width * (int)faderComponents.size(), getHeight());
+        setSize(fader_width * (int)faders.size(), getHeight());
     }
     
     //==============================================================================
@@ -289,7 +329,7 @@ public:
         auto bounds = getLocalBounds();
         auto top_left = bounds.getTopLeft();
         //draw in order
-        for (auto& [_, fader] : faderComponents)
+        for (auto& [_, fader] : faders)
         {
             fader->setTopLeftPosition(top_left + juce::Point<int>(x_offset, 0));
             fader->setSize(fader_width, bounds.getHeight());
@@ -300,42 +340,82 @@ public:
     
 private:
     const static int fader_width = 60;
-    std::unordered_map<int, std::unique_ptr<FaderComponent>> &faderComponents;
+    std::unordered_map<int, std::unique_ptr<FaderComponent>> &faders;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DecibelSlider)
 };
 
-
-struct MixerUI : public UIImplementation
+static FaderStep gameStepToFaderStep(GameStep game_step)
 {
-    MixerUI(GameState &state,
-               std::function<void()> &&onNextClicked,
-               std::function<void(bool)> &&onToggleClicked,
-               std::function<void()> &&onBackClicked,
-               std::function<void(int, double)> &&onFaderMoved,
-               std::function<void(int, const juce::String&)> && onEditedName);
-    virtual ~MixerUI() {}
-    
-    void resized_child(juce::Rectangle<int> bounds) override;
-    void createChannelUI(const ChannelState& channel, GameStep step) override;
-    void deleteChannelUI(int id) override;
-    void renameChannel(int id, const juce::String &newName) override;
-    void updateGameUI(const GameState &new_state) override;
-    
-    std::unordered_map<int, std::unique_ptr<FaderComponent>> faderComponents = {};
-    FaderRowComponent fadersRow;
-    juce::Viewport fadersViewport;
-    std::function<void(int, double)> onFaderMoved;
-    std::function<void(int, const juce::String&)> onEditedName;
-};
+    switch (game_step)
+    {
+        case Begin :
+        {
+            return FaderStep_Editing;
+        } break;
+        case Listening :
+        {
+            return FaderStep_Hiding;
+        } break;
+        case Editing :
+        {
+            return FaderStep_Editing;
+        } break; 
+        case ShowingTruth :
+        {
+            return FaderStep_Showing;
+        } break;
+        case ShowingAnswer :
+        {
+            return FaderStep_Showing;
+        } break;
+    }
+}
 
+struct MixerGame : public Game {
+    struct GameState {
+        float edited_gain;
+        float target_gain;
+    };
 
-struct MixerGame : public GameImplementation {
-    MixerGame(Application &app, GameState &state);
+    MixerGame(Application &app);
     virtual ~MixerGame() {} 
 
     ChannelState generateChannel(int id) override;
     int awardPoints() override;
     void generateNewRound() override;
-    std::unique_ptr<UIImplementation> createUI() override;
+    std::unique_ptr<GameUI> createUI() override;
     
     void editGain(int id, double new_gain);
+
+    std::unordered_map < int, GameState > state;
 };
+
+
+struct MixerUI : public GameUI
+{
+    MixerUI(GameStep step,
+            std::function<void()> &&onNextClicked,
+            std::function<void(bool)> &&onToggleClicked,
+            std::function<void()> &&onBackClicked,
+            std::function<void(int, double)> &&onFaderMoved,
+            std::function<void(int, const juce::String&)> && onEditedName);
+    virtual ~MixerUI() {}
+    
+    void resizedChild(juce::Rectangle<int> bounds) override;
+    void createChannelUI(const ChannelInfos& channel, GameStep step) override;
+    void deleteChannelUI(int id) override;
+    void renameChannel(int id, const juce::String &newName) override;
+    void updateGameUI(GameStep step) override;
+    
+    std::unordered_map<int, std::unique_ptr<FaderComponent>> faders = {};
+    FaderRowComponent fader_row;
+    juce::Viewport fader_viewport;
+    std::function<void(int, double)> onFaderMoved;
+    std::function<void(int, const juce::String&)> onEditedName;
+};
+
+
+
+
+
+#endif

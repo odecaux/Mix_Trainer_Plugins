@@ -66,9 +66,9 @@ private:
         Settings,
         Stats
     };
-#if 0
-    GameState state;
-#endif
+    
+    std::unique_ptr < Game > game;
+    std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };
     Stats stats = { 0 };
     PanelType type;

@@ -1,8 +1,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "shared.h"
-#if 0
+
 #include "Game.h"
-#endif
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"
@@ -38,6 +37,25 @@ void Application::toMainMenu()
 
 void Application::toGame()
 {
+    jassert(type == PanelType::MainMenu);
+    type = PanelType::Game;
+    jassert(editor);
+    jassert(!game);
+
+    game = std::make_unique < DemoGame > (*this, channels);
+    auto game_ui = game->createUI();
+    
+    std::unique_ptr < juce::Component > game_panel =
+        std::make_unique < GameUI_Panel > (
+            [] {  },
+            [] (bool _){},
+            [this] { 
+                game.reset();  
+                toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
+            },
+            std::move(game_ui)
+        );
+    editor->changePanel(std::move(game_panel));
 }
 
 void Application::toStats()

@@ -1,13 +1,12 @@
-#if 0
-
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "shared.h"
+
 #include "Game.h"
 #include "MainMenu.h"
-#include "PluginEditor_Host.h"
 #include "Application.h"
 #include "Processor_Host.h"
-
+#include "PluginEditor_Host.h"
+#if 0
 double randomGain()
 {
     int slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
@@ -15,7 +14,7 @@ double randomGain()
 }
 
     
-void GameImplementation::toggleInputOrTarget(bool isOn)
+void Game::toggleInputOrTarget(bool isOn)
 {
     jassert(state.step != Begin);
     auto old_step = state.step;
@@ -47,7 +46,7 @@ void GameImplementation::toggleInputOrTarget(bool isOn)
     }
 } 
     
-void GameImplementation::nextClicked(){
+void Game::nextClicked(){
     switch(state.step)
     {
         case Begin :
@@ -73,105 +72,108 @@ void GameImplementation::nextClicked(){
         game_ui->updateGameUI(state);
 }
 
-void GameImplementation::backClicked()
+void Game::backClicked()
 {
     app.toMainMenu();
 }
 
-
-UIImplementation::UIImplementation(std::function < void() > && onNextClicked,
+#endif 
+GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
                                    std::function < void(bool) > && onToggleClicked,
-                                   std::function < void() > && onBackClicked)
-:
-    onNextClicked(std::move(onNextClicked)),
-    onToggleClicked(std::move(onToggleClicked)),
-    onBackClicked(std::move(onBackClicked))
+                                   std::function < void() > && onBackClicked,
+                                   std::unique_ptr < GameUI > game_ui) :
+    game_ui(std::move(game_ui))
 {
     {
-        topLabel.setJustificationType (juce::Justification::centred);
-        addAndMakeVisible(topLabel);
-        backButton.setButtonText("Back");
-        backButton.onClick = [this] {
-            this->onBackClicked();
+        top_label.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible(top_label);
+        back_button.setButtonText("Back");
+        back_button.onClick = [this, back = std::move(onBackClicked)] {
+            back();
         };
-        addAndMakeVisible(backButton);
-        addAndMakeVisible(scoreLabel);
+        addAndMakeVisible(back_button);
+        addAndMakeVisible(score_label);
     }
     {
-        nextButton.onClick = [this] {
-            this->onNextClicked();
+        next_button.onClick = [this, next = std::move(onNextClicked)] {
+            next();
         };
-        addAndMakeVisible(nextButton);
+        addAndMakeVisible(next_button);
     }
     
     {
-        targetMixButton.setButtonText("Target mix");
-        targetMixButton.onClick = [this] {
-            this->onToggleClicked(true);
+        target_mix_button.setButtonText("Target mix");
+        target_mix_button.onClick = [this, toggle = std::move(onToggleClicked)] {
+            toggle(true);
         };
-        addAndMakeVisible(targetMixButton);
+        addAndMakeVisible(target_mix_button);
             
-        userMixButton.setButtonText("My mix");
-        userMixButton.onClick = [this] {
-            this->onToggleClicked(false);
+        user_mix_button.setButtonText("My mix");
+        user_mix_button.onClick = [this, toggle = std::move(onToggleClicked)] {
+            toggle(false);
         };
-        addAndMakeVisible(userMixButton);
+        addAndMakeVisible(user_mix_button);
             
-        targetMixButton.setRadioGroupId (1000);
-        userMixButton.setRadioGroupId (1000);
+        target_mix_button.setRadioGroupId (1000);
+        user_mix_button.setRadioGroupId (1000);
     }
+
+    addAndMakeVisible(this->game_ui.get());
 }
-        
-void UIImplementation::updateGameUI_Generic(const GameState &new_state)
+ 
+#if 0
+void GameUI::updateGameUI_Generic(const GameState &new_state)
 {
-    targetMixButton.setToggleState(new_state.step == Listening || 
+    target_mix_button.setToggleState(new_state.step == Listening || 
                                    new_state.step == ShowingTruth, 
                                    juce::dontSendNotification);
 
     if (new_state.step == Begin)
     {
-        targetMixButton.setEnabled(false);
-        userMixButton.setEnabled(false);
-        targetMixButton.setVisible(false);
-        userMixButton.setVisible(false);
+        target_mix_button.setEnabled(false);
+        user_mix_button.setEnabled(false);
+        target_mix_button.setVisible(false);
+        user_mix_button.setVisible(false);
     }
     else
     {
-        targetMixButton.setEnabled(true);
-        userMixButton.setEnabled(true);
-        targetMixButton.setVisible(true);
-        userMixButton.setVisible(true);
+        target_mix_button.setEnabled(true);
+        user_mix_button.setEnabled(true);
+        target_mix_button.setVisible(true);
+        user_mix_button.setVisible(true);
     }
 
     switch(new_state.step)
     {
         case Begin : {
-            topLabel.setText("Have a listen", juce::dontSendNotification);
-            nextButton.setButtonText("Begin");
+            top_label.setText("Have a listen", juce::dontSendNotification);
+            next_button.setButtonText("Begin");
         } break;
         case Listening :
         case Editing :
         {
-            topLabel.setText("Reproduce the target mix", juce::dontSendNotification);
-            nextButton.setButtonText("Validate");
+            top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+            next_button.setButtonText("Validate");
         }break;
         case ShowingTruth :
         case ShowingAnswer : 
         {
-            topLabel.setText("Results", juce::dontSendNotification);
-            nextButton.setButtonText("Next");
+            top_label.setText("Results", juce::dontSendNotification);
+            next_button.setButtonText("Next");
         }break;
     };
     
-    scoreLabel.setText(juce::String("Score : ") + juce::String(new_state.score), juce::dontSendNotification);
+    score_label.setText(juce::String("Score : ") + juce::String(new_state.score), juce::dontSendNotification);
 }
-        
-void UIImplementation::paint(juce::Graphics& g)
+#endif
+      
+  
+void GameUI_Panel::paint(juce::Graphics& g)
 {
     juce::ignoreUnused(g);
 }
        
-void UIImplementation::resized()
+void GameUI_Panel::resized()
 {
     auto bottom_height = 50;
     auto top_height = 20;
@@ -181,32 +183,37 @@ void UIImplementation::resized()
             
     {
         auto topLabelBounds = topBounds.withTrimmedLeft(90).withTrimmedRight(90);
-        topLabel.setBounds(topLabelBounds);
+        top_label.setBounds(topLabelBounds);
      
-        auto backButtonBounds = topBounds.withWidth(90);
-        backButton.setBounds(backButtonBounds);
+        auto back_buttonBounds = topBounds.withWidth(90);
+        back_button.setBounds(back_buttonBounds);
 
-        auto scoreLabelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
-        scoreLabel.setBounds(scoreLabelBounds);
+        auto score_labelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
+        score_label.setBounds(score_labelBounds);
     }
 
     auto gameBounds = r.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
-    resized_child(gameBounds);
-    
+    game_ui->setBounds(gameBounds);
+
     {
         auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
         auto center = bottomStripBounds.getCentre();
     
         auto button_temp = juce::Rectangle(100, bottom_height - 10);
         auto nextBounds = button_temp.withCentre(center);
-        nextButton.setBounds(nextBounds);
+        next_button.setBounds(nextBounds);
             
         auto toggleBounds = bottomStripBounds.withWidth(100);
         auto targetMixBounds = toggleBounds.withHeight(bottom_height / 2);
         auto userMixBounds = targetMixBounds.translated(0, bottom_height / 2);
-        targetMixButton.setBounds(targetMixBounds);
-        userMixButton.setBounds(userMixBounds);
+        target_mix_button.setBounds(targetMixBounds);
+        user_mix_button.setBounds(userMixBounds);
     }
+}
+#if 0
+void GameUI::deleteUI() {
+    jassert(game_ui != nullptr);
+    game_ui = nullptr;
 }
 
 MixerGame::MixerGame(Application &app, GameState &state)
@@ -252,7 +259,7 @@ void MixerGame::editGain(int id, double new_gain)
     app.broadcastAllDSP();
 }
     
-std::unique_ptr<UIImplementation> MixerGame::createUI()
+std::unique_ptr<GameUI> MixerGame::createUI()
 {
     jassert(game_ui == nullptr);
     auto new_game_ui = std::make_unique<MixerUI>(
@@ -267,15 +274,15 @@ std::unique_ptr<UIImplementation> MixerGame::createUI()
     return new_game_ui;
 }
 
-MixerUI::MixerUI(GameState &state,
+MixerUI::MixerUI(MixerGame::GameState &state,
            std::function<void()> &&onNextClicked,
            std::function<void(bool)> &&onToggleClicked,
            std::function<void()> &&onBackClicked,
            std::function<void(int, double)> &&onFaderMoved,
            std::function<void(int, const juce::String&)> &&onEditedName)
 :
-    UIImplementation(std::move(onNextClicked), std::move(onToggleClicked), std::move(onBackClicked)),
-    fadersRow(faderComponents),
+    GameUI(std::move(onNextClicked), std::move(onToggleClicked), std::move(onBackClicked)),
+    fader_row(faders),
     onFaderMoved(std::move(onFaderMoved)),
     onEditedName(std::move(onEditedName))
 {
@@ -283,69 +290,100 @@ MixerUI::MixerUI(GameState &state,
     {
         createChannelUI(channel, state.step);
     }
-    addAndMakeVisible(fadersViewport);
-    fadersViewport.setScrollBarsShown(false, true);
-    fadersViewport.setViewedComponent(&fadersRow, false);
+    addAndMakeVisible(fader_viewport);
+    fader_viewport.setScrollBarsShown(false, true);
+    fader_viewport.setViewedComponent(&fader_row, false);
         
     updateGameUI(state);
 }
 
-void MixerUI::resized_child(juce::Rectangle<int> bounds)
+void MixerUI::resizedChild(juce::Rectangle<int> bounds)
 {
-    fadersViewport.setBounds(bounds);
-    fadersRow.setSize(fadersRow.getWidth(),
-                      fadersViewport.getHeight() - fadersViewport.getScrollBarThickness());
+    fader_viewport.setBounds(bounds);
+    fader_row.setSize(fader_row.getWidth(),
+                      fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
 }
 
-void MixerUI::createChannelUI(const ChannelState& channel, GameStep step)
+void MixerUI::createChannelUI(const ChannelInfos& channel_infos,
+                              GameStep step)
 {
     {
-        auto assertFader = faderComponents.find(channel.id);
-        jassert(assertFader == faderComponents.end());
+        auto assertFader = faders.find(channel_infos.id);
+        jassert(assertFader == faders.end());
     }
     
-    auto faderMoved = [this, id = channel.id] (double gain) {
+    auto faderMoved = [this, id = channel_infos.id] (double gain) {
         onFaderMoved(id, gain);
     };
-    auto nameChanged = [this, id = channel.id] (juce::String newName){
+    auto nameChanged = [this, id = channel_infos.id] (juce::String newName){
         onEditedName(id, newName);
     };
-    
-    auto newFader = std::make_unique<FaderComponent>(channel, 
-        step,
+
+    auto fader_step = gameStepToFaderStep(step);
+
+    auto new_fader = std::make_unique<FaderComponent>(fader_gain, 
+        fader_step,
+        channel_infos.name
         faderMoved,
         nameChanged);
-    fadersRow.addAndMakeVisible(newFader.get());
-    faderComponents[channel.id] = std::move(newFader);
+    fader_row.addAndMakeVisible(new_fader.get());
+    faders[channel_infos.id] = std::move(new_fader);
     
-    fadersRow.adjustWidth();
+    fader_row.adjustWidth();
     resized();
 }
 
 void MixerUI::deleteChannelUI(int channelToRemoveId)
 {
-    auto fader = faderComponents.find(channelToRemoveId);
-    jassert(fader != faderComponents.end());
-    faderComponents.erase(fader);
-    fadersRow.adjustWidth();
+    auto fader = faders.find(channelToRemoveId);
+    jassert(fader != faders.end());
+    faders.erase(fader);
+    fader_row.adjustWidth();
     resized();
 }
 
 void MixerUI::renameChannel(int id, const juce::String &newName)
 {
-    auto &fader = faderComponents[id];
+    auto &fader = faders[id];
     fader->setName(newName);
 }
     
-void MixerUI::updateGameUI(const GameState &new_state)
+void MixerUI::updateGameUI(const GameStep step)
 {
-    for(auto& [id, fader] : faderComponents){
+    for(auto& [id, fader] : faders)
+    {
         const ChannelState &channel = new_state.channels.at(id);
-        fader->updateStep(new_state.step, channel);
+
+        FaderStep fader_step;
+        double fader_gain = 0.0;
+        switch(step)
+        {
+            case Begin :
+            {
+                fader_step = FaderStep_Editing;
+            } break;
+            case Listening :
+            {
+                fader_step = FaderStep_Hiding;
+            } break;
+            case Editing :
+            {
+                fader_step = FaderStep_Editing;
+            }break;
+            case ShowingTruth :
+            {
+                fader_step = FaderStep_Showing;
+            } break;
+            case ShowingAnswer :
+            {
+                fader_step = FaderStep_Showing;
+            }break;
+        }
+
+        fader->update(fader_step, fader_gain);
     }
     
     updateGameUI_Generic(new_state);
 }
 
-
-#endif 
+#endif
