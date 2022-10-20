@@ -86,6 +86,11 @@ void Application::onEditorDelete()
 {
     jassert(editor != nullptr);
     editor = nullptr;
+    if (type == PanelType::Game)
+    {
+        jassert(game);
+        game->onUIDelete();
+    }
 }
 
 
@@ -108,60 +113,91 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case PanelType::Stats : {
             panel = std::make_unique < StatsMenu > ([this] { toMainMenu(); }, stats);
         } break;
+        case PanelType::Game :
+        {
+            jassert(game);
+            auto game_ui = game->createUI();
+            panel = std::make_unique < GameUI_Panel > (
+                [] {  },
+                    [] (bool _){},
+                        [this] { 
+                        game.reset();  
+                        toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
+            },
+                std::move(game_ui)
+            );
+        } break;
     }
     editor->changePanel(std::move(panel));
 }
 
-#if 0
-
 void Application::createChannel(int id)
 {
     {
-        auto assertChannel = state.channels.find(id);
-        jassert(assertChannel == state.channels.end());
+        auto assertChannel = channels.find(id);
+        jassert(assertChannel == channels.end());
     }
     
-    state.channels[id] = generateChannel(id);
-        
+    channels[id] = ChannelInfos { .id = id };
+
+    if (game) {
+        jassert(type == PanelType::Game);
+        game->onChannelCreate(id);
+    }
+    
+#if 0    
+    
     audioProcessor.broadcastAllDSP();
-    if(game_ui)
-        game_ui->createChannelUI(state.channels[id], state.step);
+#endif
 }
     
 void Application::deleteChannel(int id)
 {
-    auto channel = state.channels.find(id);
-    jassert(channel != state.channels.end());
-        
-    if(game_ui)
-    {
-        game_ui->deleteChannelUI(id);
+    auto channel = channels.find(id);
+    jassert(channel != channels.end());
+
+    if (game) {
+        jassert(type == PanelType::Game);
+        game->onChannelDelete(id);
     }
-        
+#if 0
     //TODO virtual
     state.channels.erase(channel);
+        
+#endif
+    channels.erase(channel);
 }
     
 void Application::renameChannelFromUI(int id, juce::String newName)
 {
-    state.channels[id].name = newName;
+    channels[id].name = newName;
+    
+    if (game) {
+        jassert(type == PanelType::Game);
+        game->onChannelDelete(id);
+    }
     //TODO propagate to the track
 }
     
 void Application::renameChannelFromTrack(int id, const juce::String &new_name)
 {
-    auto &channel = state.channels[id];
+    auto &channel = channels[id];
     channel.name = new_name;
         
-    if(game_ui)
-        game_ui->renameChannel(id, new_name);
+    if (game) {
+        jassert(type == PanelType::Game);
+        game->onChannelRenamedFromTrack(id, new_name);
+    }
 }
     
 void Application::changeFrequencyRange(int id, float new_min, float new_max)
 {
-    auto &channel = state.channels[id];
-    channel.minFreq = new_min;
-    channel.maxFreq = new_max;
-}
+    auto &channel = channels[id];
+    channel.min_freq = new_min;
+    channel.max_freq = new_max;
 
-#endif
+    if (game) {
+        jassert(type == PanelType::Game);
+        game->onChannelFrequenciesChanged(id);
+    }
+}

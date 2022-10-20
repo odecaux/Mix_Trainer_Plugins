@@ -90,6 +90,14 @@ struct Game {
     {}
     virtual ~Game() {}
 
+    
+    virtual void onChannelCreate(int id) {};
+    virtual void onChannelDelete(int id) {};
+    //virtual void onChannelRenamedFromUI(int id, const juce::String newName) {};
+    virtual void onChannelRenamedFromTrack(int id, const juce::String &new_name) {}
+    virtual void onChannelFrequenciesChanged(int id) {}
+ 
+
 #if 0
     virtual ChannelState generateChannel(int id) = 0;
     virtual int awardPoints() = 0;
@@ -97,7 +105,7 @@ struct Game {
 #endif
     virtual std::unique_ptr<GameUI> createUI() = 0;
 
-    void deleteUI();
+    void onUIDelete();
     
     void toggleInputOrTarget(bool isOn);
     void nextClicked();
@@ -153,8 +161,21 @@ struct GameUI_Panel : public juce::Component
 
 struct DemoGameUI : public GameUI
 {
-    DemoGameUI() {}
+    DemoGameUI(int initial_channel_count) {
+        channel_count_label.setJustificationType(juce::Justification::centred);
+        channel_count_label.setText(juce::String(initial_channel_count), juce::dontSendNotification);
+        addAndMakeVisible(channel_count_label);
+    }
     virtual ~DemoGameUI() {}
+
+    void resized() override {
+        channel_count_label.setBounds(getLocalBounds());
+    }
+
+    void updateChannelCount(int new_channel_count)
+    {
+        channel_count_label.setText(juce::String(new_channel_count), juce::dontSendNotification);
+    }
 #if 0
     void resizedChild(juce::Rectangle<int> bounds) override;
     void createChannelUI(const ChannelInfos& channel, GameStep step) override;
@@ -170,18 +191,53 @@ struct DemoGame : public Game
 {
     DemoGame(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
     : Game(app, channel_infos)
-    {}
+    {
+        channel_count = channel_infos.size();
+    }
     virtual ~DemoGame() {} 
     
     std::unique_ptr < GameUI > createUI() override
     {
-        return std::make_unique < DemoGameUI > ();
+        jassert(game_ui == nullptr);
+        auto new_ui = std::make_unique < DemoGameUI > ((int)channel_infos.size());
+        game_ui = new_ui.get();
+        return new_ui;
+    }
+    
+    void onChannelCreate(int id) override {
+        channel_count++;
+        if (auto *ui = getUI())
+        {
+            ui->updateChannelCount(channel_count);
+        }
+    }
+    void onChannelDelete(int id) override {
+        channel_count--;
+        jassert(channel_count >= 0);
+        if (auto *ui = getUI())
+        {
+            ui->updateChannelCount(channel_count);
+        }
+    }
+    int channel_count;
+
+    DemoGameUI * getUI()
+    {
+        if (game_ui)
+        {
+            auto * ui = dynamic_cast<DemoGameUI*>(game_ui);
+            jassert(ui);
+            return ui;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 #if 0
     ChannelState generateChannel(int id) override;
     int awardPoints() override;
     void generateNewRound() override;
-    int channel_count;
 #endif
 };
 

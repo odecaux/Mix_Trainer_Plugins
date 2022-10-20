@@ -179,7 +179,7 @@ void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
-#if 0
+
     jassert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
     
@@ -202,12 +202,8 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
         auto maxFreq = tokens[3].getFloatValue();
         app.changeFrequencyRange(message_id, minFreq, maxFreq);
     }
-
-#endif 
 }
 
-//==============================================================================
-// This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ProcessorHost();

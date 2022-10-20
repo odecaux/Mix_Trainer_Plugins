@@ -51,13 +51,13 @@ public:
         std::unique_ptr<GameImplementation> game;
     */
 
-#if 0
+
     void createChannel(int id);
     void deleteChannel(int id);
     void renameChannelFromUI(int id, juce::String newName);
     void renameChannelFromTrack(int id, const juce::String &new_name);
     void changeFrequencyRange(int id, float new_min, float new_max);
-#endif 
+ 
 
 private:
     enum class PanelType{

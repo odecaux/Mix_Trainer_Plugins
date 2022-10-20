@@ -210,12 +210,12 @@ void GameUI_Panel::resized()
         user_mix_button.setBounds(userMixBounds);
     }
 }
-#if 0
-void GameUI::deleteUI() {
+void Game::onUIDelete() {
     jassert(game_ui != nullptr);
     game_ui = nullptr;
 }
 
+#if 0
 MixerGame::MixerGame(Application &app, GameState &state)
 : GameImplementation(app, state)
 {}
