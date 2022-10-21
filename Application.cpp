@@ -48,6 +48,7 @@ void Application::toGame()
     jassert(!game);
 
     game = std::make_unique < ChannelNamesDemo > (*this, channels, [this](const auto& dsp_states) { broadcastDSP(dsp_states); });
+    printf("toGame\n");
     auto game_ui = game->createUI();
     
     std::unique_ptr < juce::Component > game_panel =
@@ -122,7 +123,8 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case PanelType::Game :
         {
-            jassert(game);
+            jassert(game); 
+            printf("create\n");
             auto game_ui = game->createUI();
             panel = std::make_unique < GameUI_Panel > (
                 [] {  },

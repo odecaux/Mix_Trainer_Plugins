@@ -15,22 +15,14 @@ public:
     void toStats();
     void toSettings();
     
-    static ChannelDSPState bypassedChannelDSP()
-    {
-        return {
-            .gain = 1.0,
-            .low_shelf_gain = 1.0,
-            .high_shelf_gain = 1.0,
-        };
-    }
-    
+    //TODO rename
     static std::unordered_map < int, ChannelDSPState > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
         std::unordered_map < int, ChannelDSPState > dsp_states;
         
         std::transform(channels.begin(), channels.end(), 
                        std::inserter(dsp_states, dsp_states.end()), 
                        [](const auto &a) -> std::pair<int, ChannelDSPState>{
-                       return { a.first, bypassedChannelDSP() };
+                       return { a.first, ChannelDSP_on() };
         });
         return dsp_states;
     }

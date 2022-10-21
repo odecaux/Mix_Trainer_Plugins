@@ -166,17 +166,21 @@ struct ChannelNamesDemoUI : public GameUI
 {
     ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos, 
                        const std::unordered_map<int, bool> &mute_state,
-                       std::function<void(int, bool)> onMuteToggle) 
+                       std::function<void(int, bool)> onMuteToggle) :
+        onMuteToggle(onMuteToggle)
     {
         auto f = 
-            [&onMuteToggle, this](const auto &a) -> std::pair<int, std::unique_ptr<juce::ToggleButton>> {
-            auto new_toggle = std::make_unique < juce::ToggleButton > ();
-            new_toggle->setButtonText(a.second.name);
-            new_toggle->onClick = [id = a.first, toggle = new_toggle.get(), onToggle = onMuteToggle] {
+            [this, &onToggle = this->onMuteToggle, &mute_state]
+            (const auto &a) -> std::pair<int, std::unique_ptr<juce::ToggleButton>> {
+            const int &id = a.first;
+            auto new_toggle = std::make_unique < juce::ToggleButton > (a.second.name);
+            bool is_playing = mute_state.at(id);
+            new_toggle->setToggleState(is_playing, juce::dontSendNotification);
+            new_toggle->onClick = [id = id, toggle = new_toggle.get(), &onToggle] {
                 onToggle(id, toggle->getToggleState());
             };
             addAndMakeVisible(new_toggle.get());
-            return { a.first, std::move(new_toggle)};
+            return { id, std::move(new_toggle)};
         };
         
         std::transform(channel_infos.begin(), channel_infos.end(), 
@@ -210,10 +214,13 @@ struct ChannelNamesDemoUI : public GameUI
             auto assertChannel = channel_toggles.find(id);
             jassert(assertChannel == channel_toggles.end());
         }
-        auto [it, result] = channel_toggles.emplace(id, std::make_unique<juce::ToggleButton>());
+        auto [it, result] = channel_toggles.emplace(id, std::make_unique<juce::ToggleButton>(name));
         jassert(result);
         auto &new_toggle = it->second;
-        new_toggle->setButtonText(name);
+        new_toggle->setToggleState(playing, juce::dontSendNotification);
+        new_toggle->onClick = [id = id, toggle = new_toggle.get(), &onToggle = this->onMuteToggle] {
+            onToggle(id, toggle->getToggleState());
+        };
         addAndMakeVisible(new_toggle.get());
         resized();
     }
@@ -232,6 +239,7 @@ struct ChannelNamesDemoUI : public GameUI
         channel_toggles[id]->setButtonText(name);
     }
     std::unordered_map < int, std::unique_ptr<juce::ToggleButton>> channel_toggles;
+    std::function < void(int, bool) > onMuteToggle;
 };
 
 
@@ -245,8 +253,24 @@ struct ChannelNamesDemo : public Game
         std::transform(channel_infos.begin(), channel_infos.end(), 
                        std::inserter(channel_mute, channel_mute.end()), 
                        [](const auto &a) -> std::pair<int, bool> {return {a.first, true};});
+
+        audioStateChanged();
     }
     virtual ~ChannelNamesDemo() {} 
+
+    void audioStateChanged() {
+        std::unordered_map < int, ChannelDSPState > dsp;
+        std::transform(channel_mute.begin(), channel_mute.end(), 
+                        std::inserter(dsp, dsp.end()), 
+                        [](const auto &a) -> std::pair<int, ChannelDSPState> {
+                        if(a.second)
+                            return {a.first, ChannelDSP_on()};
+                        else 
+                            return {a.first, ChannelDSP_off()};
+                         
+        });
+        broadcastDSP(dsp);
+    }
     
     std::unique_ptr < GameUI > createUI() override
     {
@@ -257,6 +281,7 @@ struct ChannelNamesDemo : public Game
             [this](int id, bool is_toggled) {
                 jassert(channel_mute[id] != is_toggled);
                 channel_mute[id] = is_toggled;
+                audioStateChanged();
             }
         );
         game_ui = new_ui.get();
@@ -264,16 +289,25 @@ struct ChannelNamesDemo : public Game
     }
     
     void onChannelCreate(int id) override {
+        auto [it, result] = channel_mute.emplace(id, true);
+        jassert(result);
+
         if (auto *ui = getUI())
         {
-            ui->addChannel(id, channel_infos[id].name, true);
+            ui->addChannel(id, channel_infos[id].name, it->second);
         }
+        audioStateChanged();
     }
     void onChannelDelete(int id) override {
         if (auto *ui = getUI())
         {
             ui->removeChannel(id);
         }
+        const auto channel_to_remove = channel_mute.find(id);
+        jassert(channel_to_remove != channel_mute.end());
+        channel_mute.erase(channel_to_remove);
+
+        audioStateChanged();
     }
     
     void onChannelRenamedFromTrack(int id, const juce::String& new_name) override {

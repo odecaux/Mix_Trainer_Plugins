@@ -15,6 +15,21 @@ struct ChannelDSPState{
     double high_shelf_freq;
 };
 
+static ChannelDSPState ChannelDSP_on()
+{
+    return {
+        .gain = 1.0,
+        .low_shelf_gain = 1.0,
+        .high_shelf_gain = 1.0,
+    };
+}
+
+static ChannelDSPState ChannelDSP_off()
+{
+    return {
+        .gain = 0.0,
+    };
+}
 
 struct Settings{
     float difficulty;

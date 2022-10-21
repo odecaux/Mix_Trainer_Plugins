@@ -38,6 +38,7 @@ maxFrequency{20000}
 ProcessorTrack::~ProcessorTrack()
 {
     juce::MessageManager::getInstance()->broadcastMessage(juce::String("delete ") + juce::String(id));
+    juce::MessageManager::getInstance()->deregisterBroadcastListener(this);
 }
 
 //==============================================================================

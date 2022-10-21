@@ -39,6 +39,7 @@ ProcessorHost::ProcessorHost()
 
 ProcessorHost::~ProcessorHost()
 {
+    juce::MessageManager::getInstance()->deregisterBroadcastListener(this);
 }
 
 //==============================================================================
