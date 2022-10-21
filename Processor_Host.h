@@ -58,7 +58,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
     
-#if 0
+
     void broadcastAllDSP(const std::unordered_map<int, ChannelDSPState> &dsp_states)
     {
         for (const auto &[id, state] : dsp_states)
@@ -67,7 +67,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
             juce::MessageManager::getInstance()->broadcastMessage(message);
         }
     }
-#endif
+
     
     Application app;
     private:

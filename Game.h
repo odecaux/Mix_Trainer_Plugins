@@ -79,14 +79,17 @@ class Application;
 struct GameUI;
 
 struct Game {
-    Application &app;
+    Application &app_old;
     GameUI *game_ui = nullptr;
     std::unordered_map<int, ChannelInfos> &channel_infos;
+    std::function < void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP;
     //GameStep step;
     //int score;
     
-    Game(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
-    : app(app), channel_infos(channel_infos)
+    Game(Application &app, 
+         std::unordered_map<int, ChannelInfos> &channel_infos, 
+         std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP) 
+    : app_old(app), channel_infos(channel_infos), broadcastDSP(std::move(broadcastDSP))
     {}
     virtual ~Game() {}
 
@@ -234,8 +237,10 @@ struct ChannelNamesDemoUI : public GameUI
 
 struct ChannelNamesDemo : public Game
 {
-    ChannelNamesDemo(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
-    : Game(app, channel_infos)
+    ChannelNamesDemo(Application &app, 
+                     std::unordered_map<int, ChannelInfos> &channel_infos, 
+                     std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP) 
+    : Game(app, channel_infos, std::move(broadcastDSP))
     {
         std::transform(channel_infos.begin(), channel_infos.end(), 
                        std::inserter(channel_mute, channel_mute.end()), 

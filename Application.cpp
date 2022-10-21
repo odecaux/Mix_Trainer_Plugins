@@ -12,6 +12,9 @@ Application::Application(ProcessorHost &host) :
     editor(nullptr),
     type(PanelType::MainMenu)
 {
+    //NOTE useless
+    broadcastDSP(bypassedAllChannelsDSP(channels));
+
 #if 0
     state.step = Begin;
     state.score = 0;
@@ -22,6 +25,8 @@ Application::Application(ProcessorHost &host) :
 
 void Application::toMainMenu()
 {
+    broadcastDSP(bypassedAllChannelsDSP(channels));
+
     jassert(type != PanelType::MainMenu);
     type = PanelType::MainMenu;
     jassert(editor);
@@ -42,7 +47,7 @@ void Application::toGame()
     jassert(editor);
     jassert(!game);
 
-    game = std::make_unique < ChannelNamesDemo > (*this, channels);
+    game = std::make_unique < ChannelNamesDemo > (*this, channels, [this](const auto& dsp_states) { broadcastDSP(dsp_states); });
     auto game_ui = game->createUI();
     
     std::unique_ptr < juce::Component > game_panel =
@@ -60,6 +65,7 @@ void Application::toGame()
 
 void Application::toStats()
 {
+    broadcastDSP(bypassedAllChannelsDSP(channels));
     jassert(type == PanelType::MainMenu);
     type = PanelType::Stats;
     jassert(editor);
@@ -71,6 +77,7 @@ void Application::toStats()
 
 void Application::toSettings()
 {
+    broadcastDSP(bypassedAllChannelsDSP(channels));
     jassert(type == PanelType::MainMenu);
     type = PanelType::Settings;
     jassert(editor);
@@ -129,6 +136,11 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
     }
     editor->changePanel(std::move(panel));
+}
+
+void Application::broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states)
+{
+    host.broadcastAllDSP(dsp_states);
 }
 
 void Application::createChannel(int id)

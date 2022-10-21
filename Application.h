@@ -14,9 +14,29 @@ public:
     void toGame();
     void toStats();
     void toSettings();
+    
+    static ChannelDSPState bypassedChannelDSP()
+    {
+        return {
+            .gain = 1.0,
+            .low_shelf_gain = 1.0,
+            .high_shelf_gain = 1.0,
+        };
+    }
+    
+    static std::unordered_map < int, ChannelDSPState > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
+        std::unordered_map < int, ChannelDSPState > dsp_states;
+        
+        std::transform(channels.begin(), channels.end(), 
+                       std::inserter(dsp_states, dsp_states.end()), 
+                       [](const auto &a) -> std::pair<int, ChannelDSPState>{
+                       return { a.first, bypassedChannelDSP() };
+        });
+        return dsp_states;
+    }
 
-    /*
-    void broadcastDSP()
+    void broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states);
+#if 0
     {
         for(const auto& [_, channel] : state.channels)
         {
@@ -44,13 +64,8 @@ public:
                 } break;
             }
         }
-        
-        host.sendDSPMessage(channel.id, dsp);
     }
-    
-        std::unique_ptr<GameImplementation> game;
-    */
-
+#endif
 
     void createChannel(int id);
     void deleteChannel(int id);
