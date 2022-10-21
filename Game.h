@@ -161,70 +161,74 @@ struct GameUI_Panel : public juce::Component
 
 struct ChannelNamesDemoUI : public GameUI
 {
-    ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos) 
+    ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos, 
+                       const std::unordered_map<int, bool> &mute_state,
+                       std::function<void(int, bool)> onMuteToggle) 
     {
-        for (const auto& [id, info] : channel_infos)
-        {
-            auto [it, result] = channel_names.emplace(id, std::make_unique<juce::Label>());
-            jassert(result);
-            auto &new_label = it->second;
-            new_label->setText(info.name, juce::dontSendNotification);
-            new_label->setJustificationType(juce::Justification::left);
-            addAndMakeVisible(new_label.get());
+        auto f = 
+            [&onMuteToggle, this](const auto &a) -> std::pair<int, std::unique_ptr<juce::ToggleButton>> {
+            auto new_toggle = std::make_unique < juce::ToggleButton > ();
+            new_toggle->setButtonText(a.second.name);
+            new_toggle->onClick = [id = a.first, toggle = new_toggle.get(), onToggle = onMuteToggle] {
+                onToggle(id, toggle->getToggleState());
+            };
+            addAndMakeVisible(new_toggle.get());
+            return { a.first, std::move(new_toggle)};
+        };
+        
+        std::transform(channel_infos.begin(), channel_infos.end(), 
+                        std::inserter(channel_toggles, channel_toggles.end()), 
+                        f
+        );
+        for (const auto& [id, is_toggled] : mute_state) {
+            channel_toggles[id]->setToggleState(is_toggled, juce::dontSendNotification);
         }
+
     }
 
     virtual ~ChannelNamesDemoUI() {}
 
     void resized() override {
         auto bounds = getLocalBounds();
-        auto label_bounds = bounds.withHeight(50);
-        for (auto &[id, channel] : channel_names)
+        auto toggle_bounds = bounds.withHeight(50);
+        for (auto &[id, button] : channel_toggles)
         {
-            channel->setBounds(label_bounds);
-            label_bounds.translate(0, 50);
+            button->setBounds(toggle_bounds);
+            toggle_bounds.translate(0, 50);
         }
     }
 
     //NOTE solution 1) keeping them in sync
     //solution 2) passing in the map and rebuilding the childs everytime
 
-    void addLabel(int id, const juce::String name)
+    void addChannel(int id, const juce::String name, bool playing)
     {
         {
-            auto assertChannel = channel_names.find(id);
-            jassert(assertChannel == channel_names.end());
+            auto assertChannel = channel_toggles.find(id);
+            jassert(assertChannel == channel_toggles.end());
         }
-        auto [it, result] = channel_names.emplace(id, std::make_unique<juce::Label>());
+        auto [it, result] = channel_toggles.emplace(id, std::make_unique<juce::ToggleButton>());
         jassert(result);
-        auto &new_label = it->second;
-        new_label->setText(name, juce::dontSendNotification);
-        new_label->setJustificationType(juce::Justification::left);
-        addAndMakeVisible(new_label.get());
+        auto &new_toggle = it->second;
+        new_toggle->setButtonText(name);
+        addAndMakeVisible(new_toggle.get());
         resized();
     }
     
-    void removeLabel(int id)
+    void removeChannel(int id)
     {
-        const auto channel_to_remove = channel_names.find(id);
-        jassert(channel_to_remove != channel_names.end());
+        const auto channel_to_remove = channel_toggles.find(id);
+        jassert(channel_to_remove != channel_toggles.end());
         removeChildComponent(channel_to_remove->second.get());
-        channel_names.erase(channel_to_remove);
+        channel_toggles.erase(channel_to_remove);
         resized();
     }
 
-    void changeLabelText(int id, const juce::String name)
+    void changeChannelName(int id, const juce::String name)
     {
-        channel_names[id]->setText(name, juce::dontSendNotification);
+        channel_toggles[id]->setButtonText(name);
     }
-#if 0
-    void resizedChild(juce::Rectangle<int> bounds) override;
-    void createChannelUI(const ChannelInfos& channel, GameStep step) override;
-    void deleteChannelUI(int id) override;
-    void renameChannel(int id, const juce::String &newName) override;
-    //void updateGameUI(GameStep step) override;
-#endif
-    std::unordered_map < int, std::unique_ptr<juce::Label>> channel_names;
+    std::unordered_map < int, std::unique_ptr<juce::ToggleButton>> channel_toggles;
 };
 
 
@@ -233,41 +237,46 @@ struct ChannelNamesDemo : public Game
     ChannelNamesDemo(Application &app, std::unordered_map<int, ChannelInfos> &channel_infos) 
     : Game(app, channel_infos)
     {
-        channel_count = channel_infos.size();
+        std::transform(channel_infos.begin(), channel_infos.end(), 
+                       std::inserter(channel_mute, channel_mute.end()), 
+                       [](const auto &a) -> std::pair<int, bool> {return {a.first, true};});
     }
     virtual ~ChannelNamesDemo() {} 
     
     std::unique_ptr < GameUI > createUI() override
     {
         jassert(game_ui == nullptr);
-        auto new_ui = std::make_unique < ChannelNamesDemoUI > (channel_infos);
+        auto new_ui = std::make_unique < ChannelNamesDemoUI > (
+            channel_infos,
+            channel_mute,
+            [this](int id, bool is_toggled) {
+                jassert(channel_mute[id] != is_toggled);
+                channel_mute[id] = is_toggled;
+            }
+        );
         game_ui = new_ui.get();
         return new_ui;
     }
     
     void onChannelCreate(int id) override {
-        channel_count++;
         if (auto *ui = getUI())
         {
-            ui->addLabel(id, channel_infos[id].name);
+            ui->addChannel(id, channel_infos[id].name, true);
         }
     }
     void onChannelDelete(int id) override {
-        channel_count--;
-        jassert(channel_count >= 0);
         if (auto *ui = getUI())
         {
-            ui->removeLabel(id);
+            ui->removeChannel(id);
         }
     }
     
     void onChannelRenamedFromTrack(int id, const juce::String& new_name) override {
         if (auto *ui = getUI())
         {
-            ui->changeLabelText(id, new_name);
+            ui->changeChannelName(id, new_name);
         }
     }
-    int channel_count;
 
     ChannelNamesDemoUI * getUI()
     {
@@ -282,11 +291,8 @@ struct ChannelNamesDemo : public Game
             return nullptr;
         }
     }
-#if 0
-    ChannelState generateChannel(int id) override;
-    int awardPoints() override;
-    void generateNewRound() override;
-#endif
+
+    std::unordered_map < int, bool > channel_mute;
 };
 
 #if 0
