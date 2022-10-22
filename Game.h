@@ -1,4 +1,4 @@
-
+#if 0
 static const double slider_values[] = {-100, -12, -9, -6, -3};
 
 #define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
@@ -35,9 +35,13 @@ static double slider_value_to_gain(int value)
     return juce::Decibels::decibelsToGain(slider_value_to_db(value));
 }
 
-enum Action {
-    
-};
+
+double randomGain(double *slider_values, size_t slider_value_count)
+{
+    int slider_value = juce::Random::getSystemRandom().nextInt() % slider_value_count;
+    return slider_value_to_gain(slider_value);
+}
+#endif
 
 enum GameStep {
     Begin,
@@ -83,8 +87,7 @@ struct Game {
     GameUI *game_ui = nullptr;
     std::unordered_map<int, ChannelInfos> &channel_infos;
     std::function < void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP;
-    //GameStep step;
-    //int score;
+
     
     Game(Application &app, 
          std::unordered_map<int, ChannelInfos> &channel_infos, 
@@ -99,34 +102,36 @@ struct Game {
     //virtual void onChannelRenamedFromUI(int id, const juce::String newName) {};
     virtual void onChannelRenamedFromTrack(int id, const juce::String &new_name) {}
     virtual void onChannelFrequenciesChanged(int id) {}
+
  
 
 #if 0
-    virtual ChannelState generateChannel(int id) = 0;
     virtual int awardPoints() = 0;
     virtual void generateNewRound() = 0;
 #endif
     virtual std::unique_ptr<GameUI> createUI() = 0;
-
-    void onUIDelete();
+    virtual void nextClicked() = 0;
+    virtual void toggleInputOrTarget(bool isOn) = 0;
     
-    void toggleInputOrTarget(bool isOn);
-    void nextClicked();
-    void backClicked();
+    virtual void finishUIInitialization() {}
+    void onUIDelete();
 };
 
+struct GameUI_Panel;
 
 struct GameUI : public juce::Component
 {
+    GameUI_Panel *panel = nullptr;
+    void attachParentPanel(GameUI_Panel *new_panel)
+    {
+        jassert(panel == nullptr);
+        jassert(new_panel != nullptr);
+        panel = new_panel;
+    }
     GameUI() {}
-    virtual ~GameUI() {}
-
-#if 0
-    virtual void createChannelUI(const ChannelInfos& channel_infos, GameStep step) = 0;
-    virtual void deleteChannelUI(int id) = 0;
-    virtual void renameChannel(int id, const juce::String &newName) = 0;
-    //virtual void updateGameUI(const GameState &state) = 0;
-#endif
+    virtual ~GameUI() {
+        jassert(panel != nullptr);
+    }
 };
 
 
@@ -138,17 +143,10 @@ struct GameUI_Panel : public juce::Component
                  std::unique_ptr < GameUI > game_ui);
     
     //~GameUI_Panel() {}
-    //void updateGameUI_Generic(const GameState &state);
+    void updateGameUI_Generic(GameStep new_step, int new_score);
     void paint(juce::Graphics& g) override;
     void resized() override;
 
-#if 0
-    virtual void resizedChild(juce::Rectangle<int> bounds) = 0;
-    virtual void createChannelUI(const ChannelInfos& channel_infos, GameStep step) = 0;
-    virtual void deleteChannelUI(int id) = 0;
-    virtual void renameChannel(int id, const juce::String &newName) = 0;
-    //virtual void updateGameUI(const GameState &state) = 0;
-#endif
     juce::Label top_label;
     juce::Label score_label;
     juce::TextButton back_button;
@@ -164,18 +162,15 @@ struct GameUI_Panel : public juce::Component
 
 struct ChannelNamesDemoUI : public GameUI
 {
-    ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos, 
-                       const std::unordered_map<int, bool> &mute_state,
+    ChannelNamesDemoUI(const std::unordered_map<int, ChannelInfos>& channel_infos,
                        std::function<void(int, bool)> onMuteToggle) :
         onMuteToggle(onMuteToggle)
     {
         auto f = 
-            [this, &onToggle = this->onMuteToggle, &mute_state]
+            [this, &onToggle = this->onMuteToggle]
             (const auto &a) -> std::pair<int, std::unique_ptr<juce::ToggleButton>> {
             const int &id = a.first;
             auto new_toggle = std::make_unique < juce::ToggleButton > (a.second.name);
-            bool is_playing = mute_state.at(id);
-            new_toggle->setToggleState(is_playing, juce::dontSendNotification);
             new_toggle->onClick = [id = id, toggle = new_toggle.get(), &onToggle] {
                 onToggle(id, toggle->getToggleState());
             };
@@ -187,10 +182,6 @@ struct ChannelNamesDemoUI : public GameUI
                         std::inserter(channel_toggles, channel_toggles.end()), 
                         f
         );
-        for (const auto& [id, is_toggled] : mute_state) {
-            channel_toggles[id]->setToggleState(is_toggled, juce::dontSendNotification);
-        }
-
     }
 
     virtual ~ChannelNamesDemoUI() {}
@@ -208,7 +199,7 @@ struct ChannelNamesDemoUI : public GameUI
     //NOTE solution 1) keeping them in sync
     //solution 2) passing in the map and rebuilding the childs everytime
 
-    void addChannel(int id, const juce::String name, bool playing)
+    void addChannel(int id, const juce::String name)
     {
         {
             auto assertChannel = channel_toggles.find(id);
@@ -217,7 +208,8 @@ struct ChannelNamesDemoUI : public GameUI
         auto [it, result] = channel_toggles.emplace(id, std::make_unique<juce::ToggleButton>(name));
         jassert(result);
         auto &new_toggle = it->second;
-        new_toggle->setToggleState(playing, juce::dontSendNotification);
+        
+        //new_toggle->setToggleState(playing, juce::dontSendNotification);
         new_toggle->onClick = [id = id, toggle = new_toggle.get(), &onToggle = this->onMuteToggle] {
             onToggle(id, toggle->getToggleState());
         };
@@ -238,6 +230,54 @@ struct ChannelNamesDemoUI : public GameUI
     {
         channel_toggles[id]->setButtonText(name);
     }
+
+    void updateGameUI(GameStep new_step, int new_score, std::unordered_map<int, bool> *mute_values_to_display)
+    {
+        if(mute_values_to_display)
+            jassert(mute_values_to_display->size() == channel_toggles.size());
+
+        for(auto& [id, toggle] : channel_toggles)
+        {
+            switch(new_step)
+            {
+                case Begin :
+                {
+                    //????
+                    jassert(mute_values_to_display != nullptr);
+                    toggle->setEnabled(true);
+                    toggle->setToggleState(mute_values_to_display->at(id), juce::dontSendNotification);
+                } break;
+                case Listening :
+                {
+                    jassert(mute_values_to_display == nullptr);
+                    toggle->setEnabled(false);
+                    toggle->setToggleState(false, juce::dontSendNotification);
+                } break;
+                case Editing :
+                {
+                    jassert(mute_values_to_display != nullptr);
+                    toggle->setEnabled(true);
+                    toggle->setToggleState(mute_values_to_display->at(id), juce::dontSendNotification);
+                } break;
+                case ShowingTruth :
+                {
+                    jassert(mute_values_to_display != nullptr);
+                    toggle->setEnabled(false);
+                    toggle->setToggleState(mute_values_to_display->at(id), juce::dontSendNotification);
+                } break;
+                case ShowingAnswer :
+                {
+                    jassert(mute_values_to_display != nullptr);
+                    toggle->setEnabled(false);
+                    toggle->setToggleState(mute_values_to_display->at(id), juce::dontSendNotification);
+                } break;
+            }
+        }
+
+        jassert(panel);
+        panel->updateGameUI_Generic(new_step, new_score);
+    }
+
     std::unordered_map < int, std::unique_ptr<juce::ToggleButton>> channel_toggles;
     std::function < void(int, bool) > onMuteToggle;
 };
@@ -250,17 +290,31 @@ struct ChannelNamesDemo : public Game
                      std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP) 
     : Game(app, channel_infos, std::move(broadcastDSP))
     {
+        step = Begin;
+        score = 0;
         std::transform(channel_infos.begin(), channel_infos.end(), 
-                       std::inserter(channel_mute, channel_mute.end()), 
+                       std::inserter(edited_mutes, edited_mutes.end()), 
                        [](const auto &a) -> std::pair<int, bool> {return {a.first, true};});
-
+        
         audioStateChanged();
+        jassert(game_ui == nullptr);
     }
     virtual ~ChannelNamesDemo() {} 
 
+    
+    std::unordered_map < int, bool > *edit_or_target_RENAME()
+    {
+        if(step == Begin || step == Editing || step == ShowingAnswer)
+            return &edited_mutes;
+        else
+            return &target_mutes;
+    }
+
     void audioStateChanged() {
+        auto * edit_or_target = edit_or_target_RENAME();
+
         std::unordered_map < int, ChannelDSPState > dsp;
-        std::transform(channel_mute.begin(), channel_mute.end(), 
+        std::transform(edit_or_target->begin(), edit_or_target->end(), 
                         std::inserter(dsp, dsp.end()), 
                         [](const auto &a) -> std::pair<int, ChannelDSPState> {
                         if(a.second)
@@ -277,10 +331,10 @@ struct ChannelNamesDemo : public Game
         jassert(game_ui == nullptr);
         auto new_ui = std::make_unique < ChannelNamesDemoUI > (
             channel_infos,
-            channel_mute,
             [this](int id, bool is_toggled) {
-                jassert(channel_mute[id] != is_toggled);
-                channel_mute[id] = is_toggled;
+                jassert(step == Begin || step == Editing);
+                jassert(edited_mutes[id] != is_toggled);
+                edited_mutes[id] = is_toggled;
                 audioStateChanged();
             }
         );
@@ -289,24 +343,37 @@ struct ChannelNamesDemo : public Game
     }
     
     void onChannelCreate(int id) override {
-        auto [it, result] = channel_mute.emplace(id, true);
-        jassert(result);
-
+        auto [target, target_result] = target_mutes.emplace(id, true);
+        jassert(target_result);
+        auto [edited, edited_result] = edited_mutes.emplace(id, true);
+        jassert(edited_result);
+        
         if (auto *ui = getUI())
         {
-            ui->addChannel(id, channel_infos[id].name, it->second);
+            auto value_to_push = (step == Begin || step == Editing || step == ShowingTruth) ? edited->second : target->second;
+            ui->addChannel(id, channel_infos[id].name);
         }
+
         audioStateChanged();
+        uiChanged();
     }
+
     void onChannelDelete(int id) override {
         if (auto *ui = getUI())
         {
             ui->removeChannel(id);
         }
-        const auto channel_to_remove = channel_mute.find(id);
-        jassert(channel_to_remove != channel_mute.end());
-        channel_mute.erase(channel_to_remove);
-
+        {
+            const auto channel_to_remove = edited_mutes.find(id);
+            jassert(channel_to_remove != edited_mutes.end());
+            edited_mutes.erase(channel_to_remove);
+        }
+        
+        {
+            const auto channel_to_remove = target_mutes.find(id);
+            jassert(channel_to_remove != target_mutes.end());
+            target_mutes.erase(channel_to_remove);
+        }
         audioStateChanged();
     }
     
@@ -331,7 +398,94 @@ struct ChannelNamesDemo : public Game
         }
     }
 
-    std::unordered_map < int, bool > channel_mute;
+    
+    void toggleInputOrTarget(bool isOn) override {
+        jassert(step != Begin);
+        auto old_step = step;
+        
+        //TODO virtual affects score ?
+        
+        if(isOn && step == Editing)
+        {
+            step = Listening;
+        }
+        else if(isOn && step == ShowingAnswer)
+        {
+            step = ShowingTruth;
+        }
+        else if(!isOn && step == Listening)
+        {
+            step = Editing;
+        }
+        else if(!isOn && step == ShowingTruth){
+            step = ShowingAnswer;
+        }
+
+        if(old_step != step)
+        {
+            audioStateChanged();
+            uiChanged();
+        }
+    }
+
+    void generateNewRound()
+    {
+        for (auto& [_, channel] : channel_infos)
+        {
+            target_mutes[channel.id] = juce::Random::getSystemRandom().nextBool();
+            edited_mutes[channel.id] = true;
+        }
+        jassert(target_mutes.size() == channel_infos.size());
+        jassert(edited_mutes.size() == channel_infos.size());
+    }
+
+    void nextClicked() override {
+
+        switch(step)
+        {
+            case Begin :
+            {
+                jassert(target_mutes.size() == 0);
+                generateNewRound();
+                step = Listening;
+            } break;
+            case Listening :
+            case Editing :
+            {
+                score += 1;  //awardPoints();
+                step = ShowingTruth;
+            }break;
+            case ShowingTruth : 
+            case ShowingAnswer :
+            {
+                generateNewRound();
+                step = Listening;
+            }break;
+        }
+
+        audioStateChanged();
+        uiChanged();
+    }
+
+    void uiChanged()
+    {
+        if (auto *ui = getUI())
+        {
+            auto *mute_state_to_pass = step == Listening ? nullptr : edit_or_target_RENAME();
+            ui->updateGameUI(step, score, mute_state_to_pass);
+        }
+    }
+
+    void finishUIInitialization() override
+    {
+        jassert(game_ui);
+        uiChanged();
+    }
+    
+    GameStep step;
+    int score;
+    std::unordered_map < int, bool > edited_mutes;
+    std::unordered_map < int, bool > target_mutes;
 };
 
 #if 0
@@ -550,7 +704,7 @@ struct MixerUI : public GameUI
             std::function<void(int, const juce::String&)> && onEditedName);
     virtual ~MixerUI() {}
     
-    void resizedChild(juce::Rectangle<int> bounds) override;
+    void resized(juce::Rectangle<int> bounds) override;
     void createChannelUI(const ChannelInfos& channel, GameStep step) override;
     void deleteChannelUI(int id) override;
     void renameChannel(int id, const juce::String &newName) override;

@@ -6,71 +6,9 @@
 #include "Application.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
+
 #if 0
-double randomGain()
-{
-    int slider_value = juce::Random::getSystemRandom().nextInt() % ArraySize(slider_values);
-    return slider_value_to_gain(slider_value);
-}
-
-    
-void Game::toggleInputOrTarget(bool isOn)
-{
-    jassert(state.step != Begin);
-    auto old_step = state.step;
-        
-    //TODO virtual affects score ?
-        
-    if(isOn && state.step == Editing)
-    {
-        state.step = Listening;
-    }
-    else if(isOn && state.step == ShowingAnswer)
-    {
-        state.step = ShowingTruth;
-    }
-    else if(!isOn && state.step == Listening)
-    {
-        state.step = Editing;
-    }
-    else if(!isOn && state.step == ShowingTruth){
-        state.step = ShowingAnswer;
-    }
-
-    if(old_step != state.step)
-    {
-        app.broadcastAllDSP();
-        //virtual
-        if(game_ui)
-            game_ui->updateGameUI(state);
-    }
-} 
-    
-void Game::nextClicked(){
-    switch(state.step)
-    {
-        case Begin :
-        {
-            generateNewRound();
-            state.step = Listening;
-        } break;
-        case Listening :
-        case Editing :
-        {
-            state.score += awardPoints();
-            state.step = ShowingTruth;
-        }break;
-        case ShowingTruth : 
-        case ShowingAnswer :
-        {
-            generateNewRound();
-            state.step = Listening;
-        }break;
-    }
-    app.broadcastAllDSP();
-    if(game_ui)
-        game_ui->updateGameUI(state);
-}
+void Game::
 
 void Game::backClicked()
 {
@@ -79,7 +17,7 @@ void Game::backClicked()
 
 #endif 
 GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
-                                   std::function < void(bool) > && onToggleClicked,
+                                   std::function < void(bool) > &&onToggleClicked,
                                    std::function < void() > && onBackClicked,
                                    std::unique_ptr < GameUI > game_ui) :
     game_ui(std::move(game_ui))
@@ -103,49 +41,73 @@ GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
     
     {
         target_mix_button.setButtonText("Target mix");
-        target_mix_button.onClick = [this, toggle = std::move(onToggleClicked)] {
-            toggle(true);
+        target_mix_button.onClick = [this, toggle = onToggleClicked] {
+            toggle(target_mix_button.getToggleState());
         };
         addAndMakeVisible(target_mix_button);
             
         user_mix_button.setButtonText("My mix");
-        user_mix_button.onClick = [this, toggle = std::move(onToggleClicked)] {
+        /*
+        user_mix_button.onClick = [this, toggle = onToggleClicked] {
             toggle(false);
-        };
+         * };
+         * */
         addAndMakeVisible(user_mix_button);
             
         target_mix_button.setRadioGroupId (1000);
         user_mix_button.setRadioGroupId (1000);
     }
 
+    this->game_ui->attachParentPanel(this);
     addAndMakeVisible(this->game_ui.get());
 }
  
-#if 0
-void GameUI::updateGameUI_Generic(const GameState &new_state)
+void GameUI_Panel::updateGameUI_Generic(GameStep new_step, int new_score)
 {
-    target_mix_button.setToggleState(new_state.step == Listening || 
-                                   new_state.step == ShowingTruth, 
-                                   juce::dontSendNotification);
-
-    if (new_state.step == Begin)
-    {
-        target_mix_button.setEnabled(false);
-        user_mix_button.setEnabled(false);
-        target_mix_button.setVisible(false);
-        user_mix_button.setVisible(false);
-    }
-    else
-    {
-        target_mix_button.setEnabled(true);
-        user_mix_button.setEnabled(true);
-        target_mix_button.setVisible(true);
-        user_mix_button.setVisible(true);
-    }
-
-    switch(new_state.step)
+    //hide/reveal
+    switch(new_step)
     {
         case Begin : {
+            target_mix_button.setEnabled(false);
+            user_mix_button.setEnabled(false);
+            target_mix_button.setVisible(false);
+            user_mix_button.setVisible(false);
+        } break;
+        case Listening :
+        case Editing :
+        case ShowingTruth :
+        case ShowingAnswer : 
+        {
+            target_mix_button.setEnabled(true);
+            user_mix_button.setEnabled(true);
+            target_mix_button.setVisible(true);
+            user_mix_button.setVisible(true);
+        }break;
+    };
+
+    //enabled one
+    switch(new_step)
+    {
+        case Begin : break;
+        case Editing :
+        case ShowingTruth :
+        {
+            target_mix_button.setToggleState(false, juce::dontSendNotification);
+            user_mix_button.setToggleState(true, juce::dontSendNotification);
+        } break;
+        case Listening :
+        case ShowingAnswer : 
+        {
+            target_mix_button.setToggleState(true, juce::dontSendNotification);
+            user_mix_button.setToggleState(false, juce::dontSendNotification);
+        }break;
+    };
+
+    //labels
+    switch(new_step)
+    {
+        case Begin : 
+        {
             top_label.setText("Have a listen", juce::dontSendNotification);
             next_button.setButtonText("Begin");
         } break;
@@ -163,11 +125,11 @@ void GameUI::updateGameUI_Generic(const GameState &new_state)
         }break;
     };
     
-    score_label.setText(juce::String("Score : ") + juce::String(new_state.score), juce::dontSendNotification);
+    //score
+    score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
-#endif
+
       
-  
 void GameUI_Panel::paint(juce::Graphics& g)
 {
     juce::ignoreUnused(g);
@@ -297,7 +259,7 @@ MixerUI::MixerUI(MixerGame::GameState &state,
     updateGameUI(state);
 }
 
-void MixerUI::resizedChild(juce::Rectangle<int> bounds)
+void MixerUI::resized(juce::Rectangle<int> bounds)
 {
     fader_viewport.setBounds(bounds);
     fader_row.setSize(fader_row.getWidth(),

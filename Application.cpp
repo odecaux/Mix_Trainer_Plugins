@@ -31,7 +31,7 @@ void Application::toMainMenu()
     type = PanelType::MainMenu;
     jassert(editor);
         
-    std::unique_ptr < juce::Component > main_menu =
+    auto main_menu =
         std::make_unique < MainMenu > (
         [this] { toGame(); },
             [this] { toStats(); },
@@ -51,16 +51,17 @@ void Application::toGame()
     printf("toGame\n");
     auto game_ui = game->createUI();
     
-    std::unique_ptr < juce::Component > game_panel =
-        std::make_unique < GameUI_Panel > (
-            [] {  },
-            [] (bool _){},
+    auto game_panel = std::make_unique < GameUI_Panel > (
+        [this] { game->nextClicked();  },
+                [this] (bool isOn) { game->toggleInputOrTarget(isOn); },
             [this] { 
                 game.reset();  
                 toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
             },
             std::move(game_ui)
         );
+
+    game->finishUIInitialization();
     editor->changePanel(std::move(game_panel));
 }
 
