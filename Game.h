@@ -1,4 +1,4 @@
-#if 0
+
 static const double slider_values[] = {-100, -12, -9, -6, -3};
 
 #define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
@@ -36,12 +36,11 @@ static double slider_value_to_gain(int value)
 }
 
 
-double randomGain(double *slider_values, size_t slider_value_count)
+static double randomGain(double *slider_values, size_t slider_value_count)
 {
     int slider_value = juce::Random::getSystemRandom().nextInt() % slider_value_count;
     return slider_value_to_gain(slider_value);
 }
-#endif
 
 enum GameStep {
     Begin,
@@ -516,7 +515,7 @@ struct ChannelNamesDemo : public Game
     std::unordered_map < int, bool > target_mutes;
 };
 
-#if 0
+
 class DecibelSlider : public juce::Slider
 {
 public:
@@ -537,7 +536,7 @@ enum FaderStep {
 class FaderComponent : public juce::Component
 {
 public:
-    FaderComponent(double inital_gain,
+    FaderComponent(double initial_gain,
                    FaderStep initial_step,
                    const juce::String &name,
                    std::function<void(double)> &&onFaderChange,
@@ -636,7 +635,7 @@ private:
 class FaderRowComponent : public juce::Component
 {
 public:
-    FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& faderComponents)
+    FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& faders)
     : faders(faders)
     {
     }
@@ -672,7 +671,6 @@ public:
 private:
     const static int fader_width = 60;
     std::unordered_map<int, std::unique_ptr<FaderComponent>> &faders;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(DecibelSlider)
 };
 
 static FaderStep gameStepToFaderStep(GameStep game_step)
@@ -701,7 +699,7 @@ static FaderStep gameStepToFaderStep(GameStep game_step)
         } break;
     }
 }
-
+#if 0
 struct MixerGame : public Game {
     struct GameState {
         float edited_gain;
