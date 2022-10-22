@@ -42,16 +42,22 @@ GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
     {
         target_mix_button.setButtonText("Target mix");
         target_mix_button.onClick = [this, toggle = onToggleClicked] {
-            toggle(target_mix_button.getToggleState());
+            juce::String str = target_mix_button.getToggleState() ? juce::String{ "on" } : juce::String{ "off" };
+            
+            if(target_mix_button.getToggleState())
+                toggle(true);
         };
         addAndMakeVisible(target_mix_button);
             
         user_mix_button.setButtonText("My mix");
-        /*
+        
         user_mix_button.onClick = [this, toggle = onToggleClicked] {
-            toggle(false);
-         * };
-         * */
+            juce::String str = user_mix_button.getToggleState() ?  juce::String{ "on" } :  juce::String{ "off" };
+            
+            if(user_mix_button.getToggleState())
+                toggle(false);
+         };
+         
         addAndMakeVisible(user_mix_button);
             
         target_mix_button.setRadioGroupId (1000);
@@ -85,18 +91,18 @@ void GameUI_Panel::updateGameUI_Generic(GameStep new_step, int new_score)
         }break;
     };
 
-    //enabled one
+    //ticked one
     switch(new_step)
     {
         case Begin : break;
         case Editing :
-        case ShowingTruth :
+        case ShowingAnswer : 
         {
             target_mix_button.setToggleState(false, juce::dontSendNotification);
             user_mix_button.setToggleState(true, juce::dontSendNotification);
         } break;
+        case ShowingTruth :
         case Listening :
-        case ShowingAnswer : 
         {
             target_mix_button.setToggleState(true, juce::dontSendNotification);
             user_mix_button.setToggleState(false, juce::dontSendNotification);

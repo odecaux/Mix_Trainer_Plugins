@@ -51,6 +51,33 @@ enum GameStep {
     ShowingAnswer
 };
 
+static juce::String step_to_str(GameStep step)
+{
+    switch (step)
+    {
+        case Begin :
+        {
+            return "Begin";
+        } break;
+        case Listening :
+        {
+            return "Listening";
+        } break;
+        case Editing :
+        {
+            return "Editing";
+        } break;
+        case ShowingTruth :
+        {
+            return "ShowingTruth";
+        } break;
+        case ShowingAnswer :
+        {
+            return "ShowingAnswer";
+        } break;
+    }
+}
+
 struct ChannelState
 {
     double edited_gain;
@@ -111,7 +138,7 @@ struct Game {
 #endif
     virtual std::unique_ptr<GameUI> createUI() = 0;
     virtual void nextClicked() = 0;
-    virtual void toggleInputOrTarget(bool isOn) = 0;
+    virtual void toggleInputOrTarget(bool clicked_was_target) = 0;
     
     virtual void finishUIInitialization() {}
     void onUIDelete();
@@ -397,32 +424,33 @@ struct ChannelNamesDemo : public Game
             return nullptr;
         }
     }
-
     
-    void toggleInputOrTarget(bool isOn) override {
+    
+    void toggleInputOrTarget(bool clicked_was_target) override {
         jassert(step != Begin);
         auto old_step = step;
         
         //TODO virtual affects score ?
         
-        if(isOn && step == Editing)
+        if(clicked_was_target && step == Editing)
         {
             step = Listening;
         }
-        else if(isOn && step == ShowingAnswer)
+        else if(clicked_was_target && step == ShowingAnswer)
         {
             step = ShowingTruth;
         }
-        else if(!isOn && step == Listening)
+        else if(!clicked_was_target && step == Listening)
         {
             step = Editing;
         }
-        else if(!isOn && step == ShowingTruth){
+        else if(!clicked_was_target && step == ShowingTruth){
             step = ShowingAnswer;
         }
 
         if(old_step != step)
         {
+
             audioStateChanged();
             uiChanged();
         }

@@ -53,7 +53,7 @@ void Application::toGame()
     
     auto game_panel = std::make_unique < GameUI_Panel > (
         [this] { game->nextClicked();  },
-                [this] (bool isOn) { game->toggleInputOrTarget(isOn); },
+            [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
             [this] { 
                 game.reset();  
                 toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
