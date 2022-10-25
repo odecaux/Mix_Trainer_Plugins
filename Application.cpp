@@ -46,8 +46,20 @@ void Application::toGame()
     type = PanelType::Game;
     jassert(editor);
     jassert(!game);
-
-    game = std::make_unique < ChannelNamesDemo > (*this, channels, [this](const auto& dsp_states) { broadcastDSP(dsp_states); });
+    
+#if 0
+    game = std::make_unique < ChannelNamesDemo > (
+        *this, 
+        channels, 
+        [this](const auto& dsp_states) { broadcastDSP(dsp_states); }
+    );
+#endif
+    game = std::make_unique < MixerGame > (
+        *this, 
+        channels, 
+        std::vector<double>{ -100.0, -12.0, -9.0, -6.0, -3.0},
+        [this](const auto& dsp_states) { broadcastDSP(dsp_states); }
+    );
     printf("toGame\n");
     auto game_ui = game->createUI();
     
@@ -114,7 +126,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             panel = std::make_unique < MainMenu > (
                 [this] { toGame(); },
                 [this] { toStats(); },
-                [this ] { toSettings(); });
+                [this] { toSettings(); });
         } break;
         case PanelType::Settings : {
             panel = std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);
@@ -129,7 +141,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             auto game_ui = game->createUI();
             panel = std::make_unique < GameUI_Panel > (
                 [] {  },
-                    [] (bool _){},
+                    [] (bool){},
                         [this] { 
                         game.reset();  
                         toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid

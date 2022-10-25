@@ -1,5 +1,6 @@
 
-static const double slider_values[] = {-100, -12, -9, -6, -3};
+
+// {-100, -12, -9, -6, -3};
 
 #define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
@@ -8,39 +9,26 @@ static double equal_double(double a, double b, double theta)
     return std::abs(a - b) < theta;
 }
 
-static double slider_value_to_db(int value)
+static int db_to_slider_pos(double db, const std::vector<double> &db_values)
 {
-    jassert(value < ArraySize(slider_values));
-    return slider_values[value];
-}
-
-
-static int db_to_slider_value(double db)
-{
-    for(int i = 0; i < ArraySize(slider_values); i++)
+    for(int i = 0; i < db_values.size(); i++)
     {
-        if(equal_double(db, slider_values[i], 0.001)) return i;
+        if(equal_double(db, db_values[i], 0.001)) return i;
     }
     jassertfalse;
     return -1;
 }
 
-static int gain_to_slider_value(double gain)
+static int gain_to_slider_pos(double gain, const std::vector<double> &db_values)
 { 
-    return db_to_slider_value(juce::Decibels::gainToDecibels(gain));
+    return db_to_slider_pos(juce::Decibels::gainToDecibels(gain), db_values);
 }
 
-static double slider_value_to_gain(int value)
+static double slider_pos_to_gain(int pos, const std::vector<double> &db_values)
 {
-    return juce::Decibels::decibelsToGain(slider_value_to_db(value));
+    return juce::Decibels::decibelsToGain(db_values[pos]);
 }
 
-
-static double randomGain(double *slider_values, size_t slider_value_count)
-{
-    int slider_value = juce::Random::getSystemRandom().nextInt() % slider_value_count;
-    return slider_value_to_gain(slider_value);
-}
 
 enum GameStep {
     Begin,
@@ -268,7 +256,6 @@ struct ChannelNamesDemoUI : public GameUI
             {
                 case Begin :
                 {
-                    //????
                     jassert(mute_values_to_display != nullptr);
                     toggle->setEnabled(true);
                     toggle->setToggleState(mute_values_to_display->at(id), juce::dontSendNotification);
@@ -376,8 +363,7 @@ struct ChannelNamesDemo : public Game
         
         if (auto *ui = getUI())
         {
-            auto value_to_push = (step == Begin || step == Editing || step == ShowingTruth) ? edited->second : target->second;
-            ui->addChannel(id, channel_infos[id].name);
+              ui->addChannel(id, channel_infos[id].name);
         }
 
         audioStateChanged();
@@ -516,15 +502,38 @@ struct ChannelNamesDemo : public Game
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class DecibelSlider : public juce::Slider
 {
 public:
-    DecibelSlider() = default;
+    explicit DecibelSlider(const std::vector < double > &db_values)
+    : db_values(db_values)
+    {
+    }
     
     juce::String getTextFromValue(double value) override
     {
-        return juce::Decibels::toString(slider_value_to_db((int)value));
+        return juce::Decibels::toString(db_values[(int)value]);
     }
+
+    const std::vector < double > &db_values;
 };
 
 enum FaderStep {
@@ -536,13 +545,13 @@ enum FaderStep {
 class FaderComponent : public juce::Component
 {
 public:
-    FaderComponent(double initial_gain,
-                   FaderStep initial_step,
-                   const juce::String &name,
-                   std::function<void(double)> &&onFaderChange,
-                   std::function<void(const juce::String&)> &&onEditedName)
-    : onFaderChange(std::move(onFaderChange)),
-        onEditedName(std::move(onEditedName))
+    explicit FaderComponent(const std::vector<double> &db_values,
+                            const juce::String &name,
+                            std::function<void(int)> &&onFaderMove,
+                            std::function<void(const juce::String&)> &&onEditedName)
+    :   onFaderMove(std::move(onFaderMove)),
+        onEditedName(std::move(onEditedName)),
+        fader(db_values)
     {
         label.setText(name, juce::NotificationType::dontSendNotification);
         label.setEditable(true);
@@ -558,17 +567,14 @@ public:
         
         fader.setSliderStyle(juce::Slider::SliderStyle::LinearBarVertical);
         fader.setTextBoxStyle(juce::Slider::TextBoxAbove, true, getWidth(), 20);
-        fader.setRange(0.0f, (double)(ArraySize(slider_values) - 1), 1.0);
-        fader.setScrollWheelEnabled(false);
+        fader.setRange(0.0f, (double)(db_values.size() - 1), 1.0);
+        fader.setScrollWheelEnabled(true);
         
         fader.onValueChange = [this] {
-            jassert(this->step == Editing);
-            auto newGain = slider_value_to_gain((int)fader.getValue());
-            this->onFaderChange(newGain);
+            jassert(this->step == FaderStep_Editing);
+            this->onFaderMove((int)fader.getValue());
         };
         addAndMakeVisible(fader);
-        
-        update(initial_step, initial_gain);
     }
     
     
@@ -594,25 +600,27 @@ public:
         label.setText(new_name, juce::dontSendNotification);
     }
     
-    void update(FaderStep new_step, double new_gain)
+    void update(FaderStep new_step, int new_pos)
     {
         switch (new_step)
         {
             case FaderStep_Editing :
             {
-                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
+                fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(true);
                 fader.setVisible(true);
             } break;
             case FaderStep_Hiding :
             {
-                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
+                jassert(new_pos == -1);
+                //TODO ?
+                //fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(false);
                 fader.setVisible(false);
             } break;
             case FaderStep_Showing :
             {
-                fader.setValue(gain_to_slider_value(new_gain), juce::dontSendNotification);
+                fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(false);
                 fader.setVisible(true);
             } break;
@@ -625,7 +633,7 @@ public:
 private:
     juce::Label label;
     DecibelSlider fader;
-    std::function<void(double)> onFaderChange;
+    std::function<void(int)> onFaderMove;
     std::function<void(const juce::String&)> onEditedName;
     FaderStep step;
     //double targetValue;
@@ -639,6 +647,7 @@ public:
     : faders(faders)
     {
     }
+    
     
     void adjustWidth() 
     {
@@ -699,6 +708,359 @@ static FaderStep gameStepToFaderStep(GameStep game_step)
         } break;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct MixerGameUI : public GameUI
+{
+    MixerGameUI(const std::unordered_map<int, ChannelInfos>& channel_infos,
+                std::function<void(int, int)> onFaderMoved, //TODO lifetime ?
+                const std::vector<double> &db_slider_values) :
+        //TODO onEditedName
+        onFaderMoved(onFaderMoved),
+        fader_row(faders),
+        db_slider_values(db_slider_values)
+    {
+        auto f = 
+            [this, &onMoved = this->onFaderMoved] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
+            const int &id = a.first;
+            
+            auto onFaderMoved = [id = id, &onMoved] (int new_pos){
+                onMoved(id, new_pos);
+            };
+
+            auto new_fader = std::make_unique < FaderComponent > (
+                this->db_slider_values,
+                a.second.name,
+                std::move(onFaderMoved),
+                [](auto ...){} //TODO onEditedName
+            );
+            fader_row.addAndMakeVisible(new_fader.get());
+            return { id, std::move(new_fader)};
+        };
+        
+        std::transform(channel_infos.begin(), channel_infos.end(), 
+                       std::inserter(faders, faders.end()), 
+                       f);
+        fader_row.adjustWidth();
+
+        addAndMakeVisible(fader_viewport);
+        fader_viewport.setScrollBarsShown(false, true);
+        fader_viewport.setViewedComponent(&fader_row, false);
+    }
+
+    virtual ~MixerGameUI() {}
+
+    void resized() override {
+        auto bounds = getLocalBounds();
+        fader_viewport.setBounds(bounds);
+        fader_row.setSize(fader_row.getWidth(),
+                          fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
+    }
+
+    //NOTE solution 1) keeping them in sync
+    //solution 2) passing in the map and rebuilding the childs everytime
+
+    void addChannel(int id, const juce::String name)
+    {
+        {
+            auto assertChannel = faders.find(id);
+            jassert(assertChannel == faders.end());
+        }
+        auto fader_moved = [&onMoved = this->onFaderMoved, id = id] (int new_pos){
+            onMoved(id, new_pos);
+        };
+        auto [it, result] = faders.emplace(id, std::make_unique < FaderComponent > (
+            db_slider_values,
+            name,
+            std::move(fader_moved),
+            [](auto...){} //onEditedName
+        ));
+        jassert(result);
+        auto &new_fader = it->second;
+        //new_fader->setToggleState(playing, juce::dontSendNotification);
+
+        fader_row.addAndMakeVisible(new_fader.get());
+        fader_row.adjustWidth();
+        resized();
+    }
+    
+    void removeChannel(int id)
+    {
+        const auto channel_to_remove = faders.find(id);
+        jassert(channel_to_remove != faders.end());
+        fader_row.removeChildComponent(channel_to_remove->second.get());
+        faders.erase(channel_to_remove);
+        fader_row.adjustWidth();
+        resized();
+    }
+
+    void changeChannelName(int id, const juce::String name)
+    {
+        faders[id]->setName(name);
+    }
+
+    void updateGameUI(GameStep new_step, int new_score, std::unordered_map<int, int > *slider_pos_to_display)
+    {
+        if(slider_pos_to_display)
+            jassert(slider_pos_to_display->size() == faders.size());
+
+        for(auto& [id, fader] : faders)
+        {
+            auto fader_step = gameStepToFaderStep(new_step);
+            int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
+            fader->update(fader_step, pos);
+        }
+
+        jassert(panel);
+        panel->updateGameUI_Generic(new_step, new_score);
+    }
+
+    std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
+    FaderRowComponent fader_row;
+    juce::Viewport fader_viewport;
+    const std::vector < double > &db_slider_values;
+    std::function<void(int, int)> onFaderMoved;
+    std::function<void(int, const juce::String&)> onEditedName;
+};
+
+
+struct MixerGame : public Game
+{
+    MixerGame(Application &app, 
+              std::unordered_map<int, ChannelInfos> &channel_infos, 
+              std::vector<double> db_slider_values,
+              std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP) 
+    : Game(app, channel_infos, std::move(broadcastDSP)),
+        db_slider_values(std::move(db_slider_values))
+    {
+        step = Begin;
+        score = 0;
+        std::transform(channel_infos.begin(), channel_infos.end(), 
+                       std::inserter(edited_slider_pos, edited_slider_pos.end()), 
+                       [this](const auto &a) -> std::pair<int, int> {
+                       return { a.first, (int)this->db_slider_values.size() - 2};
+        });
+        
+        audioStateChanged();
+        jassert(game_ui == nullptr);
+    }
+    virtual ~MixerGame() {} 
+
+    
+    std::unordered_map < int, int > *edit_or_target_RENAME()
+    {
+        if(step == Begin || step == Editing || step == ShowingAnswer)
+            return &edited_slider_pos;
+        else
+            return &target_slider_pos;
+    }
+
+    void audioStateChanged() {
+        auto * edit_or_target = edit_or_target_RENAME();
+
+        std::unordered_map < int, ChannelDSPState > dsp;
+        std::transform(edit_or_target->begin(), edit_or_target->end(), 
+                       std::inserter(dsp, dsp.end()), 
+                       [this](const auto &a) -> std::pair<int, ChannelDSPState> {
+                       double gain = slider_pos_to_gain(a.second, db_slider_values);
+                       return { a.first, ChannelDSP_gain(gain) };
+                         
+        });
+        broadcastDSP(dsp);
+    }
+    
+    std::unique_ptr < GameUI > createUI() override
+    {
+        jassert(game_ui == nullptr);
+        auto new_ui = std::make_unique < MixerGameUI > (
+            channel_infos,
+            [this](int id, int pos) {
+                jassert(step == Begin || step == Editing);
+                //TODO assert sync ?
+                edited_slider_pos[id] = pos;
+                audioStateChanged(); 
+            },
+            db_slider_values
+        );
+        game_ui = new_ui.get();
+        return new_ui;
+    }
+    
+    void onChannelCreate(int id) override {
+        auto [edited, edited_result] = edited_slider_pos.emplace(id, true);
+        jassert(edited_result);
+        auto [target, target_result] = target_slider_pos.emplace(id, true);
+        jassert(target_result);
+        
+        if (auto *ui = getUI())
+        {
+            ui->addChannel(id, channel_infos[id].name);
+        }
+
+        audioStateChanged();
+        uiChanged();
+    }
+
+    void onChannelDelete(int id) override {
+        if (auto *ui = getUI())
+        {
+            ui->removeChannel(id);
+        }
+        {
+            const auto channel_to_remove = edited_slider_pos.find(id);
+            jassert(channel_to_remove != edited_slider_pos.end());
+            edited_slider_pos.erase(channel_to_remove);
+        }
+        
+        {
+            const auto channel_to_remove = target_slider_pos.find(id);
+            jassert(channel_to_remove != target_slider_pos.end());
+            target_slider_pos.erase(channel_to_remove);
+        }
+        audioStateChanged();
+    }
+    
+    void onChannelRenamedFromTrack(int id, const juce::String& new_name) override {
+        if (auto *ui = getUI())
+        {
+            ui->changeChannelName(id, new_name);
+        }
+    }
+
+    MixerGameUI * getUI()
+    {
+        if (game_ui)
+        {
+            auto * ui = dynamic_cast<MixerGameUI*>(game_ui);
+            jassert(ui);
+            return ui;
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
+    
+    
+    void toggleInputOrTarget(bool clicked_was_target) override {
+        jassert(step != Begin);
+        auto old_step = step;
+        
+        //TODO virtual affects score ?
+        
+        if(clicked_was_target && step == Editing)
+        {
+            step = Listening;
+        }
+        else if(clicked_was_target && step == ShowingAnswer)
+        {
+            step = ShowingTruth;
+        }
+        else if(!clicked_was_target && step == Listening)
+        {
+            step = Editing;
+        }
+        else if(!clicked_was_target && step == ShowingTruth){
+            step = ShowingAnswer;
+        }
+
+        if(old_step != step)
+        {
+
+            audioStateChanged();
+            uiChanged();
+        }
+    }
+
+    void generateNewRound()
+    {
+        for (auto& [_, channel] : channel_infos)
+        {
+            target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % db_slider_values.size();//;
+            edited_slider_pos[channel.id] = (int)db_slider_values.size() - 2;//true;
+        }
+        jassert(target_slider_pos.size() == channel_infos.size());
+        jassert(edited_slider_pos.size() == channel_infos.size());
+    }
+
+    void nextClicked() override {
+
+        switch(step)
+        {
+            case Begin :
+            {
+                jassert(target_slider_pos.size() == 0);
+                generateNewRound();
+                step = Listening;
+            } break;
+            case Listening :
+            case Editing :
+            {
+                score += 1;  //awardPoints();
+                step = ShowingTruth;
+            }break;
+            case ShowingTruth : 
+            case ShowingAnswer :
+            {
+                generateNewRound();
+                step = Listening;
+            }break;
+        }
+
+        audioStateChanged();
+        uiChanged();
+    }
+
+    void uiChanged()
+    {
+        if (auto *ui = getUI())
+        {
+            auto *slider_pos_to_display = step == Listening ? nullptr : edit_or_target_RENAME();
+            ui->updateGameUI(step, score, slider_pos_to_display);
+        }
+    }
+
+    void finishUIInitialization() override
+    {
+        jassert(game_ui);
+        uiChanged();
+    }
+    
+    GameStep step;
+    int score;
+    std::unordered_map < int, int > edited_slider_pos;
+    std::unordered_map < int, int > target_slider_pos;
+    std::vector < double > db_slider_values;
+};
+
+
 #if 0
 struct MixerGame : public Game {
     struct GameState {

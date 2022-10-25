@@ -31,6 +31,17 @@ static ChannelDSPState ChannelDSP_off()
     };
 }
 
+
+static ChannelDSPState ChannelDSP_gain(double gain)
+{
+    return {
+        .gain = gain,
+        .low_shelf_gain = 1.0,
+        .high_shelf_gain = 1.0,
+    };
+}
+
+
 struct Settings{
     float difficulty;
 };

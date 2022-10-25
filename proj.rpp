@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.68/win64" 1666451399
+<REAPER_PROJECT 0.1 "6.68/win64" 1666704494
   <NOTES 0 2
   >
   RIPPLE 0
@@ -17,7 +17,7 @@
   VIDEO_CONFIG 0 0 256
   PANMODE 3
   CURSOR 4376
-  ZOOM 7.11003817127936 30591 0
+  ZOOM 7.11003817127936 31039 0
   VZOOMEX 1 0
   USE_REC_CFG 0
   RECMODE 1
@@ -101,7 +101,7 @@
     WAK 0 2
     BYPASS 0 0 0
     <JS analysis/loudness_meter ""
-      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -100 -100 -100 -100 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -17.1256 -19.203191 -18.234317 -100 -18.234317 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     >
     FLOATPOS 0 0 0 0
     FXID {C21F6A46-8AA5-470E-BE17-3D58C5CF61F4}
@@ -165,7 +165,7 @@
         PAAAAAEAAAAAAAAAAAAAAEpVQ0VQcml2YXRlRGF0YQABAUJ5cGFzcwABAQMAHQAAAAAAAABKVUNFUHJpdmF0ZURhdGEAAAAAAAAAAA==
         AFByb2dyYW0gMQAQAAAA
       >
-      FLOAT 1180 97 709 754
+      FLOAT 433 169 1218 754
       FXID {D4E7F6C4-E00A-4F45-9519-64C62B9E44CA}
       WAK 0 0
     >
