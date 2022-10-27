@@ -182,19 +182,3 @@ void Game::onUIDelete() {
     jassert(game_ui != nullptr);
     game_ui = nullptr;
 }
-
-#if 0
-int MixerGame::awardPoints()
-{
-    int points_awarded = 0;
-    for (auto& [_, channel] : state.channels)
-    {
-            
-        if(channel.target_gain == channel.edited_gain)
-        {
-            points_awarded++;
-        }
-    }
-    return points_awarded;
-}
-#endif

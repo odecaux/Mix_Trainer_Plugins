@@ -465,7 +465,15 @@ struct ChannelNamesDemo : public Game
             case Listening :
             case Editing :
             {
-                score += 1;  //awardPoints();
+                int points_awarded = 0;
+                for (auto& [id, edited] : edited_mutes)
+                {
+                    if(edited == target_mutes[id])
+                    {
+                        points_awarded++;
+                    }
+                }
+                score += points_awarded;
                 step = ShowingTruth;
             }break;
             case ShowingTruth : 
@@ -1023,7 +1031,15 @@ struct MixerGame : public Game
             case Listening :
             case Editing :
             {
-                score += 1;  //awardPoints();
+                int points_awarded = 0;
+                for (auto& [id, edited] : edited_slider_pos)
+                {
+                    if(edited == target_slider_pos[id])
+                    {
+                        points_awarded++;
+                    }
+                }
+                score += points_awarded;
                 step = ShowingTruth;
             }break;
             case ShowingTruth : 
