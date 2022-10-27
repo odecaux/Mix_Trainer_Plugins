@@ -143,6 +143,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             },
                 std::move(game_ui)
             );
+            game->finishUIInitialization();
         } break;
     }
     editor->changePanel(std::move(panel));
