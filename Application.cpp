@@ -14,12 +14,6 @@ Application::Application(ProcessorHost &host) :
 {
     //NOTE useless
     broadcastDSP(bypassedAllChannelsDSP(channels));
-
-#if 0
-    state.step = Begin;
-    state.score = 0;
-    //game = std::make_unique<MixerGame>(*this, state);
-#endif
 }
 
 
@@ -171,11 +165,6 @@ void Application::createChannel(int id)
         jassert(type == PanelType::Game);
         game->onChannelCreate(id);
     }
-    
-#if 0    
-    
-    audioProcessor.broadcastAllDSP();
-#endif
 }
     
 void Application::deleteChannel(int id)
@@ -187,11 +176,6 @@ void Application::deleteChannel(int id)
         jassert(type == PanelType::Game);
         game->onChannelDelete(id);
     }
-#if 0
-    //TODO virtual
-    state.channels.erase(channel);
-        
-#endif
     channels.erase(channel);
 }
     
@@ -201,7 +185,6 @@ void Application::renameChannelFromUI(int id, juce::String newName)
     
     if (game) {
         jassert(type == PanelType::Game);
-        //game->onChannelDelete(id);
     }
     //TODO propagate to the track
 }
