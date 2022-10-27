@@ -134,11 +134,11 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             printf("create\n");
             auto game_ui = game->createUI();
             panel = std::make_unique < GameUI_Panel > (
-                [] {  },
-                    [] (bool){},
-                        [this] { 
-                        game.reset();  
-                        toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
+                [this] { game->nextClicked();  },
+                [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
+                    [this] { 
+                    game.reset();  
+                    toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
             },
                 std::move(game_ui)
             );
