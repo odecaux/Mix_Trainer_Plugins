@@ -210,9 +210,6 @@ struct ChannelNamesDemoUI : public GameUI
         }
     }
 
-    //NOTE solution 1) keeping them in sync
-    //solution 2) passing in the map and rebuilding the childs everytime
-
     void addChannel(int id, const juce::String name)
     {
         {
@@ -223,7 +220,6 @@ struct ChannelNamesDemoUI : public GameUI
         jassert(result);
         auto &new_toggle = it->second;
         
-        //new_toggle->setToggleState(playing, juce::dontSendNotification);
         new_toggle->onClick = [id = id, toggle = new_toggle.get(), &onToggle = this->onMuteToggle] {
             onToggle(id, toggle->getToggleState());
         };
