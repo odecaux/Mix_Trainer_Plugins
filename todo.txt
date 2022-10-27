@@ -1,2 +1,2 @@
-one label per channel
-broadcast DSP
+escape spaces when broadcasting name
+design a save system 

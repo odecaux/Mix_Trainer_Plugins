@@ -532,9 +532,13 @@ public:
     {
     }
     
-    juce::String getTextFromValue(double value) override
+    juce::String getTextFromValue(double pos) override
     {
-        return juce::Decibels::toString(db_values[(int)value]);
+        double db = db_values[(int)pos];
+        if (db == -100.0) 
+            return "Muted";
+        else
+            return juce::Decibels::toString(db, 0);
     }
 
     const std::vector < double > &db_values;
@@ -553,14 +557,12 @@ public:
                             const juce::String &name,
                             std::function<void(int)> &&onFaderMove,
                             std::function<void(const juce::String&)> &&onEditedName)
-    :   onFaderMove(std::move(onFaderMove)),
-        onEditedName(std::move(onEditedName)),
-        fader(db_values)
+    :   fader(db_values)
     {
         label.setText(name, juce::NotificationType::dontSendNotification);
         label.setEditable(true);
-        label.onTextChange = [this] {
-            this->onEditedName(label.getText());
+        label.onTextChange = [this, onEdited = std::move(onEditedName)] {
+            onEdited(label.getText());
         };
         label.onEditorShow = [&] {
             auto *editor = label.getCurrentTextEditor();
@@ -569,14 +571,14 @@ public:
         };
         addAndMakeVisible(label);
         
-        fader.setSliderStyle(juce::Slider::SliderStyle::LinearBarVertical);
-        fader.setTextBoxStyle(juce::Slider::TextBoxAbove, true, getWidth(), 20);
-        fader.setRange(0.0f, (double)(db_values.size() - 1), 1.0);
+        fader.setSliderStyle(juce::Slider::LinearVertical);
+        fader.setTextBoxStyle(juce::Slider::TextBoxBelow, true, fader.getTextBoxWidth(), 40);
+        fader.setRange(0.0, (double)(db_values.size() - 1), 1.0);
         fader.setScrollWheelEnabled(true);
         
-        fader.onValueChange = [this] {
+        fader.onValueChange = [this, onMove = std::move(onFaderMove)] {
             jassert(this->step == FaderStep_Editing);
-            this->onFaderMove((int)fader.getValue());
+           onMove((int)fader.getValue());
         };
         addAndMakeVisible(fader);
     }
@@ -637,8 +639,6 @@ public:
 private:
     juce::Label label;
     DecibelSlider fader;
-    std::function<void(int)> onFaderMove;
-    std::function<void(const juce::String&)> onEditedName;
     FaderStep step;
     //double targetValue;
     //double smoothing;

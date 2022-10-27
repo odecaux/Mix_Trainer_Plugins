@@ -15,6 +15,7 @@ public :
         
         stats_button.setSize(100, 40);
         stats_button.setButtonText("Statistics");
+        stats_button.setEnabled(false);
         stats_button.onClick = [click = std::move(toStatsButtonClick)] {
             click();
         };
@@ -22,6 +23,7 @@ public :
         
         settings_button.setSize(100, 40);
         settings_button.setButtonText("Settings");
+        settings_button.setEnabled(false);
         settings_button.onClick = [click = std::move(toSettingsButtonClick)] {
             click();
         };
