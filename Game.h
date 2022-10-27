@@ -745,14 +745,15 @@ struct MixerGameUI : public GameUI
 {
     MixerGameUI(const std::unordered_map<int, ChannelInfos>& channel_infos,
                 std::function<void(int, int)> onFaderMoved, //TODO lifetime ?
+                std::function<void(int, const juce::String&)> onEditedName,
                 const std::vector<double> &db_slider_values) :
-        //TODO onEditedName
         onFaderMoved(onFaderMoved),
+        onEditedName(onEditedName),
         fader_row(faders),
         db_slider_values(db_slider_values)
     {
         auto f = 
-            [this, &onMoved = this->onFaderMoved] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
+            [this, &onMoved = this->onFaderMoved, &onEdited = this->onEditedName] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
             const int &id = a.first;
             
             auto onFaderMoved = [id = id, &onMoved] (int new_pos){
@@ -763,7 +764,7 @@ struct MixerGameUI : public GameUI
                 this->db_slider_values,
                 a.second.name,
                 std::move(onFaderMoved),
-                [](auto ...){} //TODO onEditedName
+                [id, &onEdited](const juce::String & new_name){ onEdited(id, new_name); } 
             );
             fader_row.addAndMakeVisible(new_fader.get());
             return { id, std::move(new_fader)};
@@ -804,11 +805,10 @@ struct MixerGameUI : public GameUI
             db_slider_values,
             name,
             std::move(fader_moved),
-            [](auto...){} //onEditedName
+            [id, &onEditedName = this->onEditedName](const juce::String & new_name){ onEditedName(id, new_name); } 
         ));
         jassert(result);
         auto &new_fader = it->second;
-        //new_fader->setToggleState(playing, juce::dontSendNotification);
 
         fader_row.addAndMakeVisible(new_fader.get());
         fader_row.adjustWidth();
@@ -860,9 +860,11 @@ struct MixerGame : public Game
     MixerGame(Application &app, 
               std::unordered_map<int, ChannelInfos> &channel_infos, 
               std::vector<double> db_slider_values,
-              std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP) 
+              std::function<void(const std::unordered_map < int, ChannelDSPState > &)> broadcastDSP,
+              std::function<void(int, const juce::String&)> onEditedName) 
     : Game(app, channel_infos, std::move(broadcastDSP)),
-        db_slider_values(std::move(db_slider_values))
+        db_slider_values(std::move(db_slider_values)),
+        onEditedName(onEditedName)
     {
         step = Begin;
         score = 0;
@@ -911,6 +913,7 @@ struct MixerGame : public Game
                 edited_slider_pos[id] = pos;
                 audioStateChanged(); 
             },
+                [this](int id, const juce::String new_name) { this->onEditedName(id, new_name); },
             db_slider_values
         );
         game_ui = new_ui.get();
@@ -1070,4 +1073,5 @@ struct MixerGame : public Game
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
     std::vector < double > db_slider_values;
+    std::function < void(int, const juce::String&)> onEditedName;
 };

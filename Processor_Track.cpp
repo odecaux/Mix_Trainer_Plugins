@@ -25,10 +25,11 @@ ProcessorTrack::ProcessorTrack()
                  )
 #endif
 ,
-id{juce::Random().nextInt()},
-gain{0.0f},
-minFrequency{20},
-maxFrequency{20000}
+    id { juce::Random().nextInt() },
+    name { id },
+    gain { 0.0f },
+    minFrequency { 20 },
+    maxFrequency { 20000 }
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
     juce::MessageManager::getInstance()->broadcastMessage(juce::String("create ") + juce::String(id));
@@ -163,7 +164,7 @@ bool ProcessorTrack::hasEditor() const
 
 juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 {
-    return new EditorTrack(*this, id, minFrequency, maxFrequency);
+    return new EditorTrack(*this, id, name, minFrequency, maxFrequency);
 }
 
 //==============================================================================
@@ -187,7 +188,12 @@ void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 
 void ProcessorTrack::updateTrackProperties(const TrackProperties& properties)
 {
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("name ") + juce::String(id) + juce::String(" ") + properties.name);
+    juce::MessageManager::getInstance()->broadcastMessage(juce::String("name_from_track ") + juce::String(id) + juce::String(" ") + properties.name);
+    name = properties.name;
+    if (auto *editor = (EditorTrack*)getActiveEditor())
+    {
+        editor->renameTrack(name);
+    }
 }
 
 
@@ -200,7 +206,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
     if(message_id != id)
         return;
     
-    if(tokens[0] == "setDSP")
+    if(tokens[0] == "dsp")
     {
         auto blob = juce::MemoryBlock{};
         blob.loadFromHexString(tokens[2]);
@@ -209,6 +215,14 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
         jassert(blob_size == dsp_state_size);
         ChannelDSPState state = *(ChannelDSPState*)blob.getData();
         gain = state.gain;
+    }
+    else if(tokens[0] == "name_from_ui")
+    {
+        name = tokens[2];
+        if (auto *editor = (EditorTrack*)getActiveEditor())
+        {
+            editor->renameTrack(name);
+        }
     }
 }
 //==============================================================================

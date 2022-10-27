@@ -26,16 +26,22 @@ class EditorTrack : public juce::AudioProcessorEditor
 {
     public:
     
-    EditorTrack(ProcessorTrack& p, int id, float minFrequency, float maxFrequency)
+    EditorTrack(ProcessorTrack& p, int id, const juce::String &name, float minFrequency, float maxFrequency)
         : AudioProcessorEditor(p), 
     audioProcessor(p), 
     id(id)
     {
-        minLabel.setSize(120, 30);
+        
+        track_name_label.setSize(200, 30);
+        track_name_label.setJustificationType(juce::Justification::centred);
+        track_name_label.setText(name, juce::dontSendNotification);
+        addAndMakeVisible(track_name_label);
+
+        minLabel.setSize(200, 30);
         minLabel.setJustificationType(juce::Justification::centred);
         addAndMakeVisible(minLabel);
         
-        maxLabel.setSize(120, 30);
+        maxLabel.setSize(200, 30);
         maxLabel.setJustificationType(juce::Justification::centred);
         addAndMakeVisible(maxLabel);
         
@@ -72,14 +78,21 @@ class EditorTrack : public juce::AudioProcessorEditor
         auto bounds = getLocalBounds();
         auto center = bounds.getCentre();
         frequencyRangeSlider.setCentrePosition(center.x, center.y);
+        track_name_label.setCentrePosition(center.x, 40);
         maxLabel.setCentrePosition(center.x, center.y - 40);
         minLabel.setCentrePosition(center.x, center.y + 40);
+    }
+
+    void renameTrack(const juce::String &new_name)
+    {
+        track_name_label.setText(new_name, juce::dontSendNotification);
     }
     
     private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     ProcessorTrack& audioProcessor;
+    juce::Label track_name_label;
     juce::Label minLabel;
     juce::Label maxLabel;
     juce::Slider frequencyRangeSlider;

@@ -192,12 +192,12 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     {
        app.deleteChannel(message_id);
     }
-    else if (tokens[0] == "name")
+    else if (tokens[0] == "name_from_track")
     {
         app.renameChannelFromTrack(message_id, tokens[2]);
     }
     //TODO more infos from the channel ?
-    else if (tokens[0] == "frequencyRange")
+    else if (tokens[0] == "frequency_range")
     {
         auto minFreq = tokens[2].getFloatValue();
         auto maxFreq = tokens[3].getFloatValue();

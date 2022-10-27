@@ -28,36 +28,6 @@ public:
     }
 
     void broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states);
-#if 0
-    {
-        for(const auto& [_, channel] : state.channels)
-        {
-            ChannelDSPState dsp;
-            switch(state.step)
-            {
-                case Begin : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                case Listening : {
-                    dsp = { .gain = channel.target_gain };
-                } break;
-                case Editing : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                case ShowingTruth : { 
-                    dsp = { .gain = channel.target_gain };
-                } break;
-                case ShowingAnswer : {
-                    dsp = { .gain = channel.edited_gain };
-                } break;
-                default : {
-                    dsp = { .gain = 0.0 };
-                    jassertfalse;
-                } break;
-            }
-        }
-    }
-#endif
 
     void createChannel(int id);
     void deleteChannel(int id);

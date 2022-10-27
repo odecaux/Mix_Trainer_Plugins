@@ -73,7 +73,7 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     void broadcastFrequencies()
     {
         juce::String message = 
-            juce::String("frequencyRange ") + 
+            juce::String("frequency_range ") + 
             juce::String(id) + " " + 
             juce::String(minFrequency) + " " + 
             juce::String(maxFrequency);
@@ -82,6 +82,7 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     
     //==============================================================================
     int id;
+    juce::String name;
     double gain;
     float minFrequency;
     float maxFrequency;

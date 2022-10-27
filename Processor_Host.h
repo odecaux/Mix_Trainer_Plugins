@@ -63,9 +63,15 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     {
         for (const auto &[id, state] : dsp_states)
         {
-            auto message = juce::String("setDSP ") + juce::String(id) + " " + juce::String::toHexString((void*)&state, sizeof(state), 0);
+            auto message = juce::String("dsp ") + juce::String(id) + " " + juce::String::toHexString((void*)&state, sizeof(state), 0);
             juce::MessageManager::getInstance()->broadcastMessage(message);
         }
+    }
+
+    void broadcastRenameTrack(int id, const juce::String& new_name)
+    {
+        auto message = juce::String("name_from_ui ") + juce::String(id) + " " + new_name;
+        juce::MessageManager::getInstance()->broadcastMessage(message);
     }
 
     

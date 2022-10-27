@@ -52,7 +52,8 @@ void Application::toGame()
         *this, 
         channels, 
         std::vector<double>{ -100.0, -12.0, -9.0, -6.0, -3.0},
-        [this](const auto& dsp_states) { broadcastDSP(dsp_states); }
+        [this](const auto& dsp_states) { broadcastDSP(dsp_states); },
+        [this](int id, const juce::String& new_name) { renameChannelFromUI(id, new_name); }
     );
     printf("toGame\n");
     auto game_ui = game->createUI();
@@ -179,14 +180,14 @@ void Application::deleteChannel(int id)
     channels.erase(channel);
 }
     
-void Application::renameChannelFromUI(int id, juce::String newName)
+void Application::renameChannelFromUI(int id, juce::String new_name)
 {
-    channels[id].name = newName;
+    channels[id].name = new_name;
     
     if (game) {
         jassert(type == PanelType::Game);
     }
-    //TODO propagate to the track
+    host.broadcastRenameTrack(id, new_name);
 }
     
 void Application::renameChannelFromTrack(int id, const juce::String &new_name)
