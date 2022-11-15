@@ -1,3 +1,5 @@
+#include <optional>
+
 enum Event_Type{
     Event_Init,
     Event_Click_Track,
@@ -21,7 +23,8 @@ struct Event{
     int value_i;
     float value_f;
     double value_d;
-    char *value_s;
+    char *value_cp;
+    std::string  value_str;
 };
 
 enum Transition {
@@ -42,7 +45,7 @@ struct MixerGame_State {
     std::vector < double > db_slider_values;
 };
 
-MixerGame_State mixer_game_init(
+static MixerGame_State mixer_game_init(
     std::unordered_map<int, ChannelInfos> channel_infos,
     int timeout_ms,
     std::vector < double > db_slider_values)
@@ -54,30 +57,41 @@ MixerGame_State mixer_game_init(
         //.timeout_ms,
         .db_slider_values = db_slider_values
     };
+
+    return state;
 }
 
-struct DSP_Effect {
+struct Effect_DSP {
     std::unordered_map<int, ChannelDSPState> dsp_states;
 };
 
-struct UI_Effect {
+struct Effect_UI {
     GameStep new_step; 
     int new_score; 
-    std::unique_ptr < std::unordered_map<int, int> > slider_pos_to_display;
+    std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+};
+
+struct Effect_Rename {
+    int id;
+    std::string new_name;
 };
 
 struct Effects {
-    std::unique_ptr < DSP_Effect> dsp;
-    std::unique_ptr < UI_Effect > ui;
+    std::optional < Effect_DSP> dsp;
+    std::optional < Effect_UI > ui;
+    std::optional < Effect_Rename > rename;
 };
 
-Effects mixer_game_update(MixerGame_State *state, Event event)
+static Effects mixer_game_update(MixerGame_State *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;
     Transition transition = Transition_None;
     bool update_audio = false;
     bool update_ui = false;
+
+    
+    Effects effects = { std::nullopt, std::nullopt, std::nullopt };
 
     switch (event.type)
     {
@@ -168,7 +182,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             //update channel infos ?
         } break;
         case Event_Channel_Rename_From_UI : {
-            this->onEditedName(event.id, event.value_s);
+            effects.rename = std::make_optional < Effect_Rename > (event.id, event.value_str);
         } break;
     }
 
@@ -201,7 +215,6 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         }break;
     }
     
-    Effects effects = { nullptr, nullptr };
     
     std::unordered_map<int, int>* edit_or_target;
     if(step == Begin || step == Editing || step == ShowingAnswer)
@@ -214,24 +227,23 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         std::unordered_map < int, ChannelDSPState > dsp;
         std::transform(edit_or_target->begin(), edit_or_target->end(), 
                        std::inserter(dsp, dsp.end()), 
-                       [this](const auto &a) -> std::pair<int, ChannelDSPState> {
-                       double gain = slider_pos_to_gain(a.second, db_slider_values);
+                       [state](const auto &a) -> std::pair<int, ChannelDSPState> {
+                       double gain = slider_pos_to_gain(a.second, state->db_slider_values);
                        return { a.first, ChannelDSP_gain(gain) };
-                         
         });
-        effects.dsp = std::make_unique < DSP_Effect > (std::move(dsp));
+        effects.dsp = std::make_optional < Effect_DSP > (std::move(dsp));
     }
 
     if (update_ui)
     {
-        std::unique_ptr < std::unordered_map<int, int> > slider_pos_to_display;
+        std::optional < std::unordered_map<int, int> > slider_pos_to_display;
         
         if(step == Listening)
-            slider_pos_to_display = nullptr; 
+            slider_pos_to_display = std::nullopt; 
         else 
-            slider_pos_to_display = std::make_unique< std::unordered_map<int, int>>(*edit_or_target);
+            slider_pos_to_display = std::make_optional< std::unordered_map<int, int>>(*edit_or_target);
 
-        effects.ui = std::make_unique< UI_Effect> (
+        effects.ui = std::make_optional< Effect_UI> (
             step,
             state->score,
             std::move(slider_pos_to_display)
@@ -244,20 +256,21 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
 
 
 
-void mixer_game_post_event(MixerGame_State *state, Event event)
+static void mixer_game_post_event(MixerGame_State *state, Event event, Application *app, MixerGameUI *ui)
 {
     Effects effects = mixer_game_update(state, event);
     if (effects.dsp)
     {
-
+        app->broadcastDSP(effects.dsp->dsp_states);
     }
     if (effects.ui)
     {
-        //if ui exists ?
+        //ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+    }
+    if (effects.rename)
+    {
+        app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
     }
 }
-
-
-
 
 //TODO mutex ? pour les timeout
