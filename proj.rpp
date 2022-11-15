@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.68/win64" 1666892773
+<REAPER_PROJECT 0.1 "6.69/win64" 1667765719
   <NOTES 0 2
   >
   RIPPLE 0
@@ -16,8 +16,8 @@
   TIMEMODE 1 5 -1 30 0 0 -1
   VIDEO_CONFIG 0 0 256
   PANMODE 3
-  CURSOR 4374
-  ZOOM 7.11003817127936 31039 0
+  CURSOR 4392
+  ZOOM 1.28690874067372 5521 0
   VZOOMEX 1 0
   USE_REC_CFG 0
   RECMODE 1
@@ -60,8 +60,8 @@
   GLOBAL_AUTO -1
   TEMPO 120 4 4
   PLAYRATE 1 0 0.25 4
-  SELECTION 4372 4380
-  SELECTION2 4372 4380
+  SELECTION 4420 4418
+  SELECTION2 4420 4418
   MASTERAUTOMODE 0
   MASTERTRACKHEIGHT 0 0
   MASTERPEAKCOL 16576
@@ -101,7 +101,7 @@
     WAK 0 2
     BYPASS 0 0 0
     <JS analysis/loudness_meter ""
-      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -30.133295 -28.462357 -30.502923 -28.032981 -28.298019 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -100 -100 -100 -100 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     >
     FLOATPOS 0 0 0 0
     FXID {C21F6A46-8AA5-470E-BE17-3D58C5CF61F4}
@@ -165,7 +165,7 @@
         PAAAAAEAAAAAAAAAAAAAAEpVQ0VQcml2YXRlRGF0YQABAUJ5cGFzcwABAQMAHQAAAAAAAABKVUNFUHJpdmF0ZURhdGEAAAAAAAAAAA==
         AFByb2dyYW0gMQAQAAAA
       >
-      FLOAT 209 154 1218 754
+      FLOATPOS 441 159 1218 754
       FXID {D4E7F6C4-E00A-4F45-9519-64C62B9E44CA}
       WAK 0 0
     >
@@ -216,7 +216,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {D46411A4-7D67-426E-BCB4-EF160148FE4F}
       IID 6
       NAME 05_AcousticGtr.wav
@@ -242,7 +242,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -276,7 +276,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {426ECA8A-561E-4197-86B3-594407937354}
       IID 7
       NAME 06_ElecGtr1.wav
@@ -302,7 +302,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -336,7 +336,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {11482A3F-72E1-4670-B275-A3B6423D25DE}
       IID 8
       NAME 08_LeadVox.wav
@@ -362,7 +362,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -396,7 +396,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {5DEA685C-01BD-4F5F-9DEE-8CA26BC03970}
       IID 9
       NAME 09_BackingVox.wav
@@ -422,7 +422,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -456,7 +456,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {F740F05D-E6BD-49B0-8462-A97CA0722BB8}
       IID 10
       NAME 01_Kick.wav
@@ -482,7 +482,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
@@ -516,7 +516,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {DEF52769-5D82-4ABF-BFF4-7EEA8354F357}
       IID 11
       NAME 02_Snare.wav
@@ -576,7 +576,7 @@
       FADEIN 1 0.01 0 1 0 0 0
       FADEOUT 1 0.01 0 1 0 0 0
       MUTE 0 0
-      SEL 1
+      SEL 0
       IGUID {8DF4247E-F3EF-44B6-B63F-6204B31A3E49}
       IID 12
       NAME 03_Overheads.wav
@@ -602,7 +602,7 @@
     ISBUS 0 0
     BUSCOMP 0 0 0 0 0
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
-    SEL 1
+    SEL 0
     REC 0 0 1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 0 0 0 0 0 0
