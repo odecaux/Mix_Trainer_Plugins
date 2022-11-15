@@ -71,13 +71,43 @@ struct MixerGameUI_2;
 
 static void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui);
 
-struct MixerGameUI_2 : public GameUI
+
+
+struct GameUI_Panel2 : public juce::Component
+{
+    GameUI_Panel2() {} //REMOVE
+
+    GameUI_Panel2(std::function < void() > && onNextClicked,
+                  std::function < void(bool) > && onToggleClicked,
+                  std::function < void() > && onBackClicked,
+                  juce::Component *game_ui);
+
+    void updateGameUI_Generic(GameStep new_step, int new_score);
+    void paint(juce::Graphics& g) override;
+    void resized() override;
+
+    juce::Label top_label;
+    juce::Label score_label;
+    juce::TextButton back_button;
+            
+    juce::TextButton next_button;
+    juce::ToggleButton target_mix_button;
+    juce::ToggleButton user_mix_button;
+
+    juce::Component *game_ui;
+};
+
+struct MixerGameUI_2 : public juce::Component
 {
     MixerGameUI_2(const std::unordered_map<int, ChannelInfos>& channel_infos,
                   const std::vector<double> &db_slider_values,
-                  MixerGame_State *state) :
+                  MixerGame_State *state,
+                  std::function < void() > && onNextClicked,
+                  std::function < void(bool) > && onToggleClicked,
+                  std::function < void() > && onBackClicked) :
         fader_row(faders),
         db_slider_values(db_slider_values),
+        panel(std::move(onNextClicked), std::move(onToggleClicked), std::move(onBackClicked), &fader_viewport),
         state(state)
     {
         auto f = 
@@ -108,10 +138,10 @@ struct MixerGameUI_2 : public GameUI
                        std::inserter(faders, faders.end()), 
                        f);
         fader_row.adjustWidth();
-
-        addAndMakeVisible(fader_viewport);
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
+
+        addAndMakeVisible(panel);
     }
 
     virtual ~MixerGameUI_2() {}
@@ -181,16 +211,14 @@ struct MixerGameUI_2 : public GameUI
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-
-        jassert(panel);
-        panel->updateGameUI_Generic(new_step, new_score);
+        panel.updateGameUI_Generic(new_step, new_score);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
     FaderRowComponent fader_row;
     juce::Viewport fader_viewport;
     const std::vector < double > &db_slider_values;
-
+    GameUI_Panel2 panel;
     MixerGame_State *state;
 };
 
