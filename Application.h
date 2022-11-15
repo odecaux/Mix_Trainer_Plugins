@@ -44,11 +44,14 @@ private:
         Stats
     };
     
-    std::unique_ptr < Game > game;
+    //std::unique_ptr < Game > game;
+    std::unique_ptr<MixerGame_State> state;
+    MixerGameUI_2 *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };
     Stats stats = { 0 };
     PanelType type;
     ProcessorHost &host;
+
     EditorHost *editor;
 };

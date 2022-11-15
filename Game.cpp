@@ -2,9 +2,9 @@
 #include "shared.h"
 
 #include "Game.h"
+#include "Game_2.h"
 #include "MainMenu.h"
 #include "Application.h"
-#include "Game_2.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
@@ -204,46 +204,43 @@ void Game::onUIDelete() {
 //------------------------------------------------------------------------
 
 
-GameUI_Panel2::GameUI_Panel2(std::function < void() > && onNextClicked,
-                           std::function < void(bool) > &&onToggleClicked,
-                           std::function < void() > && onBackClicked,
-                           juce::Component *game_ui) :
+GameUI_Panel2::GameUI_Panel2(juce::Component *game_ui) :
     game_ui(game_ui)
 {
     {
         top_label.setJustificationType (juce::Justification::centred);
         addAndMakeVisible(top_label);
         back_button.setButtonText("Back");
-        back_button.onClick = [this, back = std::move(onBackClicked)] {
-            back();
+        back_button.onClick = [this] {
+            onBackClicked();
         };
         addAndMakeVisible(back_button);
         addAndMakeVisible(score_label);
     }
     {
-        next_button.onClick = [this, next = std::move(onNextClicked)] {
-            next();
+        next_button.onClick = [this] {
+            onNextClicked();
         };
         addAndMakeVisible(next_button);
     }
     
     {
         target_mix_button.setButtonText("Target mix");
-        target_mix_button.onClick = [this, toggle = onToggleClicked] {
+        target_mix_button.onClick = [this] {
             juce::String str = target_mix_button.getToggleState() ? juce::String{ "on" } : juce::String{ "off" };
             
             if(target_mix_button.getToggleState())
-                toggle(true);
+                onToggleClicked(true);
         };
         addAndMakeVisible(target_mix_button);
             
         user_mix_button.setButtonText("My mix");
         
-        user_mix_button.onClick = [this, toggle = onToggleClicked] {
+        user_mix_button.onClick = [this] {
             juce::String str = user_mix_button.getToggleState() ?  juce::String{ "on" } :  juce::String{ "off" };
             
             if(user_mix_button.getToggleState())
-                toggle(false);
+                onToggleClicked(false);
          };
          
         addAndMakeVisible(user_mix_button);
@@ -255,7 +252,7 @@ GameUI_Panel2::GameUI_Panel2(std::function < void() > && onNextClicked,
     addAndMakeVisible(this->game_ui);
 }
  
-void GameUI_Panel2::updateGameUI_Generic(GameStep new_step, int new_score)
+void GameUI_Panel2::update(GameStep new_step, int new_score)
 {
     //hide/reveal
     switch(new_step)
@@ -363,5 +360,25 @@ void GameUI_Panel2::resized()
         auto userMixBounds = targetMixBounds.translated(0, bottom_height / 2);
         target_mix_button.setBounds(targetMixBounds);
         user_mix_button.setBounds(userMixBounds);
+    }
+}
+
+
+
+
+void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui)
+{
+    Effects effects = mixer_game_update(state, event);
+    if (effects.dsp)
+    {
+        state->app->broadcastDSP(effects.dsp->dsp_states);
+    }
+    if (effects.ui && ui)
+    {
+        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+    }
+    if (effects.rename)
+    {
+        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
     }
 }

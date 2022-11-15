@@ -51,6 +51,9 @@
 			<WorkspaceReference>
 				<Path>Track.10x</Path>
 			</WorkspaceReference>
+			<WorkspaceReference>
+				<Path>../JUCE/juce.10x</Path>
+			</WorkspaceReference>
 		</Children>
 	</Workspace>
 </N10X>

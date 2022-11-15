@@ -35,7 +35,7 @@ enum Transition {
 };
 
 struct MixerGame_State {
-    std::unordered_map<int, ChannelInfos> channel_infos;
+    std::unordered_map<int, ChannelInfos> &channel_infos;
     GameStep step;
     int score;
     std::unordered_map < int, int > edited_slider_pos;
@@ -69,7 +69,7 @@ struct Effects {
 
 struct MixerGameUI_2;
 
-static void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui);
+void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui);
 
 
 
@@ -77,12 +77,9 @@ struct GameUI_Panel2 : public juce::Component
 {
     GameUI_Panel2() {} //REMOVE
 
-    GameUI_Panel2(std::function < void() > && onNextClicked,
-                  std::function < void(bool) > && onToggleClicked,
-                  std::function < void() > && onBackClicked,
-                  juce::Component *game_ui);
+    GameUI_Panel2(juce::Component *game_ui);
 
-    void updateGameUI_Generic(GameStep new_step, int new_score);
+    void update(GameStep new_step, int new_score);
     void paint(juce::Graphics& g) override;
     void resized() override;
 
@@ -94,6 +91,10 @@ struct GameUI_Panel2 : public juce::Component
     juce::ToggleButton target_mix_button;
     juce::ToggleButton user_mix_button;
 
+    std::function<void()> onNextClicked;
+    std::function<void(bool)> onToggleClicked;
+    std::function<void()> onBackClicked;
+
     juce::Component *game_ui;
 };
 
@@ -101,13 +102,10 @@ struct MixerGameUI_2 : public juce::Component
 {
     MixerGameUI_2(const std::unordered_map<int, ChannelInfos>& channel_infos,
                   const std::vector<double> &db_slider_values,
-                  MixerGame_State *state,
-                  std::function < void() > && onNextClicked,
-                  std::function < void(bool) > && onToggleClicked,
-                  std::function < void() > && onBackClicked) :
+                  MixerGame_State *state) :
         fader_row(faders),
         db_slider_values(db_slider_values),
-        panel(std::move(onNextClicked), std::move(onToggleClicked), std::move(onBackClicked), &fader_viewport),
+        panel(&fader_viewport),
         state(state)
     {
         auto f = 
@@ -141,6 +139,15 @@ struct MixerGameUI_2 : public juce::Component
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
 
+        panel.onNextClicked = [state = state, ui = this] {
+            mixer_game_post_event(state, Event{}, ui);
+        };
+        panel.onBackClicked = [state = state, ui = this] {
+            mixer_game_post_event(state, Event{}, ui);
+        };
+        panel.onToggleClicked = [state = state, ui = this] (bool a){
+            mixer_game_post_event(state, Event{}, ui);
+        };
         addAndMakeVisible(panel);
     }
 
@@ -148,7 +155,7 @@ struct MixerGameUI_2 : public juce::Component
 
     void resized() override {
         auto bounds = getLocalBounds();
-        fader_viewport.setBounds(bounds);
+        panel.setBounds(bounds);
         fader_row.setSize(fader_row.getWidth(),
                           fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
     }
@@ -211,7 +218,7 @@ struct MixerGameUI_2 : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        panel.updateGameUI_Generic(new_step, new_score);
+        panel.update(new_step, new_score);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
@@ -222,9 +229,8 @@ struct MixerGameUI_2 : public juce::Component
     MixerGame_State *state;
 };
 
-
-static MixerGame_State mixer_game_init(
-    std::unordered_map<int, ChannelInfos> channel_infos,
+static std::unique_ptr<MixerGame_State> mixer_game_init(
+    std::unordered_map<int, ChannelInfos> &channel_infos,
     int timeout_ms,
     std::vector<double> db_slider_values,
     Application *app)
@@ -238,7 +244,7 @@ static MixerGame_State mixer_game_init(
         .app = app
     };
 
-    return state;
+    return std::make_unique < MixerGame_State > (std::move(state));
 }
 
 static Effects mixer_game_update(MixerGame_State *state, Event event)
@@ -409,25 +415,5 @@ static Effects mixer_game_update(MixerGame_State *state, Event event)
     state->step = step;
     return effects;
 }
-
-static void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui)
-{
-    Effects effects = mixer_game_update(state, event);
-    if (effects.dsp)
-    {
-        state->app->broadcastDSP(effects.dsp->dsp_states);
-    }
-    if (effects.ui && ui)
-    {
-        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
-    }
-    if (effects.rename)
-    {
-        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
-    }
-}
-
-
-
 
 //TODO mutex ? pour les timeout

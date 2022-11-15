@@ -2,9 +2,9 @@
 #include "shared.h"
 
 #include "Game.h"
+#include "Game_2.h"
 #include "MainMenu.h"
 #include "Application.h"
-#include "Game_2.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
@@ -28,9 +28,10 @@ void Application::toMainMenu()
         
     auto main_menu =
         std::make_unique < MainMenu > (
-        [this] { toGame(); },
+            [this] { toGame(); },
             [this] { toStats(); },
-                [this ] { toSettings(); });
+            [this ] { toSettings(); }
+        );
     editor->changePanel(std::move(main_menu));
 }
 
@@ -40,7 +41,7 @@ void Application::toGame()
     jassert(type == PanelType::MainMenu);
     type = PanelType::Game;
     jassert(editor);
-    jassert(!game);
+    jassert(!state);
     
 #if 0
     game = std::make_unique < ChannelNamesDemo > (
@@ -49,6 +50,7 @@ void Application::toGame()
         [this](const auto& dsp_states) { broadcastDSP(dsp_states); }
     );
 #endif
+#if 0
     game = std::make_unique < MixerGame > (
         *this, 
         channels, 
@@ -61,15 +63,23 @@ void Application::toGame()
     
     auto game_panel = std::make_unique < GameUI_Panel > (
         [this] { game->nextClicked();  },
-            [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
-            [this] { 
-                game.reset();  
-                toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
-            },
-            std::move(game_ui)
+        [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
+        [this] { 
+            game.reset();  
+            toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
+        },
+        std::move(game_ui)
         );
 
     game->finishUIInitialization();
+#endif
+    state = mixer_game_init(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    auto game_panel = std::make_unique<MixerGameUI_2>(
+        channels,
+        state->db_slider_values,
+        state.get()
+    );
+    game_ui = game_panel.get();
     editor->changePanel(std::move(game_panel));
 }
 
@@ -105,8 +115,9 @@ void Application::onEditorDelete()
     editor = nullptr;
     if (type == PanelType::Game)
     {
-        jassert(game);
-        game->onUIDelete();
+        jassert(state);
+        game_ui = nullptr;
+        //state->onUIDelete();
     }
 }
 
@@ -132,7 +143,8 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case PanelType::Game :
         {
-            jassert(game); 
+            jassert(state); 
+#if 0
             printf("create\n");
             auto game_ui = game->createUI();
             panel = std::make_unique < GameUI_Panel > (
@@ -145,6 +157,14 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
                 std::move(game_ui)
             );
             game->finishUIInitialization();
+#endif
+            auto game_ui_temp = std::make_unique<MixerGameUI_2>(
+                channels,
+                state->db_slider_values,
+                state.get()
+            );
+            game_ui = game_ui_temp.get();
+            panel = std::move(game_ui_temp);
         } break;
     }
     editor->changePanel(std::move(panel));
@@ -164,9 +184,9 @@ void Application::createChannel(int id)
     
     channels[id] = ChannelInfos { .id = id };
 
-    if (game) {
+    if (state) {
         jassert(type == PanelType::Game);
-        game->onChannelCreate(id);
+        mixer_game_post_event(state.get(), Event{}, game_ui);
     }
 }
     
@@ -175,9 +195,9 @@ void Application::deleteChannel(int id)
     auto channel = channels.find(id);
     jassert(channel != channels.end());
 
-    if (game) {
+    if (state) {
         jassert(type == PanelType::Game);
-        game->onChannelDelete(id);
+        mixer_game_post_event(state.get(), Event{}, game_ui);
     }
     channels.erase(channel);
 }
@@ -186,7 +206,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 {
     channels[id].name = new_name;
     
-    if (game) {
+    if (state) {
         jassert(type == PanelType::Game);
     }
     host.broadcastRenameTrack(id, new_name);
@@ -197,9 +217,9 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
     auto &channel = channels[id];
     channel.name = new_name;
         
-    if (game) {
+    if (state) {
         jassert(type == PanelType::Game);
-        game->onChannelRenamedFromTrack(id, new_name);
+        mixer_game_post_event(state.get(), Event{}, game_ui);
     }
 }
     
@@ -209,8 +229,8 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
     channel.min_freq = new_min;
     channel.max_freq = new_max;
 
-    if (game) {
+    if (state) {
         jassert(type == PanelType::Game);
-        game->onChannelFrequenciesChanged(id);
+        mixer_game_post_event(state.get(), Event{}, game_ui);
     }
 }
