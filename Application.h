@@ -14,6 +14,8 @@ public:
     void toGame();
     void toStats();
     void toSettings();
+
+    void quitGame();
     
     //TODO rename
     static std::unordered_map < int, ChannelDSPState > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
@@ -45,7 +47,7 @@ private:
     };
     
     //std::unique_ptr < Game > game;
-    std::unique_ptr<MixerGame_State> state;
+    std::unique_ptr<MixerGame_State> game_state;
     MixerGameUI_2 *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };

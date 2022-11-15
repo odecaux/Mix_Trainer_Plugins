@@ -73,7 +73,7 @@ class EditorTrack : public juce::AudioProcessorEditor
         g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     }
     
-    void resized()
+    void resized() override
     {
         auto bounds = getLocalBounds();
         auto center = bounds.getCentre();

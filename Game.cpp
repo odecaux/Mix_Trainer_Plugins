@@ -218,9 +218,6 @@ GameUI_Panel2::GameUI_Panel2(juce::Component *game_ui) :
         addAndMakeVisible(score_label);
     }
     {
-        next_button.onClick = [this] {
-            onNextClicked();
-        };
         addAndMakeVisible(next_button);
     }
     
@@ -300,18 +297,27 @@ void GameUI_Panel2::update(GameStep new_step, int new_score)
         {
             top_label.setText("Have a listen", juce::dontSendNotification);
             next_button.setButtonText("Begin");
+            next_button.onClick = [this] {
+                onNextClicked(Event_Click_Begin);
+            };
         } break;
         case Listening :
         case Editing :
         {
             top_label.setText("Reproduce the target mix", juce::dontSendNotification);
             next_button.setButtonText("Validate");
+            next_button.onClick = [this] {
+                onNextClicked(Event_Click_Answer);
+            };
         }break;
         case ShowingTruth :
         case ShowingAnswer : 
         {
             top_label.setText("Results", juce::dontSendNotification);
-            next_button.setButtonText("Next");
+            next_button.setButtonText("Next");            
+            next_button.onClick = [this] {
+                onNextClicked(Event_Click_Next);
+            };
         }break;
     };
     
@@ -380,5 +386,9 @@ void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *u
     if (effects.rename)
     {
         state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
+    }
+    if (effects.quit)
+    {
+        state->app->quitGame();
     }
 }

@@ -8,10 +8,10 @@
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
-Application::Application(ProcessorHost &host) : 
+Application::Application(ProcessorHost &host) :
+    type(PanelType::MainMenu),
     host(host), 
-    editor(nullptr),
-    type(PanelType::MainMenu)
+    editor(nullptr)
 {
     //NOTE useless
     broadcastDSP(bypassedAllChannelsDSP(channels));
@@ -38,10 +38,13 @@ void Application::toMainMenu()
 
 void Application::toGame()
 {
+    
+    auto before = juce::Time::getCurrentTime();
+
     jassert(type == PanelType::MainMenu);
     type = PanelType::Game;
     jassert(editor);
-    jassert(!state);
+    jassert(!game_state);
     
 #if 0
     game = std::make_unique < ChannelNamesDemo > (
@@ -73,14 +76,22 @@ void Application::toGame()
 
     game->finishUIInitialization();
 #endif
-    state = mixer_game_init(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    game_state = mixer_game_init(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
     auto game_panel = std::make_unique<MixerGameUI_2>(
         channels,
-        state->db_slider_values,
-        state.get()
+        game_state->db_slider_values,
+        game_state.get()
     );
-    game_ui = game_panel.get();
+    game_ui = game_panel.get();           
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+
     editor->changePanel(std::move(game_panel));
+    
+    auto after = juce::Time::getCurrentTime();
+
+    auto diff = after - before;
+    auto ms = diff.inMilliseconds();
+    DBG("diff : " << ms << '\n' );
 }
 
 void Application::toStats()
@@ -108,6 +119,11 @@ void Application::toSettings()
    
 }
 
+void Application::quitGame()
+{
+    game_state.reset();  
+    toMainMenu();
+}
 
 void Application::onEditorDelete()
 {
@@ -115,15 +131,16 @@ void Application::onEditorDelete()
     editor = nullptr;
     if (type == PanelType::Game)
     {
-        jassert(state);
+        jassert(game_state);
+        mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
         game_ui = nullptr;
-        //state->onUIDelete();
     }
 }
 
 
 void Application::initialiseEditorUI(EditorHost *new_editor)
 {
+    auto before = juce::Time::getCurrentTime();
     jassert(editor == nullptr);
     editor = new_editor;
     std::unique_ptr < juce::Component > panel;
@@ -143,7 +160,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case PanelType::Game :
         {
-            jassert(state); 
+            jassert(game_state); 
 #if 0
             printf("create\n");
             auto game_ui = game->createUI();
@@ -160,14 +177,20 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
 #endif
             auto game_ui_temp = std::make_unique<MixerGameUI_2>(
                 channels,
-                state->db_slider_values,
-                state.get()
+                game_state->db_slider_values,
+                game_state.get()
             );
             game_ui = game_ui_temp.get();
+            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
             panel = std::move(game_ui_temp);
         } break;
     }
     editor->changePanel(std::move(panel));
+    auto after = juce::Time::getCurrentTime();
+
+    auto diff = after - before;
+    auto ms = diff.inMilliseconds();
+    DBG("diff : " << ms << '\n' );
 }
 
 void Application::broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states)
@@ -184,9 +207,13 @@ void Application::createChannel(int id)
     
     channels[id] = ChannelInfos { .id = id };
 
-    if (state) {
+    if (game_state) {
         jassert(type == PanelType::Game);
-        mixer_game_post_event(state.get(), Event{}, game_ui);
+        Event event = {
+            .type = Event_Channel_Create,
+            .id = id
+        };
+        mixer_game_post_event(game_state.get(), event, game_ui);
     }
 }
     
@@ -195,9 +222,13 @@ void Application::deleteChannel(int id)
     auto channel = channels.find(id);
     jassert(channel != channels.end());
 
-    if (state) {
+    if (game_state) {
         jassert(type == PanelType::Game);
-        mixer_game_post_event(state.get(), Event{}, game_ui);
+        Event event = {
+            .type = Event_Channel_Delete,
+            .id = id
+        };
+        mixer_game_post_event(game_state.get(), event, game_ui);
     }
     channels.erase(channel);
 }
@@ -206,7 +237,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 {
     channels[id].name = new_name;
     
-    if (state) {
+    if (game_state) {
         jassert(type == PanelType::Game);
     }
     host.broadcastRenameTrack(id, new_name);
@@ -217,9 +248,14 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
     auto &channel = channels[id];
     channel.name = new_name;
         
-    if (state) {
+    if (game_state) {
         jassert(type == PanelType::Game);
-        mixer_game_post_event(state.get(), Event{}, game_ui);
+        Event event = {
+            .type = Event_Channel_Rename_From_Track,
+            .id = id,
+            .value_js = new_name //copy
+        };
+        mixer_game_post_event(game_state.get(), event, game_ui);
     }
 }
     
@@ -229,8 +265,14 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
     channel.min_freq = new_min;
     channel.max_freq = new_max;
 
-    if (state) {
+    if (game_state) {
         jassert(type == PanelType::Game);
-        mixer_game_post_event(state.get(), Event{}, game_ui);
+        Event event = {
+            .type = Event_Change_Frequency_Range,
+            .id = id,
+            .value_f = new_min,
+            .value_f_2 = new_max
+        };
+        mixer_game_post_event(game_state.get(), event, game_ui);
     }
 }

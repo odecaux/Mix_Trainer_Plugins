@@ -24,9 +24,7 @@
 			<Platform>x64</Platform>
 			<Platform>Win32</Platform>
 		</Platforms>
-		<AdditionalIncludePaths>
-			<AdditionalIncludePath>C:\Users\Octave\Documents\code projects\JUCE\modules</AdditionalIncludePath>
-		</AdditionalIncludePaths>
+		<AdditionalIncludePaths></AdditionalIncludePaths>
 		<Defines></Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>

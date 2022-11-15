@@ -11,7 +11,7 @@ static double equal_double(double a, double b, double theta)
 
 static int db_to_slider_pos(double db, const std::vector<double> &db_values)
 {
-    for(int i = 0; i < db_values.size(); i++)
+    for(auto i = 0; i < db_values.size(); i++)
     {
         if(equal_double(db, db_values[i], 0.001)) return i;
     }
@@ -601,7 +601,7 @@ public:
         g.drawRoundedRectangle(r.toFloat(), 5.0f, 2.0f);
     }
     
-    void setName(const juce::String& new_name)
+    void setName(const juce::String& new_name) //TODO rename, ça override un truc de component
     {
         label.setText(new_name, juce::dontSendNotification);
     }
@@ -752,10 +752,10 @@ struct MixerGameUI : public GameUI
                 std::function<void(int, int)> onFaderMoved, //TODO lifetime ?
                 std::function<void(int, const juce::String&)> onEditedName,
                 const std::vector<double> &db_slider_values) :
-        onFaderMoved(onFaderMoved),
-        onEditedName(onEditedName),
         fader_row(faders),
-        db_slider_values(db_slider_values)
+        db_slider_values(db_slider_values),
+        onFaderMoved(onFaderMoved),
+        onEditedName(onEditedName)
     {
         auto f = 
             [this, &onMoved = this->onFaderMoved, &onEdited = this->onEditedName] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {

@@ -1,2 +1,4 @@
 cmake-build/*
 *.rpp-bak
+.vs/*
+out/*
