@@ -710,6 +710,11 @@ static FaderStep gameStepToFaderStep(GameStep game_step)
         {
             return FaderStep_Showing;
         } break;
+        default:
+        {
+            jassertfalse;
+            return {};
+        };
     }
 }
 

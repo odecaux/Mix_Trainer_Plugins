@@ -43,23 +43,8 @@ struct MixerGame_State {
     //parametres
     int timeout_ms;
     std::vector < double > db_slider_values;
+    Application *app;
 };
-
-static MixerGame_State mixer_game_init(
-    std::unordered_map<int, ChannelInfos> channel_infos,
-    int timeout_ms,
-    std::vector < double > db_slider_values)
-{
-    MixerGame_State state = {
-        .channel_infos = channel_infos,
-        .step = Begin,
-        .score = 0,
-        //.timeout_ms,
-        .db_slider_values = db_slider_values
-    };
-
-    return state;
-}
 
 struct Effect_DSP {
     std::unordered_map<int, ChannelDSPState> dsp_states;
@@ -81,6 +66,152 @@ struct Effects {
     std::optional < Effect_UI > ui;
     std::optional < Effect_Rename > rename;
 };
+
+struct MixerGameUI_2;
+
+static void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui);
+
+struct MixerGameUI_2 : public GameUI
+{
+    MixerGameUI_2(const std::unordered_map<int, ChannelInfos>& channel_infos,
+                  const std::vector<double> &db_slider_values,
+                  MixerGame_State *state) :
+        fader_row(faders),
+        db_slider_values(db_slider_values),
+        state(state)
+    {
+        auto f = 
+            [this, state, ui = this] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
+            const int id = a.first;
+            
+            auto onFaderMoved = [id, state = state, ui] (int new_pos){
+                juce::ignoreUnused(new_pos);
+                mixer_game_post_event(state, Event{}, ui);
+            };
+            
+            auto onEdited = [id, state = state, ui](const juce::String & new_name){ 
+                juce::ignoreUnused(new_name);
+                mixer_game_post_event(state, Event{}, ui);
+            };
+
+            auto new_fader = std::make_unique < FaderComponent > (
+                this->db_slider_values,
+                a.second.name,
+                std::move(onFaderMoved),
+                std::move(onEdited)
+            );
+            fader_row.addAndMakeVisible(new_fader.get());
+            return { id, std::move(new_fader)};
+        };
+        
+        std::transform(channel_infos.begin(), channel_infos.end(), 
+                       std::inserter(faders, faders.end()), 
+                       f);
+        fader_row.adjustWidth();
+
+        addAndMakeVisible(fader_viewport);
+        fader_viewport.setScrollBarsShown(false, true);
+        fader_viewport.setViewedComponent(&fader_row, false);
+    }
+
+    virtual ~MixerGameUI_2() {}
+
+    void resized() override {
+        auto bounds = getLocalBounds();
+        fader_viewport.setBounds(bounds);
+        fader_row.setSize(fader_row.getWidth(),
+                          fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
+    }
+
+    //NOTE solution 1) keeping them in sync
+    //solution 2) passing in the map and rebuilding the childs everytime
+
+    void addChannel(int id, const juce::String name)
+    {
+        {
+            auto assertChannel = faders.find(id);
+            jassert(assertChannel == faders.end());
+        }
+
+        auto onFaderMoved = [id, state = this->state, ui = this] (int new_pos){
+            mixer_game_post_event(state, Event{}, ui);
+        };
+            
+        auto onEdited = [id, state = this->state, ui = this](const juce::String & new_name){ 
+            mixer_game_post_event(state, Event{}, ui);
+        };
+
+        auto [it, result] = faders.emplace(id, std::make_unique < FaderComponent > (
+            db_slider_values,
+            name,
+            std::move(onFaderMoved),
+            std::move(onEdited)
+        ));
+        jassert(result);
+        auto &new_fader = it->second;
+
+        fader_row.addAndMakeVisible(new_fader.get());
+        fader_row.adjustWidth();
+        resized();
+    }
+    
+    void removeChannel(int id)
+    {
+        const auto channel_to_remove = faders.find(id);
+        jassert(channel_to_remove != faders.end());
+        fader_row.removeChildComponent(channel_to_remove->second.get());
+        faders.erase(channel_to_remove);
+        fader_row.adjustWidth();
+        resized();
+    }
+
+    void changeChannelName(int id, const juce::String name)
+    {
+        faders[id]->setName(name);
+    }
+
+    void updateGameUI(GameStep new_step, int new_score, std::optional<std::unordered_map<int, int >> &slider_pos_to_display)
+    {
+        if(slider_pos_to_display)
+            jassert(slider_pos_to_display->size() == faders.size());
+
+        for(auto& [id, fader] : faders)
+        {
+            auto fader_step = gameStepToFaderStep(new_step);
+            int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
+            fader->update(fader_step, pos);
+        }
+
+        jassert(panel);
+        panel->updateGameUI_Generic(new_step, new_score);
+    }
+
+    std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
+    FaderRowComponent fader_row;
+    juce::Viewport fader_viewport;
+    const std::vector < double > &db_slider_values;
+
+    MixerGame_State *state;
+};
+
+
+static MixerGame_State mixer_game_init(
+    std::unordered_map<int, ChannelInfos> channel_infos,
+    int timeout_ms,
+    std::vector<double> db_slider_values,
+    Application *app)
+{
+    MixerGame_State state = {
+        .channel_infos = channel_infos,
+        .step = Begin,
+        .score = 0,
+        //.timeout_ms,
+        .db_slider_values = db_slider_values,
+        .app = app
+    };
+
+    return state;
+}
 
 static Effects mixer_game_update(MixerGame_State *state, Event event)
 {
@@ -192,7 +323,6 @@ static Effects mixer_game_update(MixerGame_State *state, Event event)
         }break;
         case Transition_To_Exercice : {
 
-            
             for (auto& [_, channel] : state->channel_infos)
             {
                 state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % state->db_slider_values.size();//;
@@ -200,7 +330,6 @@ static Effects mixer_game_update(MixerGame_State *state, Event event)
             }
             jassert(state->target_slider_pos.size() == state->channel_infos.size());
             jassert(state->edited_slider_pos.size() == state->channel_infos.size());
-
 
             step = Listening;
             update_audio = true;
@@ -214,7 +343,6 @@ static Effects mixer_game_update(MixerGame_State *state, Event event)
         case Transition_To_End_Result : {
         }break;
     }
-    
     
     std::unordered_map<int, int>* edit_or_target;
     if(step == Begin || step == Editing || step == ShowingAnswer)
@@ -254,23 +382,24 @@ static Effects mixer_game_update(MixerGame_State *state, Event event)
     return effects;
 }
 
-
-
-static void mixer_game_post_event(MixerGame_State *state, Event event, Application *app, MixerGameUI *ui)
+static void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI_2 *ui)
 {
     Effects effects = mixer_game_update(state, event);
     if (effects.dsp)
     {
-        app->broadcastDSP(effects.dsp->dsp_states);
+        state->app->broadcastDSP(effects.dsp->dsp_states);
     }
-    if (effects.ui)
+    if (effects.ui && ui)
     {
-        //ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
     }
     if (effects.rename)
     {
-        app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
+        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
     }
 }
+
+
+
 
 //TODO mutex ? pour les timeout
