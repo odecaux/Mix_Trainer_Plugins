@@ -2,7 +2,7 @@
 #include "shared.h"
 
 #include "Game.h"
-#include "Game_2.h"
+#include "Game_Mixer.h"
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"
@@ -38,9 +38,6 @@ void Application::toMainMenu()
 
 void Application::toGame()
 {
-    
-    auto before = juce::Time::getCurrentTime();
-
     jassert(type == PanelType::MainMenu);
     type = PanelType::Game;
     jassert(editor);
@@ -64,7 +61,7 @@ void Application::toGame()
     printf("toGame\n");
     auto game_ui = game->createUI();
     
-    auto game_panel = std::make_unique < GameUI_Panel > (
+    auto game_panel = std::make_unique < GameUI_Wrapper > (
         [this] { game->nextClicked();  },
         [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
         [this] { 
@@ -86,12 +83,6 @@ void Application::toGame()
     mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
 
     editor->changePanel(std::move(game_panel));
-    
-    auto after = juce::Time::getCurrentTime();
-
-    auto diff = after - before;
-    auto ms = diff.inMilliseconds();
-    DBG("diff : " << ms << '\n' );
 }
 
 void Application::toStats()
@@ -140,7 +131,6 @@ void Application::onEditorDelete()
 
 void Application::initialiseEditorUI(EditorHost *new_editor)
 {
-    auto before = juce::Time::getCurrentTime();
     jassert(editor == nullptr);
     editor = new_editor;
     std::unique_ptr < juce::Component > panel;
@@ -164,7 +154,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
 #if 0
             printf("create\n");
             auto game_ui = game->createUI();
-            panel = std::make_unique < GameUI_Panel > (
+            panel = std::make_unique < GameUI_Wrapper > (
                 [this] { game->nextClicked();  },
                 [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
                     [this] { 
@@ -186,11 +176,6 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
     }
     editor->changePanel(std::move(panel));
-    auto after = juce::Time::getCurrentTime();
-
-    auto diff = after - before;
-    auto ms = diff.inMilliseconds();
-    DBG("diff : " << ms << '\n' );
 }
 
 void Application::broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states)

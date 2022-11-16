@@ -14,7 +14,7 @@
 
 
 #include "Game.h"
-#include "Game_2.h"
+#include "Game_Mixer.h"
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"
