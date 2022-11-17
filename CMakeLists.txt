@@ -28,6 +28,8 @@ target_sources(MixTrainer_Host
     PRIVATE
         Processor_Host.cpp
         Game.cpp
+        Game_Mixer.cpp
+        Game_Mixer_Alt.cpp
         Application.cpp)
 
 target_compile_definitions(MixTrainer_Host
