@@ -43,44 +43,16 @@ void Application::toGame()
     jassert(editor);
     jassert(!game_state);
     
-#if 0
-    game = std::make_unique < ChannelNamesDemo > (
-        *this, 
-        channels, 
-        [this](const auto& dsp_states) { broadcastDSP(dsp_states); }
-    );
-#endif
-#if 0
-    game = std::make_unique < MixerGame > (
-        *this, 
-        channels, 
-        std::vector<double>{ -100.0, -12.0, -9.0, -6.0, -3.0},
-        [this](const auto& dsp_states) { broadcastDSP(dsp_states); },
-        [this](int id, const juce::String& new_name) { renameChannelFromUI(id, new_name); }
-    );
-    printf("toGame\n");
-    auto game_ui = game->createUI();
-    
-    auto game_panel = std::make_unique < GameUI_Wrapper > (
-        [this] { game->nextClicked();  },
-        [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
-        [this] { 
-            game.reset();  
-            toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
-        },
-        std::move(game_ui)
-        );
+    game_state = mixer_game_init_alt(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    mixer_game_post_event_alt(game_state.get(), Event { .type = Event_Init }, nullptr);
 
-    game->finishUIInitialization();
-#endif
-    game_state = mixer_game_init(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
-    auto game_panel = std::make_unique<MixerGameUI_2>(
+    auto game_panel = std::make_unique<MixerGameUI_Alt>(
         channels,
         game_state->db_slider_values,
         game_state.get()
     );
-    game_ui = game_panel.get();           
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+    game_ui = game_panel.get();              
+    mixer_game_post_event_alt(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
 
     editor->changePanel(std::move(game_panel));
 }
@@ -123,7 +95,7 @@ void Application::onEditorDelete()
     if (type == PanelType::Game)
     {
         jassert(game_state);
-        mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+        mixer_game_post_event_alt(game_state.get(), Event { .type = Event_Destroy_UI }, game_ui);
         game_ui = nullptr;
     }
 }
@@ -151,27 +123,13 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case PanelType::Game :
         {
             jassert(game_state); 
-#if 0
-            printf("create\n");
-            auto game_ui = game->createUI();
-            panel = std::make_unique < GameUI_Wrapper > (
-                [this] { game->nextClicked();  },
-                [this] (bool was_target) { game->toggleInputOrTarget(was_target); },
-                    [this] { 
-                    game.reset();  
-                    toMainMenu(); //NOTE unclear lifetime, while rewinding the stack all the references will be invalid
-            },
-                std::move(game_ui)
-            );
-            game->finishUIInitialization();
-#endif
-            auto game_ui_temp = std::make_unique<MixerGameUI_2>(
+            auto game_ui_temp = std::make_unique<MixerGameUI_Alt>(
                 channels,
                 game_state->db_slider_values,
                 game_state.get()
             );
             game_ui = game_ui_temp.get();
-            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+            mixer_game_post_event_alt(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
             panel = std::move(game_ui_temp);
         } break;
     }
@@ -198,7 +156,7 @@ void Application::createChannel(int id)
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event, game_ui);
+        mixer_game_post_event_alt(game_state.get(), event, game_ui);
     }
 }
     
@@ -213,7 +171,7 @@ void Application::deleteChannel(int id)
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event, game_ui);
+        mixer_game_post_event_alt(game_state.get(), event, game_ui);
     }
     channels.erase(channel);
 }
@@ -240,7 +198,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event(game_state.get(), event, game_ui);
+        mixer_game_post_event_alt(game_state.get(), event, game_ui);
     }
 }
     
@@ -258,6 +216,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event(game_state.get(), event, game_ui);
+        mixer_game_post_event_alt(game_state.get(), event, game_ui);
     }
 }

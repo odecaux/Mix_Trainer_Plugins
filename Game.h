@@ -2,11 +2,11 @@
 
 
 enum GameStep {
-    Begin,
-    Listening,
-    Editing,
-    ShowingTruth,
-    ShowingAnswer
+    GameStep_Begin,
+    GameStep_Listening,
+    GameStep_Editing,
+    GameStep_ShowingTruth,
+    GameStep_ShowingAnswer
 };
 
 juce::String step_to_str(GameStep step);
@@ -75,6 +75,7 @@ struct Event{
 };
 
 enum Transition {
+    Transition_To_Begin,
     Transition_To_Exercice,
     Transition_To_Answer,
     Transition_To_End_Result,
@@ -90,6 +91,7 @@ struct Effect_UI {
     GameStep new_step; 
     int new_score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+    int remaining_listens;
 };
 
 struct Effect_Rename {
@@ -109,12 +111,12 @@ struct GameUI_Wrapper : public juce::Component
 {
     GameUI_Wrapper(juce::Component *game_ui);
 
-    void update(GameStep new_step, int new_score);
     void paint(juce::Graphics& g) override;
     void resized() override;
 
     juce::Label top_label;
     juce::Label score_label;
+    juce::Label remaining_listens_label;
     juce::TextButton back_button;
             
     juce::TextButton next_button;
