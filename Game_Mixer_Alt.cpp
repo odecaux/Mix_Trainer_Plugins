@@ -22,14 +22,6 @@ void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_s
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
         {
-            ui->target_mix_button.setEnabled(true);
-            ui->user_mix_button.setEnabled(true);
-            ui->target_mix_button.setVisible(true);
-            ui->user_mix_button.setVisible(true);
-            ui->remaining_listens_label.setText(
-                juce::String("remaining listens : ") + juce::String(remaining_listens), 
-                juce::dontSendNotification
-            );
         }break;
     };
 
@@ -70,6 +62,24 @@ void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_s
                 ui->onNextClicked(Event_Click_Answer);
             };
             ui->remaining_listens_label.setVisible(true);
+
+            bool show_text = remaining_listens >= 0;
+            ui->remaining_listens_label.setVisible(show_text);
+            
+            if (show_text)
+            {
+                ui->remaining_listens_label.setText(
+                    juce::String("remaining listens : ") + juce::String(remaining_listens),
+                    juce::dontSendNotification
+                );
+            }
+            
+            bool show_toggles = remaining_listens > 0;
+            ui->target_mix_button.setEnabled(show_toggles);
+            ui->user_mix_button.setEnabled(show_toggles);
+            ui->target_mix_button.setVisible(show_toggles);
+            ui->user_mix_button.setVisible(show_toggles);
+
         }break;
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
@@ -79,7 +89,16 @@ void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_s
             ui->next_button.onClick = [ui] {
                 ui->onNextClicked(Event_Click_Next);
             };
-            ui->remaining_listens_label.setVisible(true);
+            ui->remaining_listens_label.setVisible(false);
+            
+            ui->target_mix_button.setEnabled(true);
+            ui->user_mix_button.setEnabled(true);
+            ui->target_mix_button.setVisible(true);
+            ui->user_mix_button.setVisible(true);
+            ui->remaining_listens_label.setText(
+                juce::String("remaining listens : ") + juce::String(remaining_listens), 
+                juce::dontSendNotification
+            );
         }break;
     };
     
