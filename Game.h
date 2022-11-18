@@ -106,7 +106,6 @@ struct Effects {
     bool quit;
 };
 
-
 struct GameUI_Wrapper : public juce::Component
 {
     GameUI_Wrapper(juce::Component *game_ui);

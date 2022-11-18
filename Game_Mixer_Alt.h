@@ -1,4 +1,7 @@
 
+
+using audio_observer_alt_t = std::function<void(Effect_DSP)>;
+
 struct MixerGame_State_Alt {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     GameStep step;
@@ -11,6 +14,7 @@ struct MixerGame_State_Alt {
     int remaining_listens;
     std::vector < double > db_slider_values;
     Application *app;
+    std::vector<audio_observer_alt_t> observers_audio;
 };
 
 struct MixerGameUI_Alt;
@@ -19,7 +23,10 @@ void mixer_game_post_event_alt(MixerGame_State_Alt *state, Event event, MixerGam
 
 Effects mixer_game_alt_update(MixerGame_State_Alt *state, Event event);
 void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens);
-
+static void mixer_game_alt_add_audio_observer(MixerGame_State_Alt *state, audio_observer_alt_t observer)
+{
+    state->observers_audio.push_back(std::move(observer));
+}
 
 struct MixerGameUI_Alt : public juce::Component
 {
@@ -159,13 +166,10 @@ struct MixerGameUI_Alt : public juce::Component
 
     void updateGameUI(GameStep new_step, int new_score, std::optional<std::unordered_map<int, int >> &slider_pos_to_display, int remaining_listens)
     {
-        if (slider_pos_to_display)
-        {
-            int in = slider_pos_to_display->size();
-            int fa = faders.size();
+        if (slider_pos_to_display){
             jassert(slider_pos_to_display->size() == faders.size());
-            
         }
+
         for(auto& [id, fader] : faders)
         {
             auto fader_step = gameStepToFaderStep(new_step);
@@ -189,6 +193,7 @@ static std::unique_ptr<MixerGame_State_Alt> mixer_game_init_alt(
     std::vector<double> db_slider_values,
     Application *app)
 {
+    juce::ignoreUnused(timeout_ms);
     MixerGame_State_Alt state = {
         .channel_infos = channel_infos,
         .listens = 5,

@@ -111,7 +111,8 @@ void mixer_game_post_event_alt(MixerGame_State_Alt *state, Event event, MixerGam
     Effects effects = mixer_game_alt_update(state, event);
     if (effects.dsp)
     {
-        state->app->broadcastDSP(effects.dsp->dsp_states);
+        for(auto &observer : state->observers_audio)
+            observer(*effects.dsp);
     }
     if (effects.ui && ui)
     {

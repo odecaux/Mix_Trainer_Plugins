@@ -35,6 +35,27 @@ void Application::toMainMenu()
     editor->changePanel(std::move(main_menu));
 }
 
+void channel_dsp_log(const std::unordered_map<int, ChannelDSPState> &dsps, 
+                    const std::unordered_map<int, ChannelInfos> &channels)
+{
+    jassert(dsps.size() == channels.size());
+    for (const auto& [id, channel] : channels)
+    {
+        jassert(id == channel.id);
+        jassert(dsps.contains(id));
+        const auto &dsp = dsps.at(id);
+        double db = juce::Decibels::gainToDecibels(dsp.gain);
+        juce::String db_str = juce::Decibels::toString(db);
+        char output_str[1024];
+        sprintf_s(output_str, 1023, "%d  %s  : %s", int(id), channel.name.getCharPointer(), db_str.getCharPointer());
+#if 0
+        printf("%s", output_str);
+#endif
+#if 1
+        DBG(output_str);
+#endif
+    }
+}
 
 void Application::toGame()
 {
@@ -44,6 +65,11 @@ void Application::toGame()
     jassert(!game_state);
     
     game_state = mixer_game_init_alt(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    mixer_game_alt_add_audio_observer(game_state.get(), [this] (auto &&effect){ broadcastDSP(effect.dsp_states); });
+    mixer_game_alt_add_audio_observer(game_state.get(), [this] (auto &&effect){ 
+                                      channel_dsp_log(effect.dsp_states, channels); 
+    });
+    
     mixer_game_post_event_alt(game_state.get(), Event { .type = Event_Init }, nullptr);
 
     auto game_panel = std::make_unique<MixerGameUI_Alt>(

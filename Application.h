@@ -1,7 +1,8 @@
-
+#include "stdio.h"
 
 class ProcessorHost;
 class EditorHost;
+
 
 class Application
 {

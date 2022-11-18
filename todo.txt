@@ -1,8 +1,15 @@
+Struct pour le wrapper
+Observers pour audio et UI
 
 
 
 
 
+transition in et out
+
+Hierarchical FSM ?
+
+UI_Wrapper descriptor ?
 
 
 

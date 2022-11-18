@@ -87,7 +87,8 @@ void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI *ui)
     Effects effects = mixer_game_update(state, event);
     if (effects.dsp)
     {
-        state->app->broadcastDSP(effects.dsp->dsp_states);
+        for(auto &observer : state->observers_audio)
+            observer(*effects.dsp);
     }
     if (effects.ui && ui)
     {

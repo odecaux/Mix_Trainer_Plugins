@@ -31,7 +31,7 @@ static FaderStep gameStepToFaderStep(GameStep game_step)
     }
 }
 
-
+using audio_observer_t = std::function<void(Effect_DSP)>;
 
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
@@ -43,15 +43,18 @@ struct MixerGame_State {
     int timeout_ms;
     std::vector < double > db_slider_values;
     Application *app;
+    std::vector<audio_observer_t> observers_audio;
 };
 
 struct MixerGameUI;
 
 void mixer_game_post_event(MixerGame_State *state, Event event, MixerGameUI *ui);
-
 Effects mixer_game_update(MixerGame_State *state, Event event);
 void game_ui_wrapper_update(GameUI_Wrapper *ui, GameStep new_step, int new_score);
-
+static void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t observer)
+{
+    state->observers_audio.push_back(std::move(observer));
+}
 
 
 struct MixerGameUI : public juce::Component
@@ -220,6 +223,7 @@ static std::unique_ptr<MixerGame_State> mixer_game_init(
     std::vector<double> db_slider_values,
     Application *app)
 {
+    juce::ignoreUnused(timeout_ms);
     MixerGame_State state = {
         .channel_infos = channel_infos,
         .db_slider_values = db_slider_values,

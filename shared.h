@@ -43,7 +43,6 @@ static ChannelDSPState ChannelDSP_gain(double gain)
     };
 }
 
-
 struct Settings{
     float difficulty;
 };
