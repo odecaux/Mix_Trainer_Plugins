@@ -63,7 +63,7 @@ void game_ui_wrapper_update_timer(GameUI_Wrapper *ui, GameStep new_step, int new
     ui->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
-void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event, MixerGameUI_Timer *ui)
+void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
 {
     Effects effects = mixer_game_timer_update(state, event);
     if (effects.dsp)
@@ -71,9 +71,9 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event, Mixe
         for(auto &observer : state->observers_audio)
             observer(*effects.dsp);
     }
-    if (effects.ui && ui)
+    if (effects.ui && state->ui)
     {
-        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
+        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
     }
     if (effects.rename)
     {
@@ -182,11 +182,14 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
         } break;
         case Event_Create_UI :
         {
+            jassert(state->ui == nullptr);
+            state->ui = (MixerGameUI_Timer*) event.value_ptr;
             update_ui = true;
         } break;
         case Event_Destroy_UI :
         {
-
+            jassert(state->ui != nullptr);
+            state->ui = nullptr;
         } break;
     }
 

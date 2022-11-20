@@ -2,6 +2,8 @@
 
 using audio_observer_tries_t = std::function<void(Effect_DSP)>;
 
+struct MixerGameUI_Tries;
+
 struct MixerGame_State_Tries {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     GameStep step;
@@ -13,12 +15,12 @@ struct MixerGame_State_Tries {
     int remaining_listens;
     std::vector < double > db_slider_values;
     Application *app;
+    MixerGameUI_Tries *ui;
     std::vector<audio_observer_tries_t> observers_audio;
 };
 
-struct MixerGameUI_Tries;
 
-void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event, MixerGameUI_Tries *ui);
+void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event);
 
 Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event);
 void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens);
@@ -47,7 +49,7 @@ struct MixerGameUI_Tries : public juce::Component
                     .id = id,
                     .value_i = new_pos
                 };
-                mixer_game_post_event_tries(state, event, ui);
+                mixer_game_post_event_tries(state, event);
             };
             
             auto onEdited = [id, state = state, ui](const juce::String & new_name){ 
@@ -56,7 +58,7 @@ struct MixerGameUI_Tries : public juce::Component
                     .id = id,
                     .value_js = new_name
                 };
-                mixer_game_post_event_tries(state, event, ui);
+                mixer_game_post_event_tries(state, event);
             };
 
             auto new_fader = std::make_unique < FaderComponent > (
@@ -81,20 +83,20 @@ struct MixerGameUI_Tries : public juce::Component
                 .type = e
             };
             
-            mixer_game_post_event_tries(state, event, ui);
+            mixer_game_post_event_tries(state, event);
         };
         panel.onBackClicked = [state = state, ui = this] {
             Event event = {
                 .type = Event_Click_Back
             };
-            mixer_game_post_event_tries(state, event, ui);
+            mixer_game_post_event_tries(state, event);
         };
         panel.onToggleClicked = [state = state, ui = this] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            mixer_game_post_event_tries(state, event, ui);
+            mixer_game_post_event_tries(state, event);
         };
         addAndMakeVisible(panel);
     }
@@ -122,7 +124,7 @@ struct MixerGameUI_Tries : public juce::Component
                 .id = id,
                 .value_i = new_pos
             };
-            mixer_game_post_event_tries(state, event, ui);
+            mixer_game_post_event_tries(state, event);
         };
             
         auto onEdited = [id, state = this->state, ui = this](const juce::String & new_name){ 
@@ -131,7 +133,7 @@ struct MixerGameUI_Tries : public juce::Component
                 .id = id,
                 .value_js = new_name
             };
-            mixer_game_post_event_tries(state, event, ui);
+            mixer_game_post_event_tries(state, event);
         };
 
         auto [it, result] = faders.emplace(id, std::make_unique < FaderComponent > (
@@ -197,7 +199,8 @@ static std::unique_ptr<MixerGame_State_Tries> mixer_game_init_tries(
         .channel_infos = channel_infos,
         .listens = 5,
         .db_slider_values = db_slider_values,
-        .app = app
+        .app = app,
+        .ui = nullptr
     };
     return std::make_unique < MixerGame_State_Tries > (std::move(state));
 }

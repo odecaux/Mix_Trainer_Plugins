@@ -70,7 +70,7 @@ void Application::toGame()
                                       channel_dsp_log(effect.dsp_states, channels); 
     });
     
-    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Init }, nullptr);
+    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Init });
 
     auto game_panel = std::make_unique<MixerGameUI_Timer>(
         channels,
@@ -78,7 +78,7 @@ void Application::toGame()
         game_state.get()
     );
     game_ui = game_panel.get();              
-    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
 
     editor->changePanel(std::move(game_panel));
 }
@@ -121,7 +121,7 @@ void Application::onEditorDelete()
     if (type == PanelType::Game)
     {
         jassert(game_state);
-        mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Destroy_UI }, game_ui);
+        mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
 }
@@ -155,7 +155,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
                 game_state.get()
             );
             game_ui = game_ui_temp.get();
-            mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI }, game_ui);
+            mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
             panel = std::move(game_ui_temp);
         } break;
     }
@@ -182,7 +182,7 @@ void Application::createChannel(int id)
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event_timer(game_state.get(), event, game_ui);
+        mixer_game_post_event_timer(game_state.get(), event);
     }
 }
     
@@ -197,7 +197,7 @@ void Application::deleteChannel(int id)
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event_timer(game_state.get(), event, game_ui);
+        mixer_game_post_event_timer(game_state.get(), event);
     }
     channels.erase(channel);
 }
@@ -224,7 +224,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event_timer(game_state.get(), event, game_ui);
+        mixer_game_post_event_timer(game_state.get(), event);
     }
 }
     
@@ -242,6 +242,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event_timer(game_state.get(), event, game_ui);
+        mixer_game_post_event_timer(game_state.get(), event);
     }
 }

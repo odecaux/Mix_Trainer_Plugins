@@ -71,7 +71,8 @@ struct Event{
     float value_f_2;
     double value_d;
     char *value_cp;
-    std::string  value_str;
+    void *value_ptr;
+    std::string value_str;
     juce::String value_js;
 };
 
