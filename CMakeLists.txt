@@ -29,7 +29,7 @@ target_sources(MixTrainer_Host
         Processor_Host.cpp
         Game.cpp
         Game_Mixer.cpp
-        Game_Mixer_Alt.cpp
+        Game_Mixer_Tries.cpp
         Application.cpp)
 
 target_compile_definitions(MixTrainer_Host

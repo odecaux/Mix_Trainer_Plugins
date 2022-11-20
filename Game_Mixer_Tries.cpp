@@ -7,7 +7,7 @@
 #include "Application.h"
 
 
-void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens)
+void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens)
 {
     switch(new_step)
     {
@@ -106,9 +106,9 @@ void game_ui_wrapper_update_alt(GameUI_Wrapper *ui, GameStep new_step, int new_s
     ui->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
-void mixer_game_post_event_alt(MixerGame_State_Alt *state, Event event, MixerGameUI_Alt *ui)
+void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event, MixerGameUI_Tries *ui)
 {
-    Effects effects = mixer_game_alt_update(state, event);
+    Effects effects = mixer_game_tries_update(state, event);
     if (effects.dsp)
     {
         for(auto &observer : state->observers_audio)
@@ -128,7 +128,7 @@ void mixer_game_post_event_alt(MixerGame_State_Alt *state, Event event, MixerGam
     }
 }
 
-Effects mixer_game_alt_update(MixerGame_State_Alt *state, Event event)
+Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;
