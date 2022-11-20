@@ -30,6 +30,7 @@ target_sources(MixTrainer_Host
         Game.cpp
         Game_Mixer.cpp
         Game_Mixer_Tries.cpp
+        Game_Mixer_Timer.cpp
         Application.cpp)
 
 target_compile_definitions(MixTrainer_Host

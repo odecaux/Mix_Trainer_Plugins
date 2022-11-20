@@ -48,6 +48,7 @@ enum Event_Type{
     Event_Slider, //value_i = slider_position
     Event_Toggle_Input_Target, //value_b = was_target
     Event_Click_Begin,
+    Event_Click_Start_Answering_RENAME,
     Event_Click_Answer,
     Event_Click_Next,
     Event_Click_Back,
