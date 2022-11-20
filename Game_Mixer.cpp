@@ -205,7 +205,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             //update channel infos ?
         } break;
         case Event_Channel_Rename_From_UI : {
-            effects.rename = std::make_optional < Effect_Rename > (event.id, event.value_str);
+            effects.rename = Effect_Rename { event.id, event.value_str };
         } break;
         case Event_Change_Frequency_Range : {
             jassertfalse;
@@ -275,7 +275,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                        double gain = slider_pos_to_gain(a.second, state->db_slider_values);
                        return { a.first, ChannelDSP_gain(gain) };
         });
-        effects.dsp = std::make_optional < Effect_DSP > (std::move(dsp));
+        effects.dsp = Effect_DSP { std::move(dsp) };
     }
 
     if (update_ui)
@@ -285,13 +285,13 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         if(step == GameStep_Listening)
             slider_pos_to_display = std::nullopt; 
         else
-            slider_pos_to_display = std::make_optional < std::unordered_map<int, int> > (*edit_or_target);
+            slider_pos_to_display = *edit_or_target;
 
-        effects.ui = std::make_optional< Effect_UI> (
+        effects.ui = Effect_UI {
             step,
             state->score,
             std::move(slider_pos_to_display)
-        );
+        };
     }
 
     state->step = step;

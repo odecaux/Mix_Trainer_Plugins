@@ -64,7 +64,7 @@ void Application::toGame()
     jassert(editor);
     jassert(!game_state);
     
-    game_state = mixer_game_init_timer(channels, 0, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    game_state = mixer_game_init_timer(channels, 3000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
     mixer_game_timer_add_audio_observer(game_state.get(), [this] (auto &&effect){ broadcastDSP(effect.dsp_states); });
     mixer_game_timer_add_audio_observer(game_state.get(), [this] (auto &&effect){ 
                                       channel_dsp_log(effect.dsp_states, channels); 

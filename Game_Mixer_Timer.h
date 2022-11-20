@@ -4,9 +4,17 @@ using audio_observer_timer_t = std::function<void(Effect_DSP)>;
 
 
 struct MixerGameUI_Timer;
+struct MixerGame_State_Timer;
+
+struct My_Timer: public juce::Timer
+{
+    void timerCallback() override;
+    MixerGame_State_Timer *state;
+};
 
 struct MixerGame_State_Timer {
     std::unordered_map<int, ChannelInfos> &channel_infos;
+    //state
     GameStep step;
     int score;
     std::unordered_map < int, int > edited_slider_pos;
@@ -14,8 +22,10 @@ struct MixerGame_State_Timer {
     //parametres
     int timeout_ms;
     std::vector < double > db_slider_values;
+    //IO
     Application *app;
     MixerGameUI_Timer *ui;
+    My_Timer timer;
     std::vector<audio_observer_timer_t> observers_audio;
 };
 
@@ -194,12 +204,13 @@ static std::unique_ptr<MixerGame_State_Timer> mixer_game_init_timer(
     std::vector<double> db_slider_values,
     Application *app)
 {
-    juce::ignoreUnused(timeout_ms);
     MixerGame_State_Timer state = {
         .channel_infos = channel_infos,
+        .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
         .app = app,
-        .ui = nullptr
+        .ui = nullptr,
+        .timer = My_Timer{}
     };
     return std::make_unique < MixerGame_State_Timer > (std::move(state));
 }

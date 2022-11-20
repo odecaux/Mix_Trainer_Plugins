@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.69/win64" 1668958980
+<REAPER_PROJECT 0.1 "6.69/win64" 1668963075
   <NOTES 0 2
   >
   RIPPLE 0
@@ -16,7 +16,7 @@
   TIMEMODE 1 5 -1 30 0 0 -1
   VIDEO_CONFIG 0 0 256
   PANMODE 3
-  CURSOR 4380
+  CURSOR 4374
   ZOOM 14.08645152170982 61606 0
   VZOOMEX 1 0
   USE_REC_CFG 0
@@ -60,8 +60,8 @@
   GLOBAL_AUTO -1
   TEMPO 120 4 4
   PLAYRATE 1 0 0.25 4
-  SELECTION 4420 4418
-  SELECTION2 4420 4418
+  SELECTION 4389 4385
+  SELECTION2 4389 4385
   MASTERAUTOMODE 0
   MASTERTRACKHEIGHT 0 0
   MASTERPEAKCOL 16576
@@ -101,7 +101,7 @@
     WAK 0 2
     BYPASS 0 0 0
     <JS analysis/loudness_meter ""
-      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -100 -28.026891 -185.533779 -38.385881 -27.795977 11.7 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      0 0 0 2 0 1 1 0 -12 -6 1 0 -2 1.4 0 - - - - - - - - - - - - - - -150 -182.659197 -24.584541 -100 -28.176043 -25.164069 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
     >
     FLOATPOS 0 0 0 0
     FXID {C21F6A46-8AA5-470E-BE17-3D58C5CF61F4}

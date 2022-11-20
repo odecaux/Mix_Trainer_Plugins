@@ -47,6 +47,7 @@ enum Event_Type{
     Event_Toggle_Track,
     Event_Slider, //value_i = slider_position
     Event_Toggle_Input_Target, //value_b = was_target
+    Event_Timeout,
     Event_Click_Begin,
     Event_Click_Start_Answering_RENAME,
     Event_Click_Answer,
@@ -101,11 +102,16 @@ struct Effect_Rename {
     std::string new_name;
 };
 
+struct Effect_Timer {
+    int timeout_ms;
+};
+
 struct Effects {
     std::optional < Effect_DSP> dsp;
     std::optional < Effect_UI > ui;
     std::optional < Effect_Rename > rename;
     bool quit;
+    std::optional < Effect_Timer > timer;
 };
 
 struct GameUI_Wrapper : public juce::Component

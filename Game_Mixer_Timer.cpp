@@ -75,6 +75,12 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     {
         state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
     }
+    if (effects.timer)
+    {
+        jassert(!state->timer.isTimerRunning());
+        state->timer.state = state;
+        state->timer.startTimer(effects.timer->timeout_ms);
+    }
     if (effects.rename)
     {
         state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
@@ -85,6 +91,13 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     }
 }
 
+
+void My_Timer::timerCallback()
+{
+    stopTimer();
+    mixer_game_post_event_timer(state, Event { .type = Event_Timeout });
+}
+
 Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
 {
     GameStep old_step = state->step;
@@ -93,7 +106,13 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
     bool update_audio = false;
     bool update_ui = false;
 
-    Effects effects = { std::nullopt, std::nullopt, std::nullopt, false };
+    Effects effects = { 
+        .dsp = std::nullopt, 
+        .ui = std::nullopt, 
+        .rename = std::nullopt, 
+        .quit = false, 
+        .timer  = std::nullopt 
+    };
 
     switch (event.type)
     {
@@ -113,12 +132,20 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
         case Event_Toggle_Input_Target : {
             jassertfalse;
         } break;
+        case Event_Timeout : {
+            jassert(step == GameStep_Listening);
+            step = GameStep_Editing;
+            update_ui = true;
+            update_audio = true;
+        } break;
         case Event_Click_Begin : {
             jassert(step == GameStep_Begin);
             jassert(state->target_slider_pos.size() == 0);
             transition = Transition_To_Exercice;
         } break;
         case Event_Click_Start_Answering_RENAME : {
+            jassert(state->timer.isTimerRunning());
+            state->timer.stopTimer();
             jassert(step == GameStep_Listening);
             step = GameStep_Editing;
             update_ui = true;
@@ -175,7 +202,7 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
             //update channel infos ?
         } break;
         case Event_Channel_Rename_From_UI : {
-            effects.rename = std::make_optional < Effect_Rename > (event.id, event.value_str);
+            effects.rename = Effect_Rename { event.id, event.value_str };
         } break;
         case Event_Change_Frequency_Range : {
             jassertfalse;
@@ -217,7 +244,8 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
             }
             jassert(state->target_slider_pos.size() == state->channel_infos.size());
             jassert(state->edited_slider_pos.size() == state->channel_infos.size());
-
+            
+            effects.timer = Effect_Timer { state->timeout_ms };
             update_audio = true;
             update_ui = true;
         }break;
@@ -245,7 +273,7 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
                        double gain = slider_pos_to_gain(a.second, state->db_slider_values);
                        return { a.first, ChannelDSP_gain(gain) };
         });
-        effects.dsp = std::make_optional < Effect_DSP > (std::move(dsp));
+        effects.dsp = Effect_DSP { std::move(dsp) };
     }
 
     if (update_ui)
@@ -255,13 +283,13 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
         if(step == GameStep_Listening)
             slider_pos_to_display = std::nullopt; 
         else
-            slider_pos_to_display = std::make_optional < std::unordered_map<int, int> > (*edit_or_target);
+            slider_pos_to_display = *edit_or_target;
 
-        effects.ui = std::make_optional<Effect_UI> (
+        effects.ui = Effect_UI {
             step,
             state->score,
             std::move(slider_pos_to_display)
-        );
+        };
     }
 
     state->step = step;
