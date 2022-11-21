@@ -138,16 +138,15 @@ struct Effects {
     std::optional < Effect_Timer > timer;
 };
 
-struct GameUI_Top : public juce::Component
+struct GameUI_Header : public juce::Component
 {
-    GameUI_Top();
+    GameUI_Header();
 
     //void paint(juce::Graphics& g) override {} 
     void resized() override;
 
-    juce::Label top_label;
+    juce::Label header_label;
     juce::Label score_label;
-    juce::Label remaining_listens_label;
     juce::TextButton back_button;
             
     std::function<void()> onBackClicked;

@@ -7,33 +7,31 @@
 #include "Application.h"
 
 
-void game_ui_top_update(GameUI_Top *top, GameStep new_step, int new_score)
+void game_ui_header_update(GameUI_Header *header, GameStep new_step, int new_score)
 {
-    top->remaining_listens_label.setVisible(false);
-
     switch(new_step)
     {
         case GameStep_Begin : 
         {
-            top->top_label.setText("Have a listen", juce::dontSendNotification);
+            header->header_label.setText("Have a listen", juce::dontSendNotification);
 
         } break;
         case GameStep_Listening :
         case GameStep_Editing :
         {
-            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+            header->header_label.setText("Reproduce the target mix", juce::dontSendNotification);
 
         }break;
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
         {
-            top->top_label.setText("Results", juce::dontSendNotification);
+            header->header_label.setText("Results", juce::dontSendNotification);
 
         }break;
     };
     
     //score
-    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 
@@ -114,7 +112,8 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
     }
     if (effects.ui && state->ui)
     {
-        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+        auto * ui = (MixerGameUI*) state->ui;
+        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
     }
     if (effects.timer)
     {

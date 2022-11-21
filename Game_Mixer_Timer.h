@@ -1,41 +1,17 @@
 using audio_observer_timer_t = std::function<void(Effect_DSP)>;
 
 struct MixerGameUI_Timer;
-struct MixerGame_State_Timer;
 
-struct MixerGame_State_Timer {
-    std::unordered_map<int, ChannelInfos> &channel_infos;
-    //state
-    GameStep step;
-    int score;
-    std::unordered_map < int, int > edited_slider_pos;
-    std::unordered_map < int, int > target_slider_pos;
-    //parametres
-    int timeout_ms;
-    std::vector < double > db_slider_values;
-    //IO
-    Application *app;
-    MixerGameUI_Timer *ui;
-    Timer timer;
-    std::vector<audio_observer_timer_t> observers_audio;
-};
-
-
-void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event);
-Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event);
-void game_ui_top_update_timer(GameUI_Top *top, GameStep new_step, int new_score);
+void mixer_game_post_event_timer(MixerGame_State *state, Event event);
+Effects mixer_game_timer_update(MixerGame_State *state, Event event);
+void game_ui_header_update_timer(GameUI_Header *header, GameStep new_step, int new_score);
 void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step, int new_score);
-
-static void mixer_game_timer_add_audio_observer(MixerGame_State_Timer *state, audio_observer_timer_t observer)
-{
-    state->observers_audio.push_back(std::move(observer));
-}
 
 struct MixerGameUI_Timer : public juce::Component
 {
     MixerGameUI_Timer(const std::unordered_map<int, ChannelInfos>& channel_infos,
                   const std::vector<double> &db_slider_values,
-                  MixerGame_State_Timer *state) :
+                  MixerGame_State *state) :
         fader_row(faders),
         db_slider_values(db_slider_values),
         state(state)
@@ -86,7 +62,7 @@ struct MixerGameUI_Timer : public juce::Component
             
             mixer_game_post_event_timer(state, event);
         };
-        top.onBackClicked = [state = state, ui = this] {
+        header.onBackClicked = [state = state, ui = this] {
             Event event = {
                 .type = Event_Click_Back
             };
@@ -99,7 +75,7 @@ struct MixerGameUI_Timer : public juce::Component
             };
             mixer_game_post_event_timer(state, event);
         };
-        addAndMakeVisible(top);
+        addAndMakeVisible(header);
         addAndMakeVisible(fader_viewport);
         addAndMakeVisible(bottom);
     }
@@ -108,13 +84,13 @@ struct MixerGameUI_Timer : public juce::Component
     {
         auto bounds = getLocalBounds();
         auto bottom_height = 50;
-        auto top_height = 20;
+        auto header_height = 20;
     
-        auto top_bounds = bounds.withHeight(top_height);
-        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
+        auto header_bounds = bounds.withHeight(header_height);
+        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(header_height);
         auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
         
-        top.setBounds(top_bounds);
+        header.setBounds(header_bounds);
         fader_viewport.setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
     
@@ -192,7 +168,7 @@ struct MixerGameUI_Timer : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_top_update_timer(&top, new_step, new_score);
+        game_ui_header_update_timer(&header, new_step, new_score);
         game_ui_bottom_update_timer(&bottom, new_step, new_score);
     }
 
@@ -200,18 +176,18 @@ struct MixerGameUI_Timer : public juce::Component
     FaderRowComponent fader_row;
     juce::Viewport fader_viewport;
     const std::vector < double > &db_slider_values;
-    GameUI_Top top;
+    GameUI_Header header;
     GameUI_Bottom bottom;
-    MixerGame_State_Timer *state;
+    MixerGame_State *state;
 };
 
-static std::unique_ptr<MixerGame_State_Timer> mixer_game_init_timer(
+static std::unique_ptr<MixerGame_State> mixer_game_init_timer(
     std::unordered_map<int, ChannelInfos> &channel_infos,
     int timeout_ms,
     std::vector<double> db_slider_values,
     Application *app)
 {
-    MixerGame_State_Timer state = {
+    MixerGame_State state = {
         .channel_infos = channel_infos,
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
@@ -219,7 +195,7 @@ static std::unique_ptr<MixerGame_State_Timer> mixer_game_init_timer(
         .ui = nullptr,
         .timer = Timer{}
     };
-    return std::make_unique < MixerGame_State_Timer > (std::move(state));
+    return std::make_unique < MixerGame_State > (std::move(state));
 }
 
 

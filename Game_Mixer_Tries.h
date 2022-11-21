@@ -2,40 +2,16 @@ using audio_observer_tries_t = std::function<void(Effect_DSP)>;
 
 struct MixerGameUI_Tries;
 
-struct MixerGame_State_Tries {
-    std::unordered_map<int, ChannelInfos> &channel_infos;
-    //state
-    GameStep step;
-    int score;
-    std::unordered_map < int, int > edited_slider_pos;
-    std::unordered_map < int, int > target_slider_pos;
-    //parametres
-    int listens;
-    int remaining_listens;
-    std::vector < double > db_slider_values;
-    //io
-    Application *app;
-    MixerGameUI_Tries *ui;
-    Timer timer;
-    std::vector<audio_observer_tries_t> observers_audio;
-};
-
-
-void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event);
-Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event);
-void game_ui_top_update_tries(GameUI_Top *top, GameStep new_step, int new_score, int remaining_listens);
+void mixer_game_post_event_tries(MixerGame_State *state, Event event);
+Effects mixer_game_tries_update(MixerGame_State *state, Event event);
+void game_ui_header_update_tries(GameUI_Header *header, GameStep new_step, int new_score, int remaining_listens);
 void game_ui_bottom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens);
-
-static void mixer_game_tries_add_audio_observer(MixerGame_State_Tries *state, audio_observer_tries_t observer)
-{
-    state->observers_audio.push_back(std::move(observer));
-}
 
 struct MixerGameUI_Tries : public juce::Component
 {
     MixerGameUI_Tries(const std::unordered_map<int, ChannelInfos>& channel_infos,
                   const std::vector<double> &db_slider_values,
-                  MixerGame_State_Tries *state) :
+                  MixerGame_State *state) :
         fader_row(faders),
         db_slider_values(db_slider_values),
         state(state)
@@ -86,7 +62,7 @@ struct MixerGameUI_Tries : public juce::Component
             
             mixer_game_post_event_tries(state, event);
         };
-        top.onBackClicked = [state = state, ui = this] {
+        header.onBackClicked = [state = state, ui = this] {
             Event event = {
                 .type = Event_Click_Back
             };
@@ -99,7 +75,7 @@ struct MixerGameUI_Tries : public juce::Component
             };
             mixer_game_post_event_tries(state, event);
         };
-        addAndMakeVisible(top);
+        addAndMakeVisible(header);
         addAndMakeVisible(fader_viewport);
         addAndMakeVisible(bottom);
     }
@@ -108,13 +84,13 @@ struct MixerGameUI_Tries : public juce::Component
     {
         auto bounds = getLocalBounds();
         auto bottom_height = 50;
-        auto top_height = 20;
+        auto header_height = 20;
     
-        auto top_bounds = bounds.withHeight(top_height);
-        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
+        auto header_bounds = bounds.withHeight(header_height);
+        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(header_height);
         auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
         
-        top.setBounds(top_bounds);
+        header.setBounds(header_bounds);
         fader_viewport.setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
     
@@ -192,7 +168,7 @@ struct MixerGameUI_Tries : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_top_update_tries(&top, new_step, new_score, remaining_listens);
+        game_ui_header_update_tries(&header, new_step, new_score, remaining_listens);
         game_ui_bottom_update_tries(&bottom, new_step, new_score, remaining_listens);
     }
 
@@ -200,25 +176,25 @@ struct MixerGameUI_Tries : public juce::Component
     FaderRowComponent fader_row;
     juce::Viewport fader_viewport;
     const std::vector < double > &db_slider_values;
-    GameUI_Top top;
+    GameUI_Header header;
     GameUI_Bottom bottom;
-    MixerGame_State_Tries *state;
+    MixerGame_State *state;
 };
 
-static std::unique_ptr<MixerGame_State_Tries> mixer_game_init_tries(
+static std::unique_ptr<MixerGame_State> mixer_game_init_tries(
     std::unordered_map<int, ChannelInfos> &channel_infos,
     int tries,
     std::vector<double> db_slider_values,
     Application *app)
 {
-    MixerGame_State_Tries state = {
+    MixerGame_State state = {
         .channel_infos = channel_infos,
         .listens = tries,
         .db_slider_values = db_slider_values,
         .app = app,
         .ui = nullptr
     };
-    return std::make_unique < MixerGame_State_Tries > (std::move(state));
+    return std::make_unique < MixerGame_State > (std::move(state));
 }
 
 

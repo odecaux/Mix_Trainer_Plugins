@@ -7,26 +7,26 @@
 #include "Application.h"
 
 
-void game_ui_top_update_timer(GameUI_Top *top, GameStep new_step, int new_score)
+void game_ui_header_update_timer(GameUI_Header *header, GameStep new_step, int new_score)
 {
 
     switch (new_step)
     {
         case GameStep_Begin :
         {
-            top->top_label.setText("Have a listen", juce::dontSendNotification);
+            header->header_label.setText("Have a listen", juce::dontSendNotification);
         } break;
         case GameStep_Listening :
         {
-            top->top_label.setText("Listen", juce::dontSendNotification);
+            header->header_label.setText("Listen", juce::dontSendNotification);
         } break;
         case GameStep_Editing :
         {
-            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+            header->header_label.setText("Reproduce the target mix", juce::dontSendNotification);
         } break;
         case GameStep_ShowingTruth :
         {
-            top->top_label.setText("Results", juce::dontSendNotification);
+            header->header_label.setText("Results", juce::dontSendNotification);
         } break;
         case GameStep_ShowingAnswer : 
         {
@@ -35,7 +35,7 @@ void game_ui_top_update_timer(GameUI_Top *top, GameStep new_step, int new_score)
     };
     
     //score
-    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step, int new_score)
@@ -87,7 +87,7 @@ void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step, int n
     };
 }
 
-void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
+void mixer_game_post_event_timer(MixerGame_State *state, Event event)
 {
     Effects effects = mixer_game_timer_update(state, event);
     if (effects.dsp)
@@ -97,7 +97,8 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     }
     if (effects.ui && state->ui)
     {
-        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+        auto * ui = (MixerGameUI_Timer*) state->ui;
+        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
     }
     if (effects.timer)
     {
@@ -115,7 +116,7 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     }
 }
 
-Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
+Effects mixer_game_timer_update(MixerGame_State *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;

@@ -43,20 +43,17 @@ juce::String step_to_str(GameStep step)
 
 //------------------------------------------------------------------------
 
-GameUI_Top::GameUI_Top()
+GameUI_Header::GameUI_Header()
 {
     {
-        top_label.setJustificationType (juce::Justification::centred);
-        addAndMakeVisible(top_label);
+        header_label.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible(header_label);
         back_button.setButtonText("Back");
         back_button.onClick = [this] {
             onBackClicked();
         };
         addAndMakeVisible(back_button);
         addAndMakeVisible(score_label);
-
-        remaining_listens_label.setJustificationType (juce::Justification::centred);
-        addChildComponent(remaining_listens_label);
     }
 }
 
@@ -93,13 +90,12 @@ GameUI_Bottom::GameUI_Bottom()
     }
 }
        
-void GameUI_Top::resized()
+void GameUI_Header::resized()
 {
     auto bounds = getLocalBounds();
             
-    auto topLabelBounds = bounds.withTrimmedLeft(90).withTrimmedRight(90);
-    remaining_listens_label.setBounds(topLabelBounds);
-    //top_label.setBounds(topLabelBounds);
+    auto headerLabelBounds = bounds.withTrimmedLeft(90).withTrimmedRight(90);
+    header_label.setBounds(headerLabelBounds);
 
     auto back_buttonBounds = bounds.withWidth(90);
     back_button.setBounds(back_buttonBounds);
@@ -111,9 +107,6 @@ void GameUI_Top::resized()
 
 void GameUI_Bottom::resized()
 {
-//
-    //auto bottom_height = 50;
-    //auto top_height = 20;
     auto bounds = getLocalBounds();
     auto center = bounds.getCentre();
 

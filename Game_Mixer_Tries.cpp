@@ -7,48 +7,42 @@
 #include "Application.h"
 
 
-void game_ui_top_update_tries(GameUI_Top *top, GameStep new_step, int new_score, int remaining_listens)
+void game_ui_header_update_tries(GameUI_Header *header, GameStep new_step, int new_score, int remaining_listens)
 {
     switch(new_step)
     {
         case GameStep_Begin : 
         {
-            top->top_label.setText("Have a listen", juce::dontSendNotification);
-            top->remaining_listens_label.setVisible(false);
+            header->header_label.setText("Have a listen", juce::dontSendNotification);
         } break;
         case GameStep_Listening :
         case GameStep_Editing :
         {
-            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
-
-            top->remaining_listens_label.setVisible(true);
-
-            bool show_text = remaining_listens >= 0;
-            top->remaining_listens_label.setVisible(show_text);
             
-            if (show_text)
+            if (remaining_listens >= 0)
             {
-                top->remaining_listens_label.setText(
+                header->header_label.setText(
                     juce::String("remaining listens : ") + juce::String(remaining_listens),
                     juce::dontSendNotification
                 );
+            }
+            else
+            {
+                header->header_label.setText(
+                    "Reproduce the target mix", 
+                    juce::dontSendNotification);
             }
 
         }break;
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
         {
-            top->top_label.setText("Results", juce::dontSendNotification);
-            top->remaining_listens_label.setVisible(false);
-            top->remaining_listens_label.setText(
-                juce::String("remaining listens : ") + juce::String(remaining_listens), 
-                juce::dontSendNotification
-            );
+            header->header_label.setText("Results", juce::dontSendNotification);
         }break;
     };
     
     //score
-    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens)
@@ -126,7 +120,7 @@ void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int 
     };
 }
 
-void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event)
+void mixer_game_post_event_tries(MixerGame_State *state, Event event)
 {
     Effects effects = mixer_game_tries_update(state, event);
     if (effects.dsp)
@@ -136,7 +130,8 @@ void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event)
     }
     if (effects.ui && state->ui)
     {
-        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
+        auto * ui = (MixerGameUI_Tries*) state->ui;
+        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
     }
     if (effects.timer)
     {
@@ -154,7 +149,7 @@ void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event)
     }
 }
 
-Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event)
+Effects mixer_game_tries_update(MixerGame_State *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;

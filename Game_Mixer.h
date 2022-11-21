@@ -10,18 +10,20 @@ struct MixerGame_State {
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
     //parametres
+    int listens;
+    int remaining_listens;
+    int timeout_ms;
     std::vector < double > db_slider_values;
     //io
     Application *app;
-    MixerGameUI *ui;
+    void *ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
 };
 
-
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
-void game_ui_top_update(GameUI_Top *top, GameStep new_step, int new_score);
+void game_ui_header_update(GameUI_Header *header, GameStep new_step, int new_score);
 void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, int new_score);
 
 static void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t observer)
@@ -84,7 +86,7 @@ struct MixerGameUI : public juce::Component
             
             mixer_game_post_event(state, event);
         };
-        top.onBackClicked = [state = state, ui = this] {
+        header.onBackClicked = [state = state, ui = this] {
             Event event = {
                 .type = Event_Click_Back
             };
@@ -97,7 +99,7 @@ struct MixerGameUI : public juce::Component
             };
             mixer_game_post_event(state, event);
         };
-        addAndMakeVisible(top);
+        addAndMakeVisible(header);
         addAndMakeVisible(fader_viewport);
         addAndMakeVisible(bottom);
     }
@@ -106,13 +108,13 @@ struct MixerGameUI : public juce::Component
     {
         auto bounds = getLocalBounds();
         auto bottom_height = 50;
-        auto top_height = 20;
+        auto header_height = 20;
 
-        auto top_bounds = bounds.withHeight(top_height);
-        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
+        auto header_bounds = bounds.withHeight(header_height);
+        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(header_height);
         auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
         
-        top.setBounds(top_bounds);
+        header.setBounds(header_bounds);
         fader_viewport.setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
 
@@ -190,7 +192,7 @@ struct MixerGameUI : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_top_update(&top, new_step, new_score);
+        game_ui_header_update(&header, new_step, new_score);
         game_ui_bottom_update(&bottom, new_step, new_score);
     }
 
@@ -198,7 +200,7 @@ struct MixerGameUI : public juce::Component
     FaderRowComponent fader_row;
     juce::Viewport fader_viewport;
     const std::vector < double > &db_slider_values;
-    GameUI_Top top;
+    GameUI_Header header;
     GameUI_Bottom bottom;
     MixerGame_State *state;
 };
