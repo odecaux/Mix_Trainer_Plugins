@@ -48,8 +48,8 @@ private:
     };
     
     //std::unique_ptr < Game > game;
-    std::unique_ptr<MixerGame_State_Timer> game_state;
-    MixerGameUI_Timer *game_ui;
+    std::unique_ptr<MixerGame_State> game_state;
+    MixerGameUI *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };
     Stats stats = { 0 };

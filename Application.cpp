@@ -30,7 +30,7 @@ void Application::toMainMenu()
         std::make_unique < MainMenu > (
             [this] { toGame(); },
             [this] { toStats(); },
-            [this ] { toSettings(); }
+            [this] { toSettings(); }
         );
     editor->changePanel(std::move(main_menu));
 }
@@ -64,21 +64,21 @@ void Application::toGame()
     jassert(editor);
     jassert(!game_state);
     
-    game_state = mixer_game_init_timer(channels, 3000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
-    mixer_game_timer_add_audio_observer(game_state.get(), [this] (auto &&effect){ broadcastDSP(effect.dsp_states); });
-    mixer_game_timer_add_audio_observer(game_state.get(), [this] (auto &&effect){ 
+    game_state = mixer_game_init(channels, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    mixer_game_add_audio_observer(game_state.get(), [this] (auto &&effect){ broadcastDSP(effect.dsp_states); });
+    mixer_game_add_audio_observer(game_state.get(), [this] (auto &&effect){ 
                                       channel_dsp_log(effect.dsp_states, channels); 
     });
     
-    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Init });
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Init });
 
-    auto game_panel = std::make_unique<MixerGameUI_Timer>(
+    auto game_panel = std::make_unique<MixerGameUI>(
         channels,
         game_state->db_slider_values,
         game_state.get()
     );
     game_ui = game_panel.get();              
-    mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
 
     editor->changePanel(std::move(game_panel));
 }
@@ -121,7 +121,7 @@ void Application::onEditorDelete()
     if (type == PanelType::Game)
     {
         jassert(game_state);
-        mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Destroy_UI });
+        mixer_game_post_event(game_state.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
 }
@@ -149,13 +149,13 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case PanelType::Game :
         {
             jassert(game_state); 
-            auto game_ui_temp = std::make_unique<MixerGameUI_Timer>(
+            auto game_ui_temp = std::make_unique<MixerGameUI>(
                 channels,
                 game_state->db_slider_values,
                 game_state.get()
             );
             game_ui = game_ui_temp.get();
-            mixer_game_post_event_timer(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
+            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
             panel = std::move(game_ui_temp);
         } break;
     }
@@ -182,7 +182,7 @@ void Application::createChannel(int id)
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event_timer(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event);
     }
 }
     
@@ -197,7 +197,7 @@ void Application::deleteChannel(int id)
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event_timer(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event);
     }
     channels.erase(channel);
 }
@@ -224,7 +224,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event_timer(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event);
     }
 }
     
@@ -242,6 +242,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event_timer(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event);
     }
 }

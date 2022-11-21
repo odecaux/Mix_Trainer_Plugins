@@ -129,11 +129,13 @@ struct Effects {
     std::optional < Effect_Timer > timer;
 };
 
-struct GameUI_Wrapper : public juce::Component
-{
-    GameUI_Wrapper(juce::Component *game_ui);
 
-    void paint(juce::Graphics& g) override;
+
+struct GameUI_Top : public juce::Component
+{
+    GameUI_Top();
+
+    //void paint(juce::Graphics& g) override {} 
     void resized() override;
 
     juce::Label top_label;
@@ -141,6 +143,16 @@ struct GameUI_Wrapper : public juce::Component
     juce::Label remaining_listens_label;
     juce::TextButton back_button;
             
+    std::function<void()> onBackClicked;
+};
+
+struct GameUI_Bottom : public juce::Component
+{
+    GameUI_Bottom();
+
+    //void paint(juce::Graphics& g) override {}
+    void resized() override;
+
     juce::TextButton next_button;
     juce::ToggleButton target_mix_button;
     juce::ToggleButton user_mix_button;
@@ -148,8 +160,6 @@ struct GameUI_Wrapper : public juce::Component
     std::function<void()> onBeginClicked;
     std::function<void(Event_Type)> onNextClicked;
     std::function<void(bool)> onToggleClicked;
-    std::function<void()> onBackClicked;
 
-    juce::Component *game_ui;
     Event next_button_event;
 };
