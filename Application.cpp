@@ -46,8 +46,7 @@ void channel_dsp_log(const std::unordered_map<int, ChannelDSPState> &dsps,
         const auto &dsp = dsps.at(id);
         double db = juce::Decibels::gainToDecibels(dsp.gain);
         juce::String db_str = juce::Decibels::toString(db);
-        char output_str[1024];
-        sprintf_s(output_str, 1023, "%d  %s  : %s", int(id), channel.name.getCharPointer(), db_str.getCharPointer());
+        juce::String output_str = juce::String(id) + " " + channel.name + " " + db_str;
 #if 0
         printf("%s", output_str);
 #endif
