@@ -35,7 +35,7 @@ void game_ui_header_update(GameUI_Header *header, GameStep new_step, int new_sco
 }
 
 
-void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, int new_score)
+void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step)
 {
     switch(new_step)
     {

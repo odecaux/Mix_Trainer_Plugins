@@ -45,7 +45,7 @@ void game_ui_header_update_tries(GameUI_Header *header, GameStep new_step, int n
     header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
-void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens)
+void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens)
 {
     switch(new_step)
     {

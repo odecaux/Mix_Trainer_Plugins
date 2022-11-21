@@ -24,7 +24,7 @@ struct MixerGame_State {
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
 void game_ui_header_update(GameUI_Header *header, GameStep new_step, int new_score);
-void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, int new_score);
+void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step);
 
 static void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t observer)
 {
@@ -193,7 +193,7 @@ struct MixerGameUI : public juce::Component
             fader->update(fader_step, pos);
         }
         game_ui_header_update(&header, new_step, new_score);
-        game_ui_bottom_update(&bottom, new_step, new_score);
+        game_ui_bottom_update(&bottom, new_step);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
