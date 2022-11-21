@@ -14,6 +14,7 @@ struct MixerGame_State {
     //io
     Application *app;
     MixerGameUI *ui;
+    Timer timer;
     std::vector<audio_observer_t> observers_audio;
 };
 
@@ -60,7 +61,7 @@ struct MixerGameUI : public juce::Component
             };
 
             auto new_fader = std::make_unique < FaderComponent > (
-                this->db_slider_values,
+                state->db_slider_values,
                 a.second.name,
                 std::move(onFaderMoved),
                 std::move(onEdited)

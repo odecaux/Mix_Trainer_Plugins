@@ -3,12 +3,6 @@ using audio_observer_timer_t = std::function<void(Effect_DSP)>;
 struct MixerGameUI_Timer;
 struct MixerGame_State_Timer;
 
-struct My_Timer: public juce::Timer
-{
-    void timerCallback() override;
-    MixerGame_State_Timer *state;
-};
-
 struct MixerGame_State_Timer {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     //state
@@ -22,7 +16,7 @@ struct MixerGame_State_Timer {
     //IO
     Application *app;
     MixerGameUI_Timer *ui;
-    My_Timer timer;
+    Timer timer;
     std::vector<audio_observer_timer_t> observers_audio;
 };
 
@@ -69,7 +63,7 @@ struct MixerGameUI_Timer : public juce::Component
             };
 
             auto new_fader = std::make_unique < FaderComponent > (
-                this->db_slider_values,
+                state->db_slider_values,
                 a.second.name,
                 std::move(onFaderMoved),
                 std::move(onEdited)
@@ -112,20 +106,20 @@ struct MixerGameUI_Timer : public juce::Component
 
     void resized() override 
     {
-         auto bounds = getLocalBounds();
-         auto bottom_height = 50;
-         auto top_height = 20;
-
-         auto top_bounds = bounds.withHeight(top_height);
-         auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
-         auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
+        auto bounds = getLocalBounds();
+        auto bottom_height = 50;
+        auto top_height = 20;
+    
+        auto top_bounds = bounds.withHeight(top_height);
+        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
+        auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
         
-         top.setBounds(top_bounds);
-         fader_viewport.setBounds(game_bounds);
-         bottom.setBounds(bottom_bounds);
-
-         fader_row.setSize(fader_row.getWidth(),
-                           fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
+        top.setBounds(top_bounds);
+        fader_viewport.setBounds(game_bounds);
+        bottom.setBounds(bottom_bounds);
+    
+        fader_row.setSize(fader_row.getWidth(),
+                          fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
     }
 
     //NOTE solution 1) keeping them in sync
@@ -223,7 +217,7 @@ static std::unique_ptr<MixerGame_State_Timer> mixer_game_init_timer(
         .db_slider_values = db_slider_values,
         .app = app,
         .ui = nullptr,
-        .timer = My_Timer{}
+        .timer = Timer{}
     };
     return std::make_unique < MixerGame_State_Timer > (std::move(state));
 }

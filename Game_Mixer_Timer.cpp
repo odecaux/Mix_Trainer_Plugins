@@ -102,7 +102,7 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     if (effects.timer)
     {
         jassert(!state->timer.isTimerRunning());
-        state->timer.state = state;
+        state->timer.callback = std::move(effects.timer->callback); 
         state->timer.startTimer(effects.timer->timeout_ms);
     }
     if (effects.rename)
@@ -113,13 +113,6 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     {
         state->app->quitGame();
     }
-}
-
-
-void My_Timer::timerCallback()
-{
-    stopTimer();
-    mixer_game_post_event_timer(state, Event { .type = Event_Timeout });
 }
 
 Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
@@ -269,7 +262,12 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
             jassert(state->target_slider_pos.size() == state->channel_infos.size());
             jassert(state->edited_slider_pos.size() == state->channel_infos.size());
             
-            effects.timer = Effect_Timer { state->timeout_ms };
+            effects.timer = Effect_Timer {
+                .timeout_ms = state->timeout_ms ,
+                .callback = [state] {
+                    mixer_game_post_event_timer(state, Event { .type = Event_Timeout });
+                }
+            };
             update_audio = true;
             update_ui = true;
         }break;
@@ -319,6 +317,3 @@ Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event)
     state->step = step;
     return effects;
 }
-
-
-

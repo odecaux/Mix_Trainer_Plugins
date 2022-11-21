@@ -104,8 +104,6 @@ void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, int new_sco
     };
 }
 
-
-
 void mixer_game_post_event(MixerGame_State *state, Event event)
 {
     Effects effects = mixer_game_update(state, event);
@@ -117,6 +115,12 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
     if (effects.ui && state->ui)
     {
         state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+    }
+    if (effects.timer)
+    {
+        jassert(!state->timer.isTimerRunning());
+        state->timer.callback = std::move(effects.timer->callback); 
+        state->timer.startTimer(effects.timer->timeout_ms);
     }
     if (effects.rename)
     {

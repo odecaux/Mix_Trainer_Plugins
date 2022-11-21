@@ -1,3 +1,7 @@
+rendre top et bottom gerenics, update et lambdas
+
+
+
 Observers pour UI
 epoch pour le timer ?
 dessiner le graph ?

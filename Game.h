@@ -100,6 +100,14 @@ enum Transition {
     Transition_None,
 };
 
+struct Timer: public juce::Timer
+{
+    void timerCallback() override {
+        stopTimer();
+        callback();
+    }
+    std::function<void()> callback;
+};
 
 struct Effect_DSP {
     std::unordered_map<int, ChannelDSPState> dsp_states;
@@ -119,6 +127,7 @@ struct Effect_Rename {
 
 struct Effect_Timer {
     int timeout_ms;
+    std::function<void()> callback;
 };
 
 struct Effects {
@@ -128,8 +137,6 @@ struct Effects {
     bool quit;
     std::optional < Effect_Timer > timer;
 };
-
-
 
 struct GameUI_Top : public juce::Component
 {

@@ -16,6 +16,7 @@ struct MixerGame_State_Tries {
     //io
     Application *app;
     MixerGameUI_Tries *ui;
+    Timer timer;
     std::vector<audio_observer_tries_t> observers_audio;
 };
 
@@ -118,7 +119,7 @@ struct MixerGameUI_Tries : public juce::Component
         bottom.setBounds(bottom_bounds);
     
         fader_row.setSize(fader_row.getWidth(),
-                            fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
+                          fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
     }
 
     //NOTE solution 1) keeping them in sync

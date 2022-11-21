@@ -138,6 +138,12 @@ void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event)
     {
         state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
     }
+    if (effects.timer)
+    {
+        jassert(!state->timer.isTimerRunning());
+        state->timer.callback = std::move(effects.timer->callback); 
+        state->timer.startTimer(effects.timer->timeout_ms);
+    }
     if (effects.rename)
     {
         state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
@@ -351,6 +357,3 @@ Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event)
     state->step = step;
     return effects;
 }
-
-
-
