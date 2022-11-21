@@ -32,6 +32,11 @@ juce::String step_to_str(GameStep step)
         {
             return "ShowingAnswer";
         } break;
+        default : 
+        {
+            jassertfalse;
+            return "";
+        };
     }
 }
 

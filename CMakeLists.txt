@@ -31,6 +31,7 @@ target_sources(MixTrainer_Host
         Game_Mixer.cpp
         Game_Mixer_Tries.cpp
         Game_Mixer_Timer.cpp
+        Game_Solo.cpp
         Application.cpp)
 
 target_compile_definitions(MixTrainer_Host
@@ -39,6 +40,8 @@ target_compile_definitions(MixTrainer_Host
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
         
+target_compile_options(MixTrainer_Host PRIVATE /wd4505)
+
 target_link_libraries(MixTrainer_Host
     PRIVATE
         juce::juce_audio_utils

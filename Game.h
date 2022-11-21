@@ -9,25 +9,40 @@ enum GameStep {
     GameStep_ShowingAnswer
 };
 
-juce::String step_to_str(GameStep step);
-
-#if 0
-struct ChannelState
+static FaderStep gameStepToFaderStep(GameStep game_step)
 {
-    double edited_gain;
-    double target_gain;
-    //- unused 
-    double target_low_shelf_gain;
-    double target_low_shelf_freq;
-    double target_high_shelf_gain;
-    double target_high_shelf_freq;
-    
-    double edited_low_shelf_gain;
-    double edited_low_shelf_freq;
-    double edited_high_shelf_gain;
-    double edited_high_shelf_freq;
-};
-#endif
+    switch (game_step)
+    {
+        case GameStep_Begin :
+        {
+            return FaderStep_Editing;
+        } break;
+        case GameStep_Listening :
+        {
+            return FaderStep_Hiding;
+        } break;
+        case GameStep_Editing :
+        {
+            return FaderStep_Editing;
+        } break; 
+        case GameStep_ShowingTruth :
+        {
+            return FaderStep_Showing;
+        } break;
+        case GameStep_ShowingAnswer :
+        {
+            return FaderStep_Showing;
+        } break;
+        default:
+        {
+            jassertfalse;
+            return {};
+        };
+    }
+}
+
+
+juce::String step_to_str(GameStep step);
 
 struct ChannelInfos
 {
