@@ -1,7 +1,7 @@
 Observers pour UI
 epoch pour le timer ?
 dessiner le graph ?
-
+rename top et bottom.
 transition in et out
 
 Hierarchical FSM ?

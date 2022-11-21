@@ -7,10 +7,38 @@
 #include "Application.h"
 
 
-void game_ui_wrapper_update(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new_step, int new_score)
+void game_ui_top_update(GameUI_Top *top, GameStep new_step, int new_score)
 {
     top->remaining_listens_label.setVisible(false);
 
+    switch(new_step)
+    {
+        case GameStep_Begin : 
+        {
+            top->top_label.setText("Have a listen", juce::dontSendNotification);
+
+        } break;
+        case GameStep_Listening :
+        case GameStep_Editing :
+        {
+            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+
+        }break;
+        case GameStep_ShowingTruth :
+        case GameStep_ShowingAnswer : 
+        {
+            top->top_label.setText("Results", juce::dontSendNotification);
+
+        }break;
+    };
+    
+    //score
+    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+}
+
+
+void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, int new_score)
+{
     switch(new_step)
     {
         case GameStep_Begin : {
@@ -52,7 +80,6 @@ void game_ui_wrapper_update(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new
     {
         case GameStep_Begin : 
         {
-            top->top_label.setText("Have a listen", juce::dontSendNotification);
             bottom->next_button.setButtonText("Begin");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Begin);
@@ -61,7 +88,6 @@ void game_ui_wrapper_update(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new
         case GameStep_Listening :
         case GameStep_Editing :
         {
-            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
             bottom->next_button.setButtonText("Validate");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Answer);
@@ -70,16 +96,12 @@ void game_ui_wrapper_update(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
         {
-            top->top_label.setText("Results", juce::dontSendNotification);
             bottom->next_button.setButtonText("Next");            
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Next);
             };
         }break;
     };
-    
-    //score
-    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 

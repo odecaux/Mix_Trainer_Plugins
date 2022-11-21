@@ -22,7 +22,8 @@ struct MixerGame_State_Tries {
 
 void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event);
 Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event);
-void game_ui_wrapper_update_tries(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens);
+void game_ui_top_update_tries(GameUI_Top *top, GameStep new_step, int new_score, int remaining_listens);
+void game_ui_bottom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens);
 
 static void mixer_game_tries_add_audio_observer(MixerGame_State_Tries *state, audio_observer_tries_t observer)
 {
@@ -190,7 +191,8 @@ struct MixerGameUI_Tries : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_wrapper_update_tries(&top, &bottom, new_step, new_score, remaining_listens);
+        game_ui_top_update_tries(&top, new_step, new_score, remaining_listens);
+        game_ui_bottom_update_tries(&bottom, new_step, new_score, remaining_listens);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;

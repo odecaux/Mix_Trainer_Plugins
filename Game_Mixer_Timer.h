@@ -28,9 +28,9 @@ struct MixerGame_State_Timer {
 
 
 void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event);
-
 Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event);
-void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new_step, int new_score);
+void game_ui_top_update_timer(GameUI_Top *top, GameStep new_step, int new_score);
+void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step, int new_score);
 
 static void mixer_game_timer_add_audio_observer(MixerGame_State_Timer *state, audio_observer_timer_t observer)
 {
@@ -198,7 +198,8 @@ struct MixerGameUI_Timer : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_wrapper_update_timer(&top, &bottom, new_step, new_score);
+        game_ui_top_update_timer(&top, new_step, new_score);
+        game_ui_bottom_update_timer(&bottom, new_step, new_score);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;

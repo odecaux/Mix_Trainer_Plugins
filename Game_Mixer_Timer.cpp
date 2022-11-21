@@ -7,7 +7,38 @@
 #include "Application.h"
 
 
-void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new_step, int new_score)
+void game_ui_top_update_timer(GameUI_Top *top, GameStep new_step, int new_score)
+{
+
+    switch (new_step)
+    {
+        case GameStep_Begin :
+        {
+            top->top_label.setText("Have a listen", juce::dontSendNotification);
+        } break;
+        case GameStep_Listening :
+        {
+            top->top_label.setText("Listen", juce::dontSendNotification);
+        } break;
+        case GameStep_Editing :
+        {
+            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+        } break;
+        case GameStep_ShowingTruth :
+        {
+            top->top_label.setText("Results", juce::dontSendNotification);
+        } break;
+        case GameStep_ShowingAnswer : 
+        {
+            jassertfalse;
+        } break;
+    };
+    
+    //score
+    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+}
+
+void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step, int new_score)
 {
     switch(new_step)
     {
@@ -23,7 +54,6 @@ void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameSt
     {
         case GameStep_Begin :
         {
-            top->top_label.setText("Have a listen", juce::dontSendNotification);
             bottom->next_button.setButtonText("Begin");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Begin);
@@ -31,7 +61,6 @@ void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameSt
         } break;
         case GameStep_Listening :
         {
-            top->top_label.setText("Listen", juce::dontSendNotification);
             bottom->next_button.setButtonText("Go");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Start_Answering_RENAME);
@@ -39,7 +68,6 @@ void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameSt
         } break;
         case GameStep_Editing :
         {
-            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
             bottom->next_button.setButtonText("Validate");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Answer);
@@ -47,7 +75,6 @@ void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameSt
         } break;
         case GameStep_ShowingTruth :
         {
-            top->top_label.setText("Results", juce::dontSendNotification);
             bottom->next_button.setButtonText("Next");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Next);
@@ -58,9 +85,6 @@ void game_ui_wrapper_update_timer(GameUI_Top *top, GameUI_Bottom *bottom, GameSt
             jassertfalse;
         } break;
     };
-    
-    //score
-    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
