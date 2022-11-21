@@ -1,5 +1,3 @@
-
-
 using audio_observer_tries_t = std::function<void(Effect_DSP)>;
 
 struct MixerGameUI_Tries;
@@ -167,7 +165,8 @@ struct MixerGameUI_Tries : public juce::Component
 
     void updateGameUI(GameStep new_step, int new_score, std::optional<std::unordered_map<int, int >> &slider_pos_to_display, int remaining_listens)
     {
-        if (slider_pos_to_display){
+        if (slider_pos_to_display)
+        {
             jassert(slider_pos_to_display->size() == faders.size());
         }
 
@@ -190,14 +189,13 @@ struct MixerGameUI_Tries : public juce::Component
 
 static std::unique_ptr<MixerGame_State_Tries> mixer_game_init_tries(
     std::unordered_map<int, ChannelInfos> &channel_infos,
-    int timeout_ms,
+    int tries,
     std::vector<double> db_slider_values,
     Application *app)
 {
-    juce::ignoreUnused(timeout_ms);
     MixerGame_State_Tries state = {
         .channel_infos = channel_infos,
-        .listens = 5,
+        .listens = tries,
         .db_slider_values = db_slider_values,
         .app = app,
         .ui = nullptr

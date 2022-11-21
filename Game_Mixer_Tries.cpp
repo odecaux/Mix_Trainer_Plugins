@@ -136,7 +136,12 @@ Effects mixer_game_tries_update(MixerGame_State_Tries *state, Event event)
     bool update_audio = false;
     bool update_ui = false;
 
-    Effects effects = { std::nullopt, std::nullopt, std::nullopt, false };
+    Effects effects = { 
+        .dsp = std::nullopt, 
+        .ui = std::nullopt, 
+        .rename = std::nullopt, 
+        .quit = false 
+    };
 
     switch (event.type)
     {

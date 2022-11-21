@@ -7,7 +7,7 @@
 #include "Application.h"
 
 
-void game_ui_wrapper_update_timer(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens)
+void game_ui_wrapper_update_timer(GameUI_Wrapper *ui, GameStep new_step, int new_score)
 {
     switch(new_step)
     {
@@ -73,7 +73,7 @@ void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event)
     }
     if (effects.ui && state->ui)
     {
-        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
+        state->ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
     }
     if (effects.timer)
     {

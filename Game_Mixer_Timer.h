@@ -1,7 +1,4 @@
-
-
 using audio_observer_timer_t = std::function<void(Effect_DSP)>;
-
 
 struct MixerGameUI_Timer;
 struct MixerGame_State_Timer;
@@ -33,7 +30,8 @@ struct MixerGame_State_Timer {
 void mixer_game_post_event_timer(MixerGame_State_Timer *state, Event event);
 
 Effects mixer_game_timer_update(MixerGame_State_Timer *state, Event event);
-void game_ui_wrapper_update_timer(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens);
+void game_ui_wrapper_update_timer(GameUI_Wrapper *ui, GameStep new_step, int new_score);
+
 static void mixer_game_timer_add_audio_observer(MixerGame_State_Timer *state, audio_observer_timer_t observer)
 {
     state->observers_audio.push_back(std::move(observer));
@@ -175,9 +173,10 @@ struct MixerGameUI_Timer : public juce::Component
         faders[id]->setName(name);
     }
 
-    void updateGameUI(GameStep new_step, int new_score, std::optional<std::unordered_map<int, int >> &slider_pos_to_display, int remaining_listens)
+    void updateGameUI(GameStep new_step, int new_score, std::optional<std::unordered_map<int, int >> &slider_pos_to_display)
     {
-        if (slider_pos_to_display){
+        if (slider_pos_to_display)
+        {
             jassert(slider_pos_to_display->size() == faders.size());
         }
 
@@ -187,7 +186,7 @@ struct MixerGameUI_Timer : public juce::Component
             int pos = slider_pos_to_display ? slider_pos_to_display->at(id) : -1;
             fader->update(fader_step, pos);
         }
-        game_ui_wrapper_update_timer(&panel, new_step, new_score, remaining_listens);
+        game_ui_wrapper_update_timer(&panel, new_step, new_score);
     }
 
     std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;

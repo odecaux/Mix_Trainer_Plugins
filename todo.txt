@@ -1,20 +1,15 @@
+Observers pour UI
+epoch pour le timer ?
+dessiner le graph ?
+
+
+
+
 Struct pour le wrapper
-Observers pour audio et UI
-
-
-
-
 
 transition in et out
 
 Hierarchical FSM ?
-
-UI_Wrapper descriptor ?
-
-
-
-
-
 
 
 

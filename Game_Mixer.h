@@ -1,4 +1,3 @@
-
 static FaderStep gameStepToFaderStep(GameStep game_step)
 {
     switch (game_step)
@@ -37,13 +36,14 @@ struct MixerGameUI;
 
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
+    //state
     GameStep step;
     int score;
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
     //parametres
-    int timeout_ms;
     std::vector < double > db_slider_values;
+    //io
     Application *app;
     MixerGameUI *ui;
     std::vector<audio_observer_t> observers_audio;
@@ -53,11 +53,11 @@ struct MixerGame_State {
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
 void game_ui_wrapper_update(GameUI_Wrapper *ui, GameStep new_step, int new_score);
+
 static void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t observer)
 {
     state->observers_audio.push_back(std::move(observer));
 }
-
 
 struct MixerGameUI : public juce::Component
 {
@@ -221,11 +221,9 @@ struct MixerGameUI : public juce::Component
 
 static std::unique_ptr<MixerGame_State> mixer_game_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
-    int timeout_ms,
     std::vector<double> db_slider_values,
     Application *app)
 {
-    juce::ignoreUnused(timeout_ms);
     MixerGame_State state = {
         .channel_infos = channel_infos,
         .db_slider_values = db_slider_values,
