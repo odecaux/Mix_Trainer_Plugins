@@ -2,11 +2,6 @@ Observers pour UI
 epoch pour le timer ?
 dessiner le graph ?
 
-
-
-
-Struct pour le wrapper
-
 transition in et out
 
 Hierarchical FSM ?

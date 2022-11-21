@@ -100,7 +100,8 @@ struct MixerGameUI : public juce::Component
         addAndMakeVisible(bottom);
     }
 
-    void resized() override {
+    void resized() override 
+    {
         auto bounds = getLocalBounds();
         auto bottom_height = 50;
         auto top_height = 20;
@@ -218,5 +219,5 @@ static std::unique_ptr<MixerGame_State> mixer_game_init(
 
 
 
-//#include "Game_Mixer_Tries.h"
-//#include "Game_Mixer_Timer.h"
+#include "Game_Mixer_Tries.h"
+#include "Game_Mixer_Timer.h"

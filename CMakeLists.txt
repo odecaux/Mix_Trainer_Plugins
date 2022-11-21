@@ -29,8 +29,8 @@ target_sources(MixTrainer_Host
         Processor_Host.cpp
         Game.cpp
         Game_Mixer.cpp
-        # Game_Mixer_Tries.cpp
-        # Game_Mixer_Timer.cpp
+        Game_Mixer_Tries.cpp
+        Game_Mixer_Timer.cpp
         # Game_Solo.cpp
         Application.cpp)
 

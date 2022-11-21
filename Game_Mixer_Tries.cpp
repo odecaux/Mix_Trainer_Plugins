@@ -7,15 +7,15 @@
 #include "Application.h"
 
 
-void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new_score, int remaining_listens)
+void game_ui_wrapper_update_tries(GameUI_Top *top, GameUI_Bottom *bottom, GameStep new_step, int new_score, int remaining_listens)
 {
     switch(new_step)
     {
         case GameStep_Begin : {
-            ui->target_mix_button.setEnabled(false);
-            ui->user_mix_button.setEnabled(false);
-            ui->target_mix_button.setVisible(false);
-            ui->user_mix_button.setVisible(false);
+            bottom->target_mix_button.setEnabled(false);
+            bottom->user_mix_button.setEnabled(false);
+            bottom->target_mix_button.setVisible(false);
+            bottom->user_mix_button.setVisible(false);
         } break;
         case GameStep_Listening :
         case GameStep_Editing :
@@ -31,14 +31,14 @@ void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new
         case GameStep_Editing :
         case GameStep_ShowingAnswer : 
         {
-            ui->target_mix_button.setToggleState(false, juce::dontSendNotification);
-            ui->user_mix_button.setToggleState(true, juce::dontSendNotification);
+            bottom->target_mix_button.setToggleState(false, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(true, juce::dontSendNotification);
         } break;
         case GameStep_ShowingTruth :
         case GameStep_Listening :
         {
-            ui->target_mix_button.setToggleState(true, juce::dontSendNotification);
-            ui->user_mix_button.setToggleState(false, juce::dontSendNotification);
+            bottom->target_mix_button.setToggleState(true, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(false, juce::dontSendNotification);
         }break;
     };
 
@@ -46,56 +46,56 @@ void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new
     {
         case GameStep_Begin : 
         {
-            ui->top_label.setText("Have a listen", juce::dontSendNotification);
-            ui->next_button.setButtonText("Begin");
-            ui->next_button.onClick = [ui] {
-                ui->onNextClicked(Event_Click_Begin);
+            top->top_label.setText("Have a listen", juce::dontSendNotification);
+            bottom->next_button.setButtonText("Begin");
+            bottom->next_button.onClick = [bottom] {
+                bottom->onNextClicked(Event_Click_Begin);
             };
-            ui->remaining_listens_label.setVisible(false);
+            top->remaining_listens_label.setVisible(false);
         } break;
         case GameStep_Listening :
         case GameStep_Editing :
         {
-            ui->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
-            ui->next_button.setButtonText("Validate");
-            ui->next_button.onClick = [ui] {
-                ui->onNextClicked(Event_Click_Answer);
+            top->top_label.setText("Reproduce the target mix", juce::dontSendNotification);
+            bottom->next_button.setButtonText("Validate");
+            bottom->next_button.onClick = [bottom] {
+                bottom->onNextClicked(Event_Click_Answer);
             };
-            ui->remaining_listens_label.setVisible(true);
+            top->remaining_listens_label.setVisible(true);
 
             bool show_text = remaining_listens >= 0;
-            ui->remaining_listens_label.setVisible(show_text);
+            top->remaining_listens_label.setVisible(show_text);
             
             if (show_text)
             {
-                ui->remaining_listens_label.setText(
+                top->remaining_listens_label.setText(
                     juce::String("remaining listens : ") + juce::String(remaining_listens),
                     juce::dontSendNotification
                 );
             }
             
             bool show_toggles = remaining_listens > 0;
-            ui->target_mix_button.setEnabled(show_toggles);
-            ui->user_mix_button.setEnabled(show_toggles);
-            ui->target_mix_button.setVisible(show_toggles);
-            ui->user_mix_button.setVisible(show_toggles);
+            bottom->target_mix_button.setEnabled(show_toggles);
+            bottom->user_mix_button.setEnabled(show_toggles);
+            bottom->target_mix_button.setVisible(show_toggles);
+            bottom->user_mix_button.setVisible(show_toggles);
 
         }break;
         case GameStep_ShowingTruth :
         case GameStep_ShowingAnswer : 
         {
-            ui->top_label.setText("Results", juce::dontSendNotification);
-            ui->next_button.setButtonText("Next");            
-            ui->next_button.onClick = [ui] {
-                ui->onNextClicked(Event_Click_Next);
+            top->top_label.setText("Results", juce::dontSendNotification);
+            bottom->next_button.setButtonText("Next");            
+            bottom->next_button.onClick = [bottom] {
+                bottom->onNextClicked(Event_Click_Next);
             };
-            ui->remaining_listens_label.setVisible(false);
+            top->remaining_listens_label.setVisible(false);
             
-            ui->target_mix_button.setEnabled(true);
-            ui->user_mix_button.setEnabled(true);
-            ui->target_mix_button.setVisible(true);
-            ui->user_mix_button.setVisible(true);
-            ui->remaining_listens_label.setText(
+            bottom->target_mix_button.setEnabled(true);
+            bottom->user_mix_button.setEnabled(true);
+            bottom->target_mix_button.setVisible(true);
+            bottom->user_mix_button.setVisible(true);
+            top->remaining_listens_label.setText(
                 juce::String("remaining listens : ") + juce::String(remaining_listens), 
                 juce::dontSendNotification
             );
@@ -103,7 +103,7 @@ void game_ui_wrapper_update_tries(GameUI_Wrapper *ui, GameStep new_step, int new
     };
     
     //score
-    ui->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+    top->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
 void mixer_game_post_event_tries(MixerGame_State_Tries *state, Event event)
