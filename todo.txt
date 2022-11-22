@@ -1,11 +1,7 @@
-Mutualiser l'update pour les tops et bottom, la logic va dans l'update loop
 epoch pour le timer ?
 transition in et out
 
 Hierarchical FSM ?
-
-
-
 
 escape spaces when broadcasting name
 design a save system 

@@ -126,6 +126,7 @@ struct Effect_UI {
     int remaining_listens;
     juce::String button_text;
     Mix mix;
+    Event_Type button_event;
 };
 
 struct Effect_Rename {

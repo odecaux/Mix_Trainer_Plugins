@@ -85,7 +85,7 @@ void Application::toGame()
 
     mixer_game_add_ui_observer(game_state.get(), 
                                [this] (auto &&effect){ 
-                                   game_ui_update_timer(effect, *game_ui); 
+                                   game_ui_update(effect, *game_ui); 
                                }
     );      
     mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
