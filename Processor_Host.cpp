@@ -14,6 +14,7 @@
 
 
 #include "Game.h"
+#include "Game_Mixer.h"
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"
@@ -115,8 +116,6 @@ void ProcessorHost::prepareToPlay(double sampleRate, int samplesPerBlock)
 
 void ProcessorHost::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations

@@ -8,6 +8,8 @@
   ==============================================================================
 */
 
+#include <juce_audio_processors/juce_audio_processors.h>
+
 #include "shared.h"
 #include "Processor_Track.h"
 #include "PluginEditor_Track.h"
@@ -211,7 +213,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
         auto blob = juce::MemoryBlock{};
         blob.loadFromHexString(tokens[2]);
         size_t blob_size = blob.getSize();
-        size_t dsp_state_size = sizeof ChannelDSPState;
+        size_t dsp_state_size = sizeof(ChannelDSPState);
         jassert(blob_size == dsp_state_size);
         ChannelDSPState state = *(ChannelDSPState*)blob.getData();
         gain = state.gain;

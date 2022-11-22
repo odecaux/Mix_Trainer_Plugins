@@ -2,60 +2,85 @@
 #include "shared.h"
 
 #include "Game.h"
+#include "Game_Mixer.h"
 #include "MainMenu.h"
 #include "Application.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 
-#if 0
-void Game::
-
-void Game::backClicked()
+juce::String step_to_str(GameStep step)
 {
-    app.toMainMenu();
+    switch (step)
+    {
+        case GameStep_Begin :
+        {
+            return "Begin";
+        } break;
+        case GameStep_Listening :
+        {
+            return "Listening";
+        } break;
+        case GameStep_Editing :
+        {
+            return "Editing";
+        } break;
+        case GameStep_ShowingTruth :
+        {
+            return "ShowingTruth";
+        } break;
+        case GameStep_ShowingAnswer :
+        {
+            return "ShowingAnswer";
+        } break;
+        default : 
+        {
+            jassertfalse;
+            return "";
+        };
+    }
 }
 
-#endif 
-GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
-                                   std::function < void(bool) > &&onToggleClicked,
-                                   std::function < void() > && onBackClicked,
-                                   std::unique_ptr < GameUI > game_ui) :
-    game_ui(std::move(game_ui))
+
+//------------------------------------------------------------------------
+
+GameUI_Header::GameUI_Header()
 {
     {
-        top_label.setJustificationType (juce::Justification::centred);
-        addAndMakeVisible(top_label);
+        header_label.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible(header_label);
         back_button.setButtonText("Back");
-        back_button.onClick = [this, back = std::move(onBackClicked)] {
-            back();
+        back_button.onClick = [this] {
+            onBackClicked();
         };
         addAndMakeVisible(back_button);
         addAndMakeVisible(score_label);
     }
+}
+
+
+GameUI_Bottom::GameUI_Bottom()
+{
     {
-        next_button.onClick = [this, next = std::move(onNextClicked)] {
-            next();
-        };
         addAndMakeVisible(next_button);
     }
     
     {
         target_mix_button.setButtonText("Target mix");
-        target_mix_button.onClick = [this, toggle = onToggleClicked] {
+        target_mix_button.onClick = [this] {
             juce::String str = target_mix_button.getToggleState() ? juce::String{ "on" } : juce::String{ "off" };
             
             if(target_mix_button.getToggleState())
-                toggle(true);
+                onToggleClicked(true);
         };
         addAndMakeVisible(target_mix_button);
             
         user_mix_button.setButtonText("My mix");
         
-        user_mix_button.onClick = [this, toggle = onToggleClicked] {
+        user_mix_button.onClick = [this] {
             juce::String str = user_mix_button.getToggleState() ?  juce::String{ "on" } :  juce::String{ "off" };
             
             if(user_mix_button.getToggleState())
-                toggle(false);
+                onToggleClicked(false);
          };
          
         addAndMakeVisible(user_mix_button);
@@ -63,122 +88,35 @@ GameUI_Panel::GameUI_Panel(std::function < void() > && onNextClicked,
         target_mix_button.setRadioGroupId (1000);
         user_mix_button.setRadioGroupId (1000);
     }
-
-    this->game_ui->attachParentPanel(this);
-    addAndMakeVisible(this->game_ui.get());
-}
- 
-void GameUI_Panel::updateGameUI_Generic(GameStep new_step, int new_score)
-{
-    //hide/reveal
-    switch(new_step)
-    {
-        case Begin : {
-            target_mix_button.setEnabled(false);
-            user_mix_button.setEnabled(false);
-            target_mix_button.setVisible(false);
-            user_mix_button.setVisible(false);
-        } break;
-        case Listening :
-        case Editing :
-        case ShowingTruth :
-        case ShowingAnswer : 
-        {
-            target_mix_button.setEnabled(true);
-            user_mix_button.setEnabled(true);
-            target_mix_button.setVisible(true);
-            user_mix_button.setVisible(true);
-        }break;
-    };
-
-    //ticked one
-    switch(new_step)
-    {
-        case Begin : break;
-        case Editing :
-        case ShowingAnswer : 
-        {
-            target_mix_button.setToggleState(false, juce::dontSendNotification);
-            user_mix_button.setToggleState(true, juce::dontSendNotification);
-        } break;
-        case ShowingTruth :
-        case Listening :
-        {
-            target_mix_button.setToggleState(true, juce::dontSendNotification);
-            user_mix_button.setToggleState(false, juce::dontSendNotification);
-        }break;
-    };
-
-    //labels
-    switch(new_step)
-    {
-        case Begin : 
-        {
-            top_label.setText("Have a listen", juce::dontSendNotification);
-            next_button.setButtonText("Begin");
-        } break;
-        case Listening :
-        case Editing :
-        {
-            top_label.setText("Reproduce the target mix", juce::dontSendNotification);
-            next_button.setButtonText("Validate");
-        }break;
-        case ShowingTruth :
-        case ShowingAnswer : 
-        {
-            top_label.setText("Results", juce::dontSendNotification);
-            next_button.setButtonText("Next");
-        }break;
-    };
-    
-    //score
-    score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
-}
-
-      
-void GameUI_Panel::paint(juce::Graphics& g)
-{
-    juce::ignoreUnused(g);
 }
        
-void GameUI_Panel::resized()
+void GameUI_Header::resized()
 {
-    auto bottom_height = 50;
-    auto top_height = 20;
-    auto r = getLocalBounds();
+    auto bounds = getLocalBounds();
             
-    auto topBounds = r.withHeight(top_height);
-            
-    {
-        auto topLabelBounds = topBounds.withTrimmedLeft(90).withTrimmedRight(90);
-        top_label.setBounds(topLabelBounds);
-     
-        auto back_buttonBounds = topBounds.withWidth(90);
-        back_button.setBounds(back_buttonBounds);
+    auto headerLabelBounds = bounds.withTrimmedLeft(90).withTrimmedRight(90);
+    header_label.setBounds(headerLabelBounds);
 
-        auto score_labelBounds = topBounds.withTrimmedLeft(topBounds.getWidth() - 90);
-        score_label.setBounds(score_labelBounds);
-    }
+    auto back_buttonBounds = bounds.withWidth(90);
+    back_button.setBounds(back_buttonBounds);
 
-    auto gameBounds = r.withTrimmedBottom(bottom_height).withTrimmedTop(top_height);
-    game_ui->setBounds(gameBounds);
-
-    {
-        auto bottomStripBounds = r.withTrimmedTop(r.getHeight() - bottom_height);
-        auto center = bottomStripBounds.getCentre();
-    
-        auto button_temp = juce::Rectangle(100, bottom_height - 10);
-        auto nextBounds = button_temp.withCentre(center);
-        next_button.setBounds(nextBounds);
-            
-        auto toggleBounds = bottomStripBounds.withWidth(100);
-        auto targetMixBounds = toggleBounds.withHeight(bottom_height / 2);
-        auto userMixBounds = targetMixBounds.translated(0, bottom_height / 2);
-        target_mix_button.setBounds(targetMixBounds);
-        user_mix_button.setBounds(userMixBounds);
-    }
+    auto score_labelBounds = bounds.withTrimmedLeft(bounds.getWidth() - 90);
+    score_label.setBounds(score_labelBounds);
 }
-void Game::onUIDelete() {
-    jassert(game_ui != nullptr);
-    game_ui = nullptr;
+
+
+void GameUI_Bottom::resized()
+{
+    auto bounds = getLocalBounds();
+    auto center = bounds.getCentre();
+
+    auto button_temp = juce::Rectangle(100, bounds.getHeight() - 10);
+    auto nextBounds = button_temp.withCentre(center);
+    next_button.setBounds(nextBounds);
+        
+    auto toggleBounds = bounds.withWidth(100);
+    auto targetMixBounds = toggleBounds.withHeight(bounds.getHeight() / 2);
+    auto userMixBounds = targetMixBounds.translated(0, bounds.getHeight() / 2);
+    target_mix_button.setBounds(targetMixBounds);
+    user_mix_button.setBounds(userMixBounds);
 }

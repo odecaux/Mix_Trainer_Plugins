@@ -1,7 +1,8 @@
-
+#include "stdio.h"
 
 class ProcessorHost;
 class EditorHost;
+
 
 class Application
 {
@@ -14,6 +15,8 @@ public:
     void toGame();
     void toStats();
     void toSettings();
+
+    void quitGame();
     
     //TODO rename
     static std::unordered_map < int, ChannelDSPState > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
@@ -44,11 +47,14 @@ private:
         Stats
     };
     
-    std::unique_ptr < Game > game;
+    //std::unique_ptr < Game > game;
+    std::unique_ptr<MixerGame_State> game_state;
+    MixerGameUI *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };
     Stats stats = { 0 };
     PanelType type;
     ProcessorHost &host;
+
     EditorHost *editor;
 };
