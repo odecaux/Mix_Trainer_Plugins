@@ -119,6 +119,7 @@ struct Effect_UI {
     int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
     int remaining_listens;
+    juce::String button_text;
 };
 
 struct Effect_Rename {

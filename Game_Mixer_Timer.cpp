@@ -6,7 +6,7 @@
 #include "MainMenu.h"
 #include "Application.h"
 
-void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step)
+void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step,  juce::String button_text)
 {
     switch(new_step)
     {
@@ -18,32 +18,30 @@ void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step)
         } break;
     };
 
+    bottom->next_button.setButtonText(button_text);
+
     switch (new_step)
     {
         case GameStep_Begin :
         {
-            bottom->next_button.setButtonText("Begin");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Begin);
             };
         } break;
         case GameStep_Listening :
         {
-            bottom->next_button.setButtonText("Go");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Start_Answering_RENAME);
             };
         } break;
         case GameStep_Editing :
         {
-            bottom->next_button.setButtonText("Validate");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Answer);
             };
         } break;
         case GameStep_ShowingTruth :
         {
-            bottom->next_button.setButtonText("Next");
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Next);
             };
@@ -52,7 +50,7 @@ void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step)
         {
             jassertfalse;
         } break;
-    };
+    }
 }
 
 void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui)
@@ -68,7 +66,7 @@ void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui)
         fader->update(fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    game_ui_bottom_update_timer(&ui.bottom, new_ui.step);
+    game_ui_bottom_update_timer(&ui.bottom, new_ui.step, new_ui.button_text);
 }
 
 Effects mixer_game_timer_update(MixerGame_State *state, Event event)
@@ -260,23 +258,28 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             slider_pos_to_display = *edit_or_target;
 
         juce::String header_text;
+        juce::String button_text;
         switch (step)
         {
             case GameStep_Begin :
             {
                 header_text = "Have a listen";
+                button_text = "Begin";
             } break;
             case GameStep_Listening :
             {
                 header_text = "Listen";
+                button_text = "Go";
             } break;
             case GameStep_Editing :
             {
                 header_text = "Reproduce the target mix";
+                button_text = "Validate";
             } break;
             case GameStep_ShowingTruth :
             {
                 header_text = "Results";
+                button_text = "Next";
             } break;
             case GameStep_ShowingAnswer : 
             {
@@ -288,7 +291,8 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             .step = step,
             .header_text = std::move(header_text),
             .score = state->score,
-            .slider_pos_to_display = std::move(slider_pos_to_display)
+            .slider_pos_to_display = std::move(slider_pos_to_display),
+            .button_text = std::move(button_text)
         };
     }
 
