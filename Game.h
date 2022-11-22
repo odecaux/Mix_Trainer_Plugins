@@ -41,6 +41,11 @@ static FaderStep gameStepToFaderStep(GameStep game_step)
     }
 }
 
+enum Mix {
+    Mix_User,
+    Mix_Target,
+    Mix_Hidden
+};
 
 juce::String step_to_str(GameStep step);
 
@@ -120,6 +125,7 @@ struct Effect_UI {
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
     int remaining_listens;
     juce::String button_text;
+    Mix mix;
 };
 
 struct Effect_Rename {

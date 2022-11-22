@@ -6,41 +6,34 @@
 #include "MainMenu.h"
 #include "Application.h"
 
-void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens, juce::String button_text)
+void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens, juce::String button_text, Mix mix)
 {
-    switch(new_step)
+    if (mix == Mix_Hidden)
     {
-        case GameStep_Begin : {
-            bottom->target_mix_button.setEnabled(false);
-            bottom->user_mix_button.setEnabled(false);
-            bottom->target_mix_button.setVisible(false);
-            bottom->user_mix_button.setVisible(false);
-        } break;
-        case GameStep_Listening :
-        case GameStep_Editing :
-        case GameStep_ShowingTruth :
-        case GameStep_ShowingAnswer : 
-        {
-        }break;
-    };
+        bottom->target_mix_button.setEnabled(false);
+        bottom->user_mix_button.setEnabled(false);
+        bottom->target_mix_button.setVisible(false);
+        bottom->user_mix_button.setVisible(false);
+    }
+    else
+    {
+        bottom->target_mix_button.setEnabled(true);
+        bottom->user_mix_button.setEnabled(true);
+        bottom->target_mix_button.setVisible(true);
+        bottom->user_mix_button.setVisible(true);
 
-    switch(new_step)
-    {
-        case GameStep_Begin : break;
-        case GameStep_Editing :
-        case GameStep_ShowingAnswer : 
+        if (mix == Mix_User)
         {
             bottom->target_mix_button.setToggleState(false, juce::dontSendNotification);
             bottom->user_mix_button.setToggleState(true, juce::dontSendNotification);
-        } break;
-        case GameStep_ShowingTruth :
-        case GameStep_Listening :
+        }
+        else if (mix == Mix_Target)
         {
             bottom->target_mix_button.setToggleState(true, juce::dontSendNotification);
             bottom->user_mix_button.setToggleState(false, juce::dontSendNotification);
-        }break;
-    };
-    
+        }
+    }
+
     bottom->next_button.setButtonText(button_text);
 
     switch(new_step)
@@ -57,12 +50,6 @@ void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int 
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Answer);
             };
-            
-            bool show_toggles = remaining_listens > 0;
-            bottom->target_mix_button.setEnabled(show_toggles);
-            bottom->user_mix_button.setEnabled(show_toggles);
-            bottom->target_mix_button.setVisible(show_toggles);
-            bottom->user_mix_button.setVisible(show_toggles);
 
         }break;
         case GameStep_ShowingTruth :
@@ -71,11 +58,6 @@ void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int 
             bottom->next_button.onClick = [bottom] {
                 bottom->onNextClicked(Event_Click_Next);
             };
-            
-            bottom->target_mix_button.setEnabled(true);
-            bottom->user_mix_button.setEnabled(true);
-            bottom->target_mix_button.setVisible(true);
-            bottom->user_mix_button.setVisible(true);
         }break;
     };
 }
@@ -93,7 +75,7 @@ void game_ui_update_tries(Effect_UI &new_ui, MixerGameUI &ui)
         fader->update(fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    game_ui_bottom_update_tries(&ui.bottom, new_ui.step, new_ui.remaining_listens, new_ui.button_text);
+    game_ui_bottom_update_tries(&ui.bottom, new_ui.step, new_ui.remaining_listens, new_ui.button_text, new_ui.mix);
 }
 
 Effects mixer_game_tries_update(MixerGame_State *state, Event event)
@@ -309,6 +291,30 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
                 button_text = "Next";
             }break;
         }
+        
+        bool show_toggles = state->remaining_listens > 0;
+        Mix mix;
+        switch(step)
+        {
+            case GameStep_Begin : {
+                mix = Mix_Hidden;
+            } break;
+            case GameStep_Editing : {
+                mix = show_toggles ? Mix_User : Mix_Hidden;
+            } break;
+            case GameStep_Listening :
+            {
+                mix = show_toggles ? Mix_Target : Mix_Hidden;
+            } break;
+            case GameStep_ShowingAnswer : 
+            {
+                mix = Mix_User;
+            } break;
+            case GameStep_ShowingTruth :
+            {
+                mix = Mix_Target;
+            }break;
+        };
 
         effects.ui = Effect_UI {
             .step = step,

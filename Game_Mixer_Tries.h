@@ -1,5 +1,5 @@
 Effects mixer_game_tries_update(MixerGame_State *state, Event event);
-void game_ui_bottom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens,  juce::String button_text);
+void game_ui_bottom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens,  juce::String button_text, Mix mix);
 void game_ui_update_tries(Effect_UI &new_ui, MixerGameUI &ui);
 
 static std::unique_ptr<MixerGame_State> mixer_game_init_tries(

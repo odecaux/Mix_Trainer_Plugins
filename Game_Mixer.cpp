@@ -12,45 +12,34 @@ void game_ui_header_update(GameUI_Header *header, juce::String header_text, int 
     header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
 }
 
-void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, juce::String button_text)
-{
-    switch(new_step)
+void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step, juce::String button_text, Mix mix)
+{   
+    if (mix == Mix_Hidden)
     {
-        case GameStep_Begin : {
-            bottom->target_mix_button.setEnabled(false);
-            bottom->user_mix_button.setEnabled(false);
-            bottom->target_mix_button.setVisible(false);
-            bottom->user_mix_button.setVisible(false);
-        } break;
-        case GameStep_Listening :
-        case GameStep_Editing :
-        case GameStep_ShowingTruth :
-        case GameStep_ShowingAnswer : 
-        {
-            bottom->target_mix_button.setEnabled(true);
-            bottom->user_mix_button.setEnabled(true);
-            bottom->target_mix_button.setVisible(true);
-            bottom->user_mix_button.setVisible(true);
-        }break;
-    };
+        bottom->target_mix_button.setEnabled(false);
+        bottom->user_mix_button.setEnabled(false);
+        bottom->target_mix_button.setVisible(false);
+        bottom->user_mix_button.setVisible(false);
+    }
+    else
+    {
+        bottom->target_mix_button.setEnabled(true);
+        bottom->user_mix_button.setEnabled(true);
+        bottom->target_mix_button.setVisible(true);
+        bottom->user_mix_button.setVisible(true);
 
-    switch(new_step)
-    {
-        case GameStep_Begin : break;
-        case GameStep_Editing :
-        case GameStep_ShowingAnswer : 
+        if (mix == Mix_User)
         {
             bottom->target_mix_button.setToggleState(false, juce::dontSendNotification);
             bottom->user_mix_button.setToggleState(true, juce::dontSendNotification);
-        } break;
-        case GameStep_ShowingTruth :
-        case GameStep_Listening :
+        }
+        else if (mix == Mix_Target)
         {
             bottom->target_mix_button.setToggleState(true, juce::dontSendNotification);
             bottom->user_mix_button.setToggleState(false, juce::dontSendNotification);
-        }break;
-    };
-    
+        }
+    }
+
     bottom->next_button.setButtonText(button_text);
 
     switch(new_step)
@@ -91,7 +80,7 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
         fader->update(fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    game_ui_bottom_update(&ui.bottom, new_ui.step, new_ui.button_text);
+    game_ui_bottom_update(&ui.bottom, new_ui.step, new_ui.button_text, new_ui.mix);
 }
 
 void mixer_game_post_event(MixerGame_State *state, Event event)
@@ -330,6 +319,25 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 button_text = "Next";
             }break;
         }
+
+        
+        Mix mix;
+        switch(step)
+        {
+            case GameStep_Begin : {
+                mix = Mix_Hidden;
+            } break;
+            case GameStep_Editing :
+            case GameStep_ShowingAnswer : 
+            {
+                mix = Mix_User;
+            } break;
+            case GameStep_ShowingTruth :
+            case GameStep_Listening :
+            {
+                mix = Mix_Target;
+            }break;
+        };
         
         effects.ui = Effect_UI {
             .step = step,

@@ -1,5 +1,5 @@
 Effects mixer_game_timer_update(MixerGame_State *state, Event event);
-void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step,  juce::String button_text);
+void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step,  juce::String button_text, Mix mix);
 void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui);
 
 static std::unique_ptr<MixerGame_State> mixer_game_init_timer(

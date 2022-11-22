@@ -6,17 +6,33 @@
 #include "MainMenu.h"
 #include "Application.h"
 
-void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step,  juce::String button_text)
+void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step,  juce::String button_text, Mix mix)
 {
-    switch(new_step)
+    if (mix == Mix_Hidden)
     {
-        default : {
-            bottom->target_mix_button.setEnabled(false);
-            bottom->user_mix_button.setEnabled(false);
-            bottom->target_mix_button.setVisible(false);
-            bottom->user_mix_button.setVisible(false);
-        } break;
-    };
+        bottom->target_mix_button.setEnabled(false);
+        bottom->user_mix_button.setEnabled(false);
+        bottom->target_mix_button.setVisible(false);
+        bottom->user_mix_button.setVisible(false);
+    }
+    else
+    {
+        bottom->target_mix_button.setEnabled(true);
+        bottom->user_mix_button.setEnabled(true);
+        bottom->target_mix_button.setVisible(true);
+        bottom->user_mix_button.setVisible(true);
+
+        if (mix == Mix_User)
+        {
+            bottom->target_mix_button.setToggleState(false, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(true, juce::dontSendNotification);
+        }
+        else if (mix == Mix_Target)
+        {
+            bottom->target_mix_button.setToggleState(true, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(false, juce::dontSendNotification);
+        }
+    }
 
     bottom->next_button.setButtonText(button_text);
 
@@ -66,7 +82,7 @@ void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui)
         fader->update(fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    game_ui_bottom_update_timer(&ui.bottom, new_ui.step, new_ui.button_text);
+    game_ui_bottom_update_timer(&ui.bottom, new_ui.step, new_ui.button_text, new_ui.mix);
 }
 
 Effects mixer_game_timer_update(MixerGame_State *state, Event event)
@@ -286,6 +302,8 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
                 jassertfalse;
             } break;
         }
+
+        Mix mix = Mix_Hidden;
 
         effects.ui = Effect_UI {
             .step = step,
