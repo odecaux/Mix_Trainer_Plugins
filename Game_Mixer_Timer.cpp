@@ -6,38 +6,6 @@
 #include "MainMenu.h"
 #include "Application.h"
 
-
-void game_ui_header_update_timer(GameUI_Header *header, GameStep new_step, int new_score)
-{
-
-    switch (new_step)
-    {
-        case GameStep_Begin :
-        {
-            header->header_label.setText("Have a listen", juce::dontSendNotification);
-        } break;
-        case GameStep_Listening :
-        {
-            header->header_label.setText("Listen", juce::dontSendNotification);
-        } break;
-        case GameStep_Editing :
-        {
-            header->header_label.setText("Reproduce the target mix", juce::dontSendNotification);
-        } break;
-        case GameStep_ShowingTruth :
-        {
-            header->header_label.setText("Results", juce::dontSendNotification);
-        } break;
-        case GameStep_ShowingAnswer : 
-        {
-            jassertfalse;
-        } break;
-    };
-    
-    //score
-    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
-}
-
 void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step)
 {
     switch(new_step)
@@ -99,7 +67,7 @@ void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui)
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
         fader->update(fader_step, pos);
     }
-    game_ui_header_update_timer(&ui.header, new_ui.step, new_ui.score);
+    game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     game_ui_bottom_update_timer(&ui.bottom, new_ui.step);
 }
 
@@ -291,10 +259,36 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
         else
             slider_pos_to_display = *edit_or_target;
 
+        juce::String header_text;
+        switch (step)
+        {
+            case GameStep_Begin :
+            {
+                header_text = "Have a listen";
+            } break;
+            case GameStep_Listening :
+            {
+                header_text = "Listen";
+            } break;
+            case GameStep_Editing :
+            {
+                header_text = "Reproduce the target mix";
+            } break;
+            case GameStep_ShowingTruth :
+            {
+                header_text = "Results";
+            } break;
+            case GameStep_ShowingAnswer : 
+            {
+                jassertfalse;
+            } break;
+        }
+
         effects.ui = Effect_UI {
-            step,
-            state->score,
-            std::move(slider_pos_to_display)
+            .step = step,
+            .header_text = std::move(header_text),
+            .score = state->score,
+            .slider_pos_to_display = std::move(slider_pos_to_display)
         };
     }
 

@@ -1,11 +1,5 @@
-rendre top et bottom gerenics, update et lambdas
-
-
-
-Observers pour UI
+Mutualiser l'update pour les tops et bottom, la logic va dans l'update loop
 epoch pour le timer ?
-dessiner le graph ?
-rename top et bottom.
 transition in et out
 
 Hierarchical FSM ?

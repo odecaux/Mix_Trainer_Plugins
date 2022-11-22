@@ -1,5 +1,4 @@
 Effects mixer_game_tries_update(MixerGame_State *state, Event event);
-void game_ui_header_update_tries(GameUI_Header *header, GameStep new_step, int new_score, int remaining_listens);
 void game_ui_bottom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int remaining_listens);
 void game_ui_update_tries(Effect_UI &new_ui, MixerGameUI &ui);
 

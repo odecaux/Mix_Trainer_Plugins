@@ -21,7 +21,7 @@ struct MixerGame_State {
 
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
-void game_ui_header_update(GameUI_Header *header, GameStep new_step, int new_score);
+void game_ui_header_update(GameUI_Header *header, juce::String header_text, int new_score);
 void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step);
 void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui);
 

@@ -39,7 +39,7 @@ void game_ui_header_update_tries(GameUI_Header *header, GameStep new_step, int n
         {
             header->header_label.setText("Results", juce::dontSendNotification);
         }break;
-    };
+    }
     
     //score
     header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
@@ -132,7 +132,7 @@ void game_ui_update_tries(Effect_UI &new_ui, MixerGameUI &ui)
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
         fader->update(fader_step, pos);
     }
-    game_ui_header_update_tries(&ui.header, new_ui.step, new_ui.score, new_ui.remaining_listens);
+    game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     game_ui_bottom_update_tries(&ui.bottom, new_ui.step, new_ui.remaining_listens);
 }
 
@@ -324,11 +324,34 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         else
             slider_pos_to_display = *edit_or_target;
 
+        juce::String header_text;
+        switch(step)
+        {
+            case GameStep_Begin : 
+            {
+                header_text = "Have a listen";
+            } break;
+            case GameStep_Listening :
+            case GameStep_Editing :
+            {
+                if (state->remaining_listens >= 0)
+                    header_text = juce::String("remaining listens : ") + juce::String(state->remaining_listens);
+                else
+                    header_text = "Reproduce the target mix";
+            }break;
+            case GameStep_ShowingTruth :
+            case GameStep_ShowingAnswer : 
+            {
+                header_text = "Results";
+            }break;
+        }
+
         effects.ui = Effect_UI {
-            step,
-            state->score,
-            std::move(slider_pos_to_display),
-            state->remaining_listens
+            .step = step,
+            .header_text = std::move(header_text),
+            .score = state->score,
+            .slider_pos_to_display = std::move(slider_pos_to_display),
+            .remaining_listens = state->remaining_listens
         };
     }
 

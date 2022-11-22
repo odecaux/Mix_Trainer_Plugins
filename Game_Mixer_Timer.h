@@ -1,5 +1,4 @@
 Effects mixer_game_timer_update(MixerGame_State *state, Event event);
-void game_ui_header_update_timer(GameUI_Header *header, GameStep new_step, int new_score);
 void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step);
 void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui);
 
