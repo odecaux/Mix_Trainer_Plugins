@@ -120,33 +120,20 @@ void game_ui_botttom_update_tries(GameUI_Bottom *bottom, GameStep new_step, int 
     };
 }
 
-void mixer_game_post_event_tries(MixerGame_State *state, Event event)
+void game_ui_update_tries(Effect_UI &new_ui, MixerGameUI &ui)
 {
-    Effects effects = mixer_game_tries_update(state, event);
-    if (effects.dsp)
+    if (new_ui.slider_pos_to_display)
     {
-        for(auto &observer : state->observers_audio)
-            observer(*effects.dsp);
+        jassert(new_ui.slider_pos_to_display->size() == ui.faders.size());
     }
-    if (effects.ui && state->ui)
+    for(auto& [id, fader] : ui.faders)
     {
-        auto * ui = (MixerGameUI_Tries*) state->ui;
-        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display, effects.ui->remaining_listens);
+        auto fader_step = gameStepToFaderStep(new_ui.step);
+        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
+        fader->update(fader_step, pos);
     }
-    if (effects.timer)
-    {
-        jassert(!state->timer.isTimerRunning());
-        state->timer.callback = std::move(effects.timer->callback); 
-        state->timer.startTimer(effects.timer->timeout_ms);
-    }
-    if (effects.rename)
-    {
-        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
-    }
-    if (effects.quit)
-    {
-        state->app->quitGame();
-    }
+    game_ui_header_update_tries(&ui.header, new_ui.step, new_ui.score, new_ui.remaining_listens);
+    game_ui_bottom_update_tries(&ui.bottom, new_ui.step, new_ui.remaining_listens);
 }
 
 Effects mixer_game_tries_update(MixerGame_State *state, Event event)
@@ -265,14 +252,10 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         } break;
         case Event_Create_UI :
         {
-            jassert(state->ui == nullptr);
-            state->ui = (MixerGameUI_Tries *) event.value_ptr;
             update_ui = true;
         } break;
         case Event_Destroy_UI :
         {
-            jassert(state->ui != nullptr);
-            state->ui = nullptr;
         } break;
     }
 

@@ -87,33 +87,20 @@ void game_ui_bottom_update_timer(GameUI_Bottom *bottom, GameStep new_step)
     };
 }
 
-void mixer_game_post_event_timer(MixerGame_State *state, Event event)
+void game_ui_update_timer(Effect_UI &new_ui, MixerGameUI &ui)
 {
-    Effects effects = mixer_game_timer_update(state, event);
-    if (effects.dsp)
+    if (new_ui.slider_pos_to_display)
     {
-        for(auto &observer : state->observers_audio)
-            observer(*effects.dsp);
+        jassert(new_ui.slider_pos_to_display->size() == ui.faders.size());
     }
-    if (effects.ui && state->ui)
+    for(auto& [id, fader] : ui.faders)
     {
-        auto * ui = (MixerGameUI_Timer*) state->ui;
-        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+        auto fader_step = gameStepToFaderStep(new_ui.step);
+        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
+        fader->update(fader_step, pos);
     }
-    if (effects.timer)
-    {
-        jassert(!state->timer.isTimerRunning());
-        state->timer.callback = std::move(effects.timer->callback); 
-        state->timer.startTimer(effects.timer->timeout_ms);
-    }
-    if (effects.rename)
-    {
-        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
-    }
-    if (effects.quit)
-    {
-        state->app->quitGame();
-    }
+    game_ui_header_update_timer(&ui.header, new_ui.step, new_ui.score);
+    game_ui_bottom_update_timer(&ui.bottom, new_ui.step);
 }
 
 Effects mixer_game_timer_update(MixerGame_State *state, Event event)
@@ -227,14 +214,10 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
         } break;
         case Event_Create_UI :
         {
-            jassert(state->ui == nullptr);
-            state->ui = (MixerGameUI_Timer*) event.value_ptr;
             update_ui = true;
         } break;
         case Event_Destroy_UI :
         {
-            jassert(state->ui != nullptr);
-            state->ui = nullptr;
         } break;
     }
 
@@ -266,7 +249,7 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             effects.timer = Effect_Timer {
                 .timeout_ms = state->timeout_ms ,
                 .callback = [state] {
-                    mixer_game_post_event_timer(state, Event { .type = Event_Timeout });
+                    mixer_game_post_event(state, Event { .type = Event_Timeout });
                 }
             };
             update_audio = true;

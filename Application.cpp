@@ -64,11 +64,16 @@ void Application::toGame()
     jassert(!game_state);
     
     game_state = mixer_game_init(channels, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
-    mixer_game_add_audio_observer(game_state.get(), [this] (auto &&effect){ broadcastDSP(effect.dsp_states); });
-    mixer_game_add_audio_observer(game_state.get(), [this] (auto &&effect){ 
+    mixer_game_add_audio_observer(game_state.get(), 
+                                  [this] (auto &&effect) { 
+                                      broadcastDSP(effect.dsp_states); 
+                                  }
+    );
+    mixer_game_add_audio_observer(game_state.get(), 
+                                  [this] (auto &&effect){ 
                                       channel_dsp_log(effect.dsp_states, channels); 
-    });
-    
+                                  }
+    );
     mixer_game_post_event(game_state.get(), Event { .type = Event_Init });
 
     auto game_panel = std::make_unique<MixerGameUI>(
@@ -76,7 +81,13 @@ void Application::toGame()
         game_state->db_slider_values,
         game_state.get()
     );
-    game_ui = game_panel.get();              
+    game_ui = game_panel.get();        
+
+    mixer_game_add_ui_observer(game_state.get(), 
+                               [this] (auto &&effect){ 
+                                   game_ui_update_timer(effect, *game_ui); 
+                               }
+    );      
     mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
 
     editor->changePanel(std::move(game_panel));

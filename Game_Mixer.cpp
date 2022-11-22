@@ -102,6 +102,22 @@ void game_ui_bottom_update(GameUI_Bottom *bottom, GameStep new_step)
     };
 }
 
+void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
+{
+    if (new_ui.slider_pos_to_display)
+    {
+        jassert(new_ui.slider_pos_to_display->size() == ui.faders.size());
+    }
+    for(auto& [id, fader] : ui.faders)
+    {
+        auto fader_step = gameStepToFaderStep(new_ui.step);
+        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
+        fader->update(fader_step, pos);
+    }
+    game_ui_header_update(&ui.header, new_ui.step, new_ui.score);
+    game_ui_bottom_update(&ui.bottom, new_ui.step);
+}
+
 void mixer_game_post_event(MixerGame_State *state, Event event)
 {
     Effects effects = mixer_game_update(state, event);
@@ -110,10 +126,10 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
         for(auto &observer : state->observers_audio)
             observer(*effects.dsp);
     }
-    if (effects.ui && state->ui)
+    if (effects.ui)
     {
-        auto * ui = (MixerGameUI*) state->ui;
-        ui->updateGameUI(effects.ui->new_step, effects.ui->new_score, effects.ui->slider_pos_to_display);
+        for(auto &observer : state->observers_ui)
+            observer(*effects.ui);
     }
     if (effects.timer)
     {
@@ -244,14 +260,10 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         } break;
         case Event_Create_UI :
         {
-            jassert(state->ui == nullptr);
-            state->ui = (MixerGameUI*) event.value_ptr;
             update_ui = true;
         } break;
         case Event_Destroy_UI :
         {
-            jassert(state->ui != nullptr);
-            state->ui = nullptr;
         } break;
     }
 

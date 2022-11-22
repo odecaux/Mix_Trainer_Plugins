@@ -114,8 +114,8 @@ struct Effect_DSP {
 };
 
 struct Effect_UI {
-    GameStep new_step; 
-    int new_score; 
+    GameStep step; 
+    int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
     int remaining_listens;
 };
@@ -137,6 +137,9 @@ struct Effects {
     bool quit;
     std::optional < Effect_Timer > timer;
 };
+
+using audio_observer_t = std::function<void(Effect_DSP)>;
+using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct GameUI_Header : public juce::Component
 {
