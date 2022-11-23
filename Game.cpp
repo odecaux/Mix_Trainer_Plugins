@@ -120,3 +120,46 @@ void GameUI_Bottom::resized()
     target_mix_button.setBounds(targetMixBounds);
     user_mix_button.setBounds(userMixBounds);
 }
+
+
+
+void game_ui_header_update(GameUI_Header *header, juce::String header_text, int new_score)
+{
+    header->header_label.setText(header_text, juce::dontSendNotification);
+    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+}
+
+void game_ui_bottom_update(GameUI_Bottom *bottom, juce::String button_text, Mix mix, Event_Type event)
+{   
+    if (mix == Mix_Hidden)
+    {
+        bottom->target_mix_button.setEnabled(false);
+        bottom->user_mix_button.setEnabled(false);
+        bottom->target_mix_button.setVisible(false);
+        bottom->user_mix_button.setVisible(false);
+    }
+    else
+    {
+        bottom->target_mix_button.setEnabled(true);
+        bottom->user_mix_button.setEnabled(true);
+        bottom->target_mix_button.setVisible(true);
+        bottom->user_mix_button.setVisible(true);
+
+        if (mix == Mix_User)
+        {
+            bottom->target_mix_button.setToggleState(false, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(true, juce::dontSendNotification);
+        }
+        else if (mix == Mix_Target)
+        {
+            bottom->target_mix_button.setToggleState(true, juce::dontSendNotification);
+            bottom->user_mix_button.setToggleState(false, juce::dontSendNotification);
+        }
+    }
+
+    bottom->next_button.setButtonText(button_text);
+
+    bottom->next_button.onClick = [bottom, event] {
+        bottom->onNextClicked(event);
+    };
+}
