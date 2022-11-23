@@ -351,7 +351,9 @@ class AudioFileList :
     public juce::DragAndDropTarget
 {
 public:
-    AudioFileList()
+    AudioFileList(FilePlayer &player, juce::Component *dropSource) : 
+        player(player), 
+        dropSource(dropSource)
     {
         fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
         fileListComp.setOutlineThickness (2);
@@ -365,7 +367,7 @@ public:
 
     int getNumRows() override 
     {
-        return 100;
+        return (int)player.file_list.size();
     }
 
     void paintListBoxItem (int rowNumber,
@@ -373,26 +375,35 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber % 2)
-            g.setColour(juce::Colours::lightgrey);
-        else
-            g.setColour(juce::Colours::darkgrey);
-        g.fillRect (0, 0, width - 1, height);  
+        if (rowNumber < player.file_list.size())
+        {
+            g.setColour(juce::Colours::white);
+            auto bounds = juce::Rectangle { 0, 0, width, height };
+            g.drawText(player.file_list[rowNumber].toString(false), bounds, juce::Justification::centredLeft);
+        }
     }
 
     bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override 
     {
+        jassert(dragSourceDetails.sourceComponent == dropSource);
         return true;
     }
 
     
     void itemDropped (const SourceDetails& dragSourceDetails) override
     {
-        DBG("dropped");
+        jassert(dragSourceDetails.sourceComponent == dropSource);
+        juce::File file = ((juce::FileTreeComponent*)dropSource)->getSelectedFile();
+        player.file_list.emplace_back(file);
+        fileListComp.updateContent();
+        DBG(file.getFullPathName());
     }
 
 private:
+    FilePlayer &player;
     juce::ListBox fileListComp = { {}, this};
+
+    juce::Component *dropSource;
 };
 
 class FileSelector_Panel : 
@@ -402,7 +413,7 @@ class FileSelector_Panel :
 {
 public:
     
-    FileSelector_Panel(FilePlayer &player) : player(player)
+    FileSelector_Panel(FilePlayer &player) : fileList(player, &fileTreeComp), player(player)
     {
         {
             fileExplorerThread.startThread (3);
