@@ -344,6 +344,74 @@ private:
     }
 };
 
+class AudioFileListBoxModel : public::juce::ListBoxModel
+{
+public:
+    int getNumRows() override 
+    {
+        return 100;
+    }
+
+    void paintListBoxItem (int rowNumber,
+                           juce::Graphics& g,
+                           int width, int height,
+                           bool rowIsSelected) override
+    {
+        if (rowNumber % 2)
+            g.setColour(juce::Colours::lightgrey);
+        else
+            g.setColour(juce::Colours::darkgrey);
+        g.fillRect (0, 0, width - 1, height);  
+    }
+};
+
+class FileSelector_Panel : public juce::Component
+{
+public:
+    
+    FileSelector_Panel()
+    {
+        {
+            fileExplorerThread.startThread (3);
+            addAndMakeVisible (fileTreeComp);
+
+            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
+
+            fileTreeComp.setTitle ("Files");
+            fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
+            //fileTreeComp.addListener (this);
+        }
+
+        {
+            fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+            fileListComp.setOutlineThickness (2);
+            addAndMakeVisible(fileListComp);
+        }
+    }
+
+    ~FileSelector_Panel()
+    {
+        //fileTreeComp.removeListener (this);
+    }
+
+    void resized() override 
+    {
+        auto r = getLocalBounds().reduced (4);
+        auto leftBounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
+        auto rightBounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+
+        fileTreeComp.setBounds (leftBounds);
+        fileListComp.setBounds (rightBounds);
+    }
+private:
+    AudioFileListBoxModel fileList;
+    juce::ListBox fileListComp = { {}, &fileList};
+    
+    juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
+    juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
+    juce::FileTreeComponent fileTreeComp { directoryList };
+};
+
 //==============================================================================
 class Main_Panel  : 
     public juce::Component,
@@ -355,7 +423,6 @@ public:
         player(player)
     {
         
-        fileExplorerThread.startThread (3);
 
         //UI (boring)
         {
@@ -371,6 +438,7 @@ public:
             followTransportButton.onClick = [this] { updateFollowTransportState(); };
         }
         {
+            fileExplorerThread.startThread (3);
             addAndMakeVisible (fileTreeComp);
 
             directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
@@ -407,7 +475,6 @@ public:
 
 
         setOpaque (true);
-        setSize (500, 500);
     }
 
     ~Main_Panel() override
@@ -502,11 +569,15 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
+#if 0
         panel = std::make_unique < Main_Panel > (
             player
         );
-        setSize(panel->getWidth(), panel->getHeight());
+#else
+        panel = std::make_unique < FileSelector_Panel > ();
+#endif
         addAndMakeVisible(*panel);
+        setSize (500, 500);
     }
     
     ~Main_Component()
@@ -520,7 +591,7 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
-    std::unique_ptr<Main_Panel> panel;
+    std::unique_ptr<juce::Component> panel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
