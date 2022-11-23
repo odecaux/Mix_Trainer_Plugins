@@ -265,13 +265,13 @@ private:
 };
 
 //==============================================================================
-class Standalone_Trainer  : 
+class Main_Panel  : 
     public juce::Component,
     private juce::FileBrowserListener,
     private juce::ChangeListener
 {
 public:
-    Standalone_Trainer()
+    Main_Panel()
     {
         addAndMakeVisible (zoomLabel);
         zoomLabel.setFont (juce::Font (15.00f, juce::Font::plain));
@@ -283,10 +283,6 @@ public:
         addAndMakeVisible (followTransportButton);
         followTransportButton.onClick = [this] { updateFollowTransportState(); };
 
-#if (JUCE_ANDROID || JUCE_IOS)
-        addAndMakeVisible (chooseFileButton);
-        chooseFileButton.addListener (this);
-#else
         addAndMakeVisible (fileTreeComp);
 
         directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
@@ -301,7 +297,6 @@ public:
         explanation.setEditable (false, false, false);
         explanation.setColour (juce::TextEditor::textColourId, juce::Colours::black);
         explanation.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-#endif
 
         addAndMakeVisible (zoomSlider);
         zoomSlider.setRange (0, 1, 0);
@@ -336,7 +331,7 @@ public:
         setSize (500, 500);
     }
 
-    ~Standalone_Trainer() override
+    ~Main_Panel() override
     {
         transportSource  .setSource (nullptr);
         audioSourcePlayer.setSource (nullptr);
@@ -379,7 +374,6 @@ public:
     }
 
 private:
-    // if this PIP is running inside the demo runner, we'll use the shared device manager instead
     juce::AudioDeviceManager audioDeviceManager;
 
     juce::AudioFormatManager formatManager;
@@ -476,5 +470,27 @@ private:
             showAudioResource (juce::URL (thumbnail->getLastDroppedFile()));
     }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Standalone_Trainer)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
+};
+
+
+class Main_Component : public juce::Component
+{
+    public :
+    
+    Main_Component() : panel{}
+    {
+        setSize(panel.getWidth(), panel.getHeight());
+        addAndMakeVisible(panel);
+    }
+
+    void resized() override 
+    {
+        panel.setBounds(getLocalBounds());
+    }
+
+    private :
+
+    Main_Panel panel;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };

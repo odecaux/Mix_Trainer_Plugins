@@ -19,7 +19,7 @@ public:
 
     void initialise (const juce::String&) override
     {
-        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", new Standalone_Trainer, *this);
+        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", new Main_Component, *this);
     }
 
     void shutdown() override                         { mainWindow = nullptr; }
@@ -37,13 +37,9 @@ private:
             setUsingNativeTitleBar (true);
             setContentOwned (c, true);
 
-#if JUCE_ANDROID || JUCE_IOS
-            setFullScreen (true);
-#else
             setResizable (true, false);
             setResizeLimits (300, 250, 10000, 10000);
             centreWithSize (getWidth(), getHeight());
-#endif
 
             setVisible (true);
         }
