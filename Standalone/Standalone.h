@@ -406,7 +406,9 @@ public:
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
         jassert(row < player.file_list.size());
-        
+        auto url = juce::URL(player.file_list[row]);
+        jassert(player.loadURLIntoTransport(url));
+        player.startOrStop();
     }
 
 private:
