@@ -137,8 +137,9 @@ struct FilePlayer {
     juce::AudioSourcePlayer audioSourcePlayer;
     juce::AudioTransportSource transportSource;
     std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
-};
 
+    std::vector<juce::URL> file_list;
+};
 
 //==============================================================================
 class DemoThumbnailComp  :
@@ -365,21 +366,24 @@ public:
     }
 };
 
-class FileSelector_Panel : public juce::Component
+class FileSelector_Panel : 
+    public juce::Component,
+    private juce::FileBrowserListener
 {
 public:
     
-    FileSelector_Panel()
+    FileSelector_Panel(FilePlayer &player) : player(player)
     {
         {
             fileExplorerThread.startThread (3);
             addAndMakeVisible (fileTreeComp);
 
             directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
+            directoryList.setIgnoresHiddenFiles(true);
 
             fileTreeComp.setTitle ("Files");
             fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
-            //fileTreeComp.addListener (this);
+            fileTreeComp.addListener (this);
         }
 
         {
@@ -391,7 +395,7 @@ public:
 
     ~FileSelector_Panel()
     {
-        //fileTreeComp.removeListener (this);
+        fileTreeComp.removeListener (this);
     }
 
     void resized() override 
@@ -410,6 +414,19 @@ private:
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent fileTreeComp { directoryList };
+    
+    FilePlayer &player;
+
+    
+    void selectionChanged() override
+    {
+        if(player.loadURLIntoTransport(juce::URL (fileTreeComp.getSelectedFile())))
+            player.startOrStop();
+    }
+
+    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
+    void fileDoubleClicked (const juce::File&) override                       {}
+    void browserRootChanged (const juce::File&) override                      {}
 };
 
 //==============================================================================
@@ -574,7 +591,7 @@ class Main_Component : public juce::Component
             player
         );
 #else
-        panel = std::make_unique < FileSelector_Panel > ();
+        panel = std::make_unique < FileSelector_Panel > (player);
 #endif
         addAndMakeVisible(*panel);
         setSize (500, 500);
