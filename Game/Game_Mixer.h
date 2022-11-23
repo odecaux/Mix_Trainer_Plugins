@@ -47,7 +47,7 @@ struct MixerGameUI : public juce::Component
             [&] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
             const int id = a.first;
             
-            auto onFaderMoved = [&] (int new_pos){
+            auto onFaderMoved = [state, id] (int new_pos){
                 Event event = {
                     .type = Event_Slider,
                     .id = id,
@@ -56,7 +56,7 @@ struct MixerGameUI : public juce::Component
                 mixer_game_post_event(state, event);
             };
             
-            auto onEdited = [&](const juce::String & new_name){ 
+            auto onEdited = [state, id](const juce::String & new_name){ 
                 Event event = {
                     .type = Event_Channel_Rename_From_UI,
                     .id = id,
@@ -82,20 +82,20 @@ struct MixerGameUI : public juce::Component
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
 
-        bottom.onNextClicked = [&] (Event_Type e){
+        bottom.onNextClicked = [state] (Event_Type e){
             Event event = {
                 .type = e
             };
             
             mixer_game_post_event(state, event);
         };
-        header.onBackClicked = [&] {
+        header.onBackClicked = [state] {
             Event event = {
                 .type = Event_Click_Back
             };
             mixer_game_post_event(state, event);
         };
-        bottom.onToggleClicked = [&] (bool a){
+        bottom.onToggleClicked = [state] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
@@ -135,7 +135,7 @@ struct MixerGameUI : public juce::Component
             jassert(assertChannel == faders.end());
         }
 
-        auto onFaderMoved = [&] (int new_pos){
+        auto onFaderMoved = [state = this->state, id] (int new_pos){
             Event event = {
                 .type = Event_Slider,
                 .id = id,
@@ -144,7 +144,7 @@ struct MixerGameUI : public juce::Component
             mixer_game_post_event(state, event);
         };
             
-        auto onEdited = [&](const juce::String & new_name){ 
+        auto onEdited = [state = this->state, id](const juce::String & new_name){ 
             Event event = {
                 .type = Event_Channel_Rename_From_UI,
                 .id = id,
