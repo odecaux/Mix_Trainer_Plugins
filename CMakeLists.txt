@@ -83,3 +83,34 @@ target_link_libraries(MixTrainer_Track
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
 
+juce_add_gui_app(Standalone
+    # VERSION ...                       # Set this if the app version is different to the project version
+    # ICON_BIG ...                      # ICON_* arguments specify a path to an image file to use as an icon
+    # ICON_SMALL ...
+    # DOCUMENT_EXTENSIONS ...           # Specify file extensions that should be associated with this app
+    # COMPANY_NAME ...                  # Specify the name of the app's author
+    PRODUCT_NAME "Gui App Example")     # The name of the final executable, which can differ from the target name
+
+juce_generate_juce_header(Standalone)
+
+target_sources(Standalone
+    PRIVATE
+        Standalone/Standalone.cpp)
+
+target_compile_definitions(Standalone
+    PRIVATE
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:Standalone,JUCE_PRODUCT_NAME>"
+        JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:Standalone,JUCE_VERSION>")
+
+
+target_link_libraries(Standalone
+    PRIVATE
+        # GuiAppData            # If we'd created a binary data target, we'd link to it here
+        juce::juce_gui_extra
+        juce::juce_audio_utils
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
