@@ -631,6 +631,7 @@ private:
 };
 
 
+
 class Main_Component : public juce::Component
 {
     public :
@@ -645,6 +646,13 @@ class Main_Component : public juce::Component
         panel = std::make_unique < FileSelector_Panel > (player);
 #endif
         addAndMakeVisible(*panel);
+        addAndMakeVisible (sidePanel);
+        addAndMakeVisible(burger);
+
+        burger.onClick = [&] {
+            sidePanel.showOrHide(true);
+        };
+
         setSize (500, 500);
     }
     
@@ -654,12 +662,22 @@ class Main_Component : public juce::Component
 
     void resized() override 
     {
-        panel->setBounds(getLocalBounds());
+        auto r = getLocalBounds();
+        auto headerBounds = r.withHeight(50);
+        {
+            auto burgerBounds = headerBounds.withWidth(50);
+            burger.setBounds(burgerBounds);
+        }
+       auto panelBounds = r.withTrimmedTop(50);
+        panel->setBounds(panelBounds);
     }
 
     private :
     FilePlayer player;
     std::unique_ptr<juce::Component> panel;
+    
+    juce::TextButton burger { "menu" };
+    juce::SidePanel sidePanel { "Menu", 150, true };
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
