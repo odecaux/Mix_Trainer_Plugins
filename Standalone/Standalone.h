@@ -345,9 +345,24 @@ private:
     }
 };
 
-class AudioFileListBoxModel : public::juce::ListBoxModel
+class AudioFileList : 
+    public juce::Component,
+    public juce::ListBoxModel,
+    public juce::DragAndDropTarget
 {
 public:
+    AudioFileList()
+    {
+        fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+        fileListComp.setOutlineThickness (2);
+        addAndMakeVisible(fileListComp);
+    }
+
+    void resized()
+    {
+        fileListComp.setBounds(getLocalBounds());
+    }
+
     int getNumRows() override 
     {
         return 100;
@@ -364,11 +379,26 @@ public:
             g.setColour(juce::Colours::darkgrey);
         g.fillRect (0, 0, width - 1, height);  
     }
+
+    bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override 
+    {
+        return true;
+    }
+
+    
+    void itemDropped (const SourceDetails& dragSourceDetails) override
+    {
+        DBG("dropped");
+    }
+
+private:
+    juce::ListBox fileListComp = { {}, this};
 };
 
 class FileSelector_Panel : 
     public juce::Component,
-    private juce::FileBrowserListener
+    private juce::FileBrowserListener,
+    public juce::DragAndDropContainer
 {
 public:
     
@@ -383,13 +413,12 @@ public:
 
             fileTreeComp.setTitle ("Files");
             fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
+            fileTreeComp.setDragAndDropDescription("drag");
             fileTreeComp.addListener (this);
         }
 
         {
-            fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
-            fileListComp.setOutlineThickness (2);
-            addAndMakeVisible(fileListComp);
+            addAndMakeVisible(fileList);
         }
     }
 
@@ -405,11 +434,10 @@ public:
         auto rightBounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
 
         fileTreeComp.setBounds (leftBounds);
-        fileListComp.setBounds (rightBounds);
+        fileList.setBounds (rightBounds);
     }
 private:
-    AudioFileListBoxModel fileList;
-    juce::ListBox fileListComp = { {}, &fileList};
+    AudioFileList fileList;
     
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
