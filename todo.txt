@@ -8,7 +8,14 @@ design a save system
 
 
 
+File struct : bounds
+Enlever le sidebar/burger
+Main menu : files et exercice
+files : ajouter ou supprimer
+exercice : select active files -> begin -> exercice loop
+mock up exercice panel -> comme chez soundgym
 
 
+mock-up : label displays mouse frequency, matches vertical lines
 
 utiliser que des files, pas des URL

@@ -2,6 +2,7 @@
 #pragma once
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "FrequencyWidget.h"
 
 inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
 {
@@ -630,6 +631,7 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
 };
 
+
 class Empty : public juce::Component {
 public :
     void paint(juce::Graphics &g)
@@ -649,8 +651,10 @@ class Main_Component : public juce::Component
         panel = std::make_unique < Main_Panel > (
             player
         );
-#else
+#elif 0
         panel = std::make_unique < FileSelector_Panel > (player);
+#else 
+        panel = std::make_unique < FrequencyWidget > ();
 #endif
         addAndMakeVisible(*panel);
         addAndMakeVisible (sidePanel);
