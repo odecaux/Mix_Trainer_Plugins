@@ -271,61 +271,65 @@ class Main_Panel  :
     private juce::ChangeListener
 {
 public:
-    Main_Panel()
+    Main_Panel(juce::AudioFormatManager &formatManager,
+               juce::AudioTransportSource &transportSource,
+               std::function < bool(const juce::URL&) > loadURLIntoTransport,
+               std::function < void() > startOrStop) :
+        formatManager(formatManager),
+        loadURLIntoTransport(std::move(loadURLIntoTransport)),
+        startOrStop(std::move(startOrStop))
     {
-        addAndMakeVisible (zoomLabel);
-        zoomLabel.setFont (juce::Font (15.00f, juce::Font::plain));
-        zoomLabel.setJustificationType (juce::Justification::centredRight);
-        zoomLabel.setEditable (false, false, false);
-        zoomLabel.setColour (juce::TextEditor::textColourId, juce::Colours::black);
-        zoomLabel.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+        
+        fileExplorerThread.startThread (3);
 
-        addAndMakeVisible (followTransportButton);
-        followTransportButton.onClick = [this] { updateFollowTransportState(); };
+        //UI (boring)
+        {
+            addAndMakeVisible (zoomLabel);
+            zoomLabel.setFont (juce::Font (15.00f, juce::Font::plain));
+            zoomLabel.setJustificationType (juce::Justification::centredRight);
+            zoomLabel.setEditable (false, false, false);
+            zoomLabel.setColour (juce::TextEditor::textColourId, juce::Colours::black);
+            zoomLabel.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+        }
+        {
+            addAndMakeVisible (followTransportButton);
+            followTransportButton.onClick = [this] { updateFollowTransportState(); };
+        }
+        {
+            addAndMakeVisible (fileTreeComp);
 
-        addAndMakeVisible (fileTreeComp);
+            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
 
-        directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
+            fileTreeComp.setTitle ("Files");
+            fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
+            fileTreeComp.addListener (this);
+        }
+        {
+            addAndMakeVisible (explanation);
+            explanation.setFont (juce::Font (14.00f, juce::Font::plain));
+            explanation.setJustificationType (juce::Justification::bottomRight);
+            explanation.setEditable (false, false, false);
+            explanation.setColour (juce::TextEditor::textColourId, juce::Colours::black);
+            explanation.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
+        }
+        {
+            addAndMakeVisible (zoomSlider);
+            zoomSlider.setRange (0, 1, 0);
+            zoomSlider.onValueChange = [this] { thumbnail->setZoomFactor (zoomSlider.getValue()); };
+            zoomSlider.setSkewFactor (2);
+        }
+        {
+            thumbnail = std::make_unique < DemoThumbnailComp > (formatManager, transportSource, zoomSlider);
+            addAndMakeVisible (thumbnail.get());
+            thumbnail->addChangeListener (this);
+        }
+        { 
+            addAndMakeVisible (startStopButton);
+            startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
+            startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+            startStopButton.onClick = [this] { this->startOrStop(); };
+        }
 
-        fileTreeComp.setTitle ("Files");
-        fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
-        fileTreeComp.addListener (this);
-
-        addAndMakeVisible (explanation);
-        explanation.setFont (juce::Font (14.00f, juce::Font::plain));
-        explanation.setJustificationType (juce::Justification::bottomRight);
-        explanation.setEditable (false, false, false);
-        explanation.setColour (juce::TextEditor::textColourId, juce::Colours::black);
-        explanation.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-
-        addAndMakeVisible (zoomSlider);
-        zoomSlider.setRange (0, 1, 0);
-        zoomSlider.onValueChange = [this] { thumbnail->setZoomFactor (zoomSlider.getValue()); };
-        zoomSlider.setSkewFactor (2);
-
-        thumbnail = std::make_unique<DemoThumbnailComp> (formatManager, transportSource, zoomSlider);
-        addAndMakeVisible (thumbnail.get());
-        thumbnail->addChangeListener (this);
-
-        addAndMakeVisible (startStopButton);
-        startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
-        startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-        startStopButton.onClick = [this] { startOrStop(); };
-
-        // audio setup
-        formatManager.registerBasicFormats();
-
-        thread.startThread (3);
-
-        juce::RuntimePermissions::request (juce::RuntimePermissions::recordAudio,
-                                     [this] (bool granted)
-                                     {
-                                     int numInputChannels = granted ? 2 : 0;
-                                     audioDeviceManager.initialise (numInputChannels, 2, nullptr, true, {}, nullptr);
-                                     });
-
-        audioDeviceManager.addAudioCallback (&audioSourcePlayer);
-        audioSourcePlayer.setSource (&transportSource);
 
         setOpaque (true);
         setSize (500, 500);
@@ -333,11 +337,6 @@ public:
 
     ~Main_Panel() override
     {
-        transportSource  .setSource (nullptr);
-        audioSourcePlayer.setSource (nullptr);
-
-        audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
-
         fileTreeComp.removeListener (this);
 
         thumbnail->removeChangeListener (this);
@@ -374,19 +373,14 @@ public:
     }
 
 private:
-    juce::AudioDeviceManager audioDeviceManager;
-
-    juce::AudioFormatManager formatManager;
-    juce::TimeSliceThread thread  { "audio file preview" };
-
-    juce::DirectoryContentsList directoryList {nullptr, thread};
+    juce::AudioFormatManager &formatManager;
+    std::function < bool(const juce::URL& audioURL) > loadURLIntoTransport;
+    std::function < void() > startOrStop;
+    
+    juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
+    juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent fileTreeComp {directoryList};
     juce::Label explanation { {}, "Select an audio file in the treeview above, and this page will display its waveform, and let you play it.." };
-
-    juce::URL currentAudioFile;
-    juce::AudioSourcePlayer audioSourcePlayer;
-    juce::AudioTransportSource transportSource;
-    std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
 
     std::unique_ptr<DemoThumbnailComp> thumbnail;
     juce::Label zoomLabel                     { {}, "zoom:" };
@@ -398,12 +392,89 @@ private:
     void showAudioResource (juce::URL resource)
     {
         if (loadURLIntoTransport (resource))
-            currentAudioFile = std::move (resource);
-
-        zoomSlider.setValue (0, juce::dontSendNotification);
-        thumbnail->setURL (currentAudioFile);
+        {
+            zoomSlider.setValue (0, juce::dontSendNotification);
+            thumbnail->setURL (resource);
+        }
     }
 
+    void updateFollowTransportState()
+    {
+        thumbnail->setFollowsTransport (followTransportButton.getToggleState());
+    }
+    
+    void selectionChanged() override
+    {
+        showAudioResource (juce::URL (fileTreeComp.getSelectedFile()));
+    }
+
+    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
+    void fileDoubleClicked (const juce::File&) override                       {}
+    void browserRootChanged (const juce::File&) override                      {}
+
+    void changeListenerCallback (juce::ChangeBroadcaster* source) override
+    {
+        //file drag and drop
+        if (source == thumbnail.get())
+            showAudioResource (juce::URL (thumbnail->getLastDroppedFile()));
+    }
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
+};
+
+
+class Main_Component : public juce::Component
+{
+    public :
+    
+    Main_Component()
+    {
+        // audio setup
+        formatManager.registerBasicFormats();
+
+        readAheadThread.startThread (3);
+
+        audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
+
+        audioDeviceManager.addAudioCallback (&audioSourcePlayer);
+        audioSourcePlayer.setSource (&transportSource);
+
+        panel = std::make_unique < Main_Panel > (
+            formatManager,
+            transportSource,
+            [&] (const auto& audioURL) -> bool { return loadURLIntoTransport(audioURL); },
+            [&] { startOrStop(); }
+        );
+        setSize(panel->getWidth(), panel->getHeight());
+        addAndMakeVisible(*panel);
+    }
+    
+    ~Main_Component()
+    {
+        transportSource  .setSource (nullptr);
+        audioSourcePlayer.setSource (nullptr);
+
+        audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
+    }
+
+    void resized() override 
+    {
+        panel->setBounds(getLocalBounds());
+    }
+
+    private :
+    
+    juce::AudioDeviceManager audioDeviceManager;
+    juce::AudioFormatManager formatManager;
+    juce::TimeSliceThread readAheadThread  { "audio file preview" };
+    
+    //juce::URL currentAudioFile;
+    juce::AudioSourcePlayer audioSourcePlayer;
+    juce::AudioTransportSource transportSource;
+    std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
+
+    std::unique_ptr<Main_Panel> panel;
+    
     bool loadURLIntoTransport (const juce::URL& audioURL)
     {
         // unload the previous file source and delete it..
@@ -431,7 +502,7 @@ private:
         // ..and plug it into our transport source
         transportSource.setSource (currentAudioFileSource.get(),
                                    32768,                   // tells it to buffer this many samples ahead
-                                   &thread,                 // this is the background thread to use for reading-ahead
+                                   &readAheadThread,                 // this is the background thread to use for reading-ahead
                                    currentAudioFileSource->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
 
         return true;
@@ -449,48 +520,5 @@ private:
             transportSource.start();
         }
     }
-
-    void updateFollowTransportState()
-    {
-        thumbnail->setFollowsTransport (followTransportButton.getToggleState());
-    }
-    
-    void selectionChanged() override
-    {
-        showAudioResource (juce::URL (fileTreeComp.getSelectedFile()));
-    }
-
-    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
-    void fileDoubleClicked (const juce::File&) override                       {}
-    void browserRootChanged (const juce::File&) override                      {}
-
-    void changeListenerCallback (juce::ChangeBroadcaster* source) override
-    {
-        if (source == thumbnail.get())
-            showAudioResource (juce::URL (thumbnail->getLastDroppedFile()));
-    }
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
-};
-
-
-class Main_Component : public juce::Component
-{
-    public :
-    
-    Main_Component() : panel{}
-    {
-        setSize(panel.getWidth(), panel.getHeight());
-        addAndMakeVisible(panel);
-    }
-
-    void resized() override 
-    {
-        panel.setBounds(getLocalBounds());
-    }
-
-    private :
-
-    Main_Panel panel;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
