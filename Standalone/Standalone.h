@@ -630,7 +630,14 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
 };
 
-
+class Empty : public juce::Component {
+public :
+    void paint(juce::Graphics &g)
+    {
+        g.setColour(juce::Colours::red);
+        g.fillAll();
+    }
+};
 
 class Main_Component : public juce::Component
 {
@@ -647,6 +654,7 @@ class Main_Component : public juce::Component
 #endif
         addAndMakeVisible(*panel);
         addAndMakeVisible (sidePanel);
+        sidePanel.setContent(&empty, false);
         addAndMakeVisible(burger);
 
         burger.onClick = [&] {
@@ -677,7 +685,9 @@ class Main_Component : public juce::Component
     std::unique_ptr<juce::Component> panel;
     
     juce::TextButton burger { "menu" };
+    Empty empty;
     juce::SidePanel sidePanel { "Menu", 150, true };
+
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
