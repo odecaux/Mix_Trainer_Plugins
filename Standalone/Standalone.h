@@ -60,6 +60,86 @@ inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
     return std::make_unique<juce::URLInputSource> (url);
 }
 
+
+struct FilePlayer {
+    FilePlayer()
+    {
+        // audio setup
+        formatManager.registerBasicFormats();
+
+        readAheadThread.startThread (3);
+
+        audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
+
+        audioDeviceManager.addAudioCallback (&audioSourcePlayer);
+        audioSourcePlayer.setSource (&transportSource);
+    }
+
+    ~FilePlayer()
+    {
+        transportSource  .setSource (nullptr);
+        audioSourcePlayer.setSource (nullptr);
+
+        audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
+    }
+
+    bool loadURLIntoTransport (const juce::URL& audioURL)
+    {
+        // unload the previous file source and delete it..
+        transportSource.stop();
+        transportSource.setSource (nullptr);
+        currentAudioFileSource.reset();
+
+        const auto source = makeInputSource (audioURL);
+
+        if (source == nullptr)
+            return false;
+
+        auto stream = juce::rawToUniquePtr (source->createInputStream());
+
+        if (stream == nullptr)
+            return false;
+
+        auto reader = juce::rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
+
+        if (reader == nullptr)
+            return false;
+
+        currentAudioFileSource = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
+
+        // ..and plug it into our transport source
+        transportSource.setSource (currentAudioFileSource.get(),
+                                   32768,                   // tells it to buffer this many samples ahead
+                                   &readAheadThread,                 // this is the background thread to use for reading-ahead
+                                   currentAudioFileSource->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
+
+        return true;
+    }
+
+    void startOrStop()
+    {
+        if (transportSource.isPlaying())
+        {
+            transportSource.stop();
+        }
+        else
+        {
+            transportSource.setPosition (0);
+            transportSource.start();
+        }
+    }
+    
+    juce::AudioDeviceManager audioDeviceManager;
+    juce::AudioFormatManager formatManager;
+    juce::TimeSliceThread readAheadThread  { "audio file preview" };
+    
+    //juce::URL currentAudioFile;
+    juce::AudioSourcePlayer audioSourcePlayer;
+    juce::AudioTransportSource transportSource;
+    std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
+};
+
+
 //==============================================================================
 class DemoThumbnailComp  :
     public juce::Component,
@@ -271,13 +351,8 @@ class Main_Panel  :
     private juce::ChangeListener
 {
 public:
-    Main_Panel(juce::AudioFormatManager &formatManager,
-               juce::AudioTransportSource &transportSource,
-               std::function < bool(const juce::URL&) > loadURLIntoTransport,
-               std::function < void() > startOrStop) :
-        formatManager(formatManager),
-        loadURLIntoTransport(std::move(loadURLIntoTransport)),
-        startOrStop(std::move(startOrStop))
+    Main_Panel(FilePlayer &player) :
+        player(player)
     {
         
         fileExplorerThread.startThread (3);
@@ -319,7 +394,7 @@ public:
             zoomSlider.setSkewFactor (2);
         }
         {
-            thumbnail = std::make_unique < DemoThumbnailComp > (formatManager, transportSource, zoomSlider);
+            thumbnail = std::make_unique < DemoThumbnailComp > (player.formatManager, player.transportSource, zoomSlider);
             addAndMakeVisible (thumbnail.get());
             thumbnail->addChangeListener (this);
         }
@@ -327,7 +402,7 @@ public:
             addAndMakeVisible (startStopButton);
             startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
             startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-            startStopButton.onClick = [this] { this->startOrStop(); };
+            startStopButton.onClick = [this] { this->player.startOrStop(); };
         }
 
 
@@ -373,9 +448,7 @@ public:
     }
 
 private:
-    juce::AudioFormatManager &formatManager;
-    std::function < bool(const juce::URL& audioURL) > loadURLIntoTransport;
-    std::function < void() > startOrStop;
+    FilePlayer &player;
     
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
@@ -391,7 +464,7 @@ private:
     //==============================================================================
     void showAudioResource (juce::URL resource)
     {
-        if (loadURLIntoTransport (resource))
+        if (player.loadURLIntoTransport (resource))
         {
             zoomSlider.setValue (0, juce::dontSendNotification);
             thumbnail->setURL (resource);
@@ -429,21 +502,8 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
-        // audio setup
-        formatManager.registerBasicFormats();
-
-        readAheadThread.startThread (3);
-
-        audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
-
-        audioDeviceManager.addAudioCallback (&audioSourcePlayer);
-        audioSourcePlayer.setSource (&transportSource);
-
         panel = std::make_unique < Main_Panel > (
-            formatManager,
-            transportSource,
-            [&] (const auto& audioURL) -> bool { return loadURLIntoTransport(audioURL); },
-            [&] { startOrStop(); }
+            player
         );
         setSize(panel->getWidth(), panel->getHeight());
         addAndMakeVisible(*panel);
@@ -451,10 +511,6 @@ class Main_Component : public juce::Component
     
     ~Main_Component()
     {
-        transportSource  .setSource (nullptr);
-        audioSourcePlayer.setSource (nullptr);
-
-        audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
     }
 
     void resized() override 
@@ -463,62 +519,8 @@ class Main_Component : public juce::Component
     }
 
     private :
-    
-    juce::AudioDeviceManager audioDeviceManager;
-    juce::AudioFormatManager formatManager;
-    juce::TimeSliceThread readAheadThread  { "audio file preview" };
-    
-    //juce::URL currentAudioFile;
-    juce::AudioSourcePlayer audioSourcePlayer;
-    juce::AudioTransportSource transportSource;
-    std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
-
+    FilePlayer player;
     std::unique_ptr<Main_Panel> panel;
     
-    bool loadURLIntoTransport (const juce::URL& audioURL)
-    {
-        // unload the previous file source and delete it..
-        transportSource.stop();
-        transportSource.setSource (nullptr);
-        currentAudioFileSource.reset();
-
-        const auto source = makeInputSource (audioURL);
-
-        if (source == nullptr)
-            return false;
-
-        auto stream = juce::rawToUniquePtr (source->createInputStream());
-
-        if (stream == nullptr)
-            return false;
-
-        auto reader = juce::rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
-
-        if (reader == nullptr)
-            return false;
-
-        currentAudioFileSource = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
-
-        // ..and plug it into our transport source
-        transportSource.setSource (currentAudioFileSource.get(),
-                                   32768,                   // tells it to buffer this many samples ahead
-                                   &readAheadThread,                 // this is the background thread to use for reading-ahead
-                                   currentAudioFileSource->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
-
-        return true;
-    }
-
-    void startOrStop()
-    {
-        if (transportSource.isPlaying())
-        {
-            transportSource.stop();
-        }
-        else
-        {
-            transportSource.setPosition (0);
-            transportSource.start();
-        }
-    }
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
