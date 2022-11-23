@@ -91,8 +91,6 @@ juce_add_gui_app(Standalone
     # COMPANY_NAME ...                  # Specify the name of the app's author
     PRODUCT_NAME "Gui App Example")     # The name of the final executable, which can differ from the target name
 
-juce_generate_juce_header(Standalone)
-
 target_sources(Standalone
     PRIVATE
         Standalone/Standalone.cpp)

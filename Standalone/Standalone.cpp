@@ -6,7 +6,6 @@
     ==============================================================================
     */
 
-#include <JuceHeader.h>
 #include "Standalone.h"
 
 class Application    : public juce::JUCEApplication
@@ -15,12 +14,12 @@ public:
     //==============================================================================
     Application() = default;
 
-    const juce::String getApplicationName() override       { return "AudioPlaybackDemo"; }
+    const juce::String getApplicationName() override       { return "Mixer Trainer"; }
     const juce::String getApplicationVersion() override    { return "0.0.1"; }
 
     void initialise (const juce::String&) override
     {
-        mainWindow.reset (new MainWindow ("AudioPlaybackDemo", new AudioPlaybackDemo, *this));
+        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", new Standalone_Trainer, *this);
     }
 
     void shutdown() override                         { mainWindow = nullptr; }

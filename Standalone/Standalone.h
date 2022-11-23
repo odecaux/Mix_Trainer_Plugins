@@ -1,80 +1,78 @@
-/*
-    ==============================================================================
-
-    This file is part of the JUCE examples.
-    Copyright (c) 2022 - Raw Material Software Limited
-
-    The code included in this file is provided under the terms of the ISC license
-    http://www.isc.org/downloads/software-support-policy/isc-license. Permission
-    To use, copy, modify, and/or distribute this software for any purpose with or
-    without fee is hereby granted provided that the above copyright notice and
-    this permission notice appear in all copies.
-
-    THE SOFTWARE IS PROVIDED "AS IS" WITHOUT ANY WARRANTY, AND ALL WARRANTIES,
-    WHETHER EXPRESSED OR IMPLIED, INCLUDING MERCHANTABILITY AND FITNESS FOR
-    PURPOSE, ARE DISCLAIMED.
-
-    ==============================================================================
-    */
-
-/*******************************************************************************
-    The block below describes the properties of this PIP. A PIP is a short snippet
-    of code that can be read by the Projucer and used to generate a JUCE project.
-
-    BEGIN_JUCE_PIP_METADATA
-
-    name:             AudioPlaybackDemo
-    version:          1.0.0
-    vendor:           JUCE
-    website:          http://juce.com
-    description:      Plays an audio file.
-
-    dependencies:     juce_audio_basics, juce_audio_devices, juce_audio_formats,
-    juce_audio_processors, juce_audio_utils, juce_core,
-    juce_data_structures, juce_events, juce_graphics,
-    juce_gui_basics, juce_gui_extra
-    exporters:        xcode_mac, vs2022, linux_make, androidstudio, xcode_iphone
-
-    type:             Component
-    mainClass:        AudioPlaybackDemo
-
-    useLocalCopy:     1
-
-    END_JUCE_PIP_METADATA
-
-    *******************************************************************************/
 
 #pragma once
+#include <juce_gui_extra/juce_gui_extra.h>
+#include <juce_audio_utils/juce_audio_utils.h>
 
-#include "DemoUtilities.h"
-
-inline std::unique_ptr<InputSource> makeInputSource (const URL& url)
+inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
 {
-   #if JUCE_ANDROID
-    if (auto doc = AndroidDocument::fromDocument (url))
-        return std::make_unique<AndroidDocumentInputSource> (doc);
+    if (auto* v4 = dynamic_cast<juce::LookAndFeel_V4*> (&juce::LookAndFeel::getDefaultLookAndFeel()))
+        return v4->getCurrentColourScheme().getUIColour (uiColour);
+
+    return fallback;
+}
+
+inline juce::File getExamplesDirectory() noexcept
+{
+    auto currentFile = juce::File::getSpecialLocation (juce::File::SpecialLocationType::currentApplicationFile);
+    auto exampleDir = currentFile.getParentDirectory().getChildFile ("examples");
+
+    if (exampleDir.exists())
+        return exampleDir;
+
+    // keep track of the number of parent directories so we don't go on endlessly
+    for (int numTries = 0; numTries < 15; ++numTries)
+    {
+        if (currentFile.getFileName() == "examples")
+            return currentFile;
+
+        const auto sibling = currentFile.getSiblingFile ("examples");
+
+        if (sibling.exists())
+            return sibling;
+
+        currentFile = currentFile.getParentDirectory();
+    }
+
+    return currentFile;
+}
+
+inline std::unique_ptr<juce::InputStream> createAssetInputStream (const char* resourcePath)
+{
+   #if JUCE_MAC
+    auto assetsDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
+        .getParentDirectory().getParentDirectory().getChildFile ("Resources").getChildFile ("Assets");
+
+    if (! assetsDir.exists())
+        assetsDir = getExamplesDirectory().getChildFile ("Assets");
+   #else
+    auto assetsDir = getExamplesDirectory().getChildFile ("Assets");
    #endif
 
-   #if ! JUCE_IOS
-    if (url.isLocalFile())
-        return std::make_unique<FileInputSource> (url.getLocalFile());
-   #endif
+    auto resourceFile = assetsDir.getChildFile (resourcePath);
+    jassert (resourceFile.existsAsFile());
 
-    return std::make_unique<URLInputSource> (url);
+    return resourceFile.createInputStream();
+}
+
+
+inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
+{
+    return std::make_unique<juce::URLInputSource> (url);
 }
 
 //==============================================================================
-class DemoThumbnailComp  : public Component,
-public ChangeListener,
-public FileDragAndDropTarget,
-public ChangeBroadcaster,
-private ScrollBar::Listener,
-private Timer
+class DemoThumbnailComp  :
+    public juce::Component,
+    public juce::ChangeListener,
+    public juce::FileDragAndDropTarget,
+    public juce::ChangeBroadcaster,
+    private juce::ScrollBar::Listener,
+    private juce::Timer
 {
 public:
-    DemoThumbnailComp (AudioFormatManager& formatManager,
-                       AudioTransportSource& source,
-                       Slider& slider)
+    DemoThumbnailComp (juce::AudioFormatManager& formatManager,
+                       juce::AudioTransportSource& source,
+                       juce::Slider& slider)
     : transportSource (source),
       zoomSlider (slider),
       thumbnail (512, formatManager, thumbnailCache)
@@ -86,7 +84,7 @@ public:
         scrollbar.setAutoHide (false);
         scrollbar.addListener (this);
 
-        currentPositionMarker.setFill (Colours::white.withAlpha (0.85f));
+        currentPositionMarker.setFill (juce::Colours::white.withAlpha (0.85f));
         addAndMakeVisible (currentPositionMarker);
     }
 
@@ -96,13 +94,13 @@ public:
         thumbnail.removeChangeListener (this);
     }
 
-    void setURL (const URL& url)
+    void setURL (const juce::URL& url)
     {
         if (auto inputSource = makeInputSource (url))
         {
             thumbnail.setSource (inputSource.release());
 
-            Range<double> newRange (0.0, thumbnail.getTotalLength());
+            juce::Range<double> newRange (0.0, thumbnail.getTotalLength());
             scrollbar.setRangeLimits (newRange);
             setRange (newRange);
 
@@ -110,20 +108,20 @@ public:
         }
     }
 
-    URL getLastDroppedFile() const noexcept { return lastFileDropped; }
+    juce::URL getLastDroppedFile() const noexcept { return lastFileDropped; }
 
     void setZoomFactor (double amount)
     {
         if (thumbnail.getTotalLength() > 0)
         {
-            auto newScale = jmax (0.001, thumbnail.getTotalLength() * (1.0 - jlimit (0.0, 0.99, amount)));
+            auto newScale = juce::jmax (0.001, thumbnail.getTotalLength() * (1.0 - juce::jlimit (0.0, 0.99, amount)));
             auto timeAtCentre = xToTime ((float) getWidth() / 2.0f);
 
             setRange ({ timeAtCentre - newScale * 0.5, timeAtCentre + newScale * 0.5 });
         }
     }
 
-    void setRange (Range<double> newRange)
+    void setRange (juce::Range<double> newRange)
     {
         visibleRange = newRange;
         scrollbar.setCurrentRange (visibleRange);
@@ -136,10 +134,10 @@ public:
         isFollowingTransport = shouldFollow;
     }
 
-    void paint (Graphics& g) override
+    void paint (juce::Graphics& g) override
     {
-        g.fillAll (Colours::darkgrey);
-        g.setColour (Colours::lightblue);
+        g.fillAll (juce::Colours::darkgrey);
+        g.setColour (juce::Colours::lightblue);
 
         if (thumbnail.getTotalLength() > 0.0)
         {
@@ -152,7 +150,7 @@ public:
         else
         {
             g.setFont (14.0f);
-            g.drawFittedText ("(No audio file selected)", getLocalBounds(), Justification::centred, 2);
+            g.drawFittedText ("(No audio file selected)", getLocalBounds(), juce::Justification::centred, 2);
         }
     }
 
@@ -161,45 +159,45 @@ public:
         scrollbar.setBounds (getLocalBounds().removeFromBottom (14).reduced (2));
     }
 
-    void changeListenerCallback (ChangeBroadcaster*) override
+    void changeListenerCallback (juce::ChangeBroadcaster*) override
     {
         // this method is called by the thumbnail when it has changed, so we should repaint it..
         repaint();
     }
 
-    bool isInterestedInFileDrag (const StringArray& /*files*/) override
+    bool isInterestedInFileDrag (const juce::StringArray& /*files*/) override
     {
         return true;
     }
 
-    void filesDropped (const StringArray& files, int /*x*/, int /*y*/) override
+    void filesDropped (const juce::StringArray& files, int /*x*/, int /*y*/) override
     {
-        lastFileDropped = URL (File (files[0]));
+        lastFileDropped = juce::URL (juce::File (files[0]));
         sendChangeMessage();
     }
 
-    void mouseDown (const MouseEvent& e) override
+    void mouseDown (const juce::MouseEvent& e) override
     {
         mouseDrag (e);
     }
 
-    void mouseDrag (const MouseEvent& e) override
+    void mouseDrag (const juce::MouseEvent& e) override
     {
         if (canMoveTransport())
-            transportSource.setPosition (jmax (0.0, xToTime ((float) e.x)));
+            transportSource.setPosition (juce::jmax (0.0, xToTime ((float) e.x)));
     }
 
-    void mouseUp (const MouseEvent&) override
+    void mouseUp (const juce::MouseEvent&) override
     {
         transportSource.start();
     }
 
-    void mouseWheelMove (const MouseEvent&, const MouseWheelDetails& wheel) override
+    void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel) override
     {
         if (thumbnail.getTotalLength() > 0.0)
         {
             auto newStart = visibleRange.getStart() - wheel.deltaX * (visibleRange.getLength()) / 10.0;
-            newStart = jlimit (0.0, jmax (0.0, thumbnail.getTotalLength() - (visibleRange.getLength())), newStart);
+            newStart = juce::jlimit (0.0, juce::jmax (0.0, thumbnail.getTotalLength() - (visibleRange.getLength())), newStart);
 
             if (canMoveTransport())
                 setRange ({ newStart, newStart + visibleRange.getLength() });
@@ -212,17 +210,17 @@ public:
     }
 
 private:
-    AudioTransportSource& transportSource;
-    Slider& zoomSlider;
-    ScrollBar scrollbar  { false };
+    juce::AudioTransportSource& transportSource;
+    juce::Slider& zoomSlider;
+    juce::ScrollBar scrollbar  { false };
 
-    AudioThumbnailCache thumbnailCache  { 5 };
-    AudioThumbnail thumbnail;
-    Range<double> visibleRange;
+    juce::AudioThumbnailCache thumbnailCache  { 5 };
+    juce::AudioThumbnail thumbnail;
+    juce::Range<double> visibleRange;
     bool isFollowingTransport = false;
-    URL lastFileDropped;
+    juce::URL lastFileDropped;
 
-    DrawableRectangle currentPositionMarker;
+    juce::DrawableRectangle currentPositionMarker;
 
     float timeToX (const double time) const
     {
@@ -242,7 +240,7 @@ private:
         return ! (isFollowingTransport && transportSource.isPlaying());
     }
 
-    void scrollBarMoved (ScrollBar* scrollBarThatHasMoved, double newRangeStart) override
+    void scrollBarMoved (juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override
     {
         if (scrollBarThatHasMoved == &scrollbar)
             if (! (isFollowingTransport && transportSource.isPlaying()))
@@ -261,29 +259,26 @@ private:
     {
         currentPositionMarker.setVisible (transportSource.isPlaying() || isMouseButtonDown());
 
-        currentPositionMarker.setRectangle (Rectangle<float> (timeToX (transportSource.getCurrentPosition()) - 0.75f, 0,
+        currentPositionMarker.setRectangle (juce::Rectangle<float> (timeToX (transportSource.getCurrentPosition()) - 0.75f, 0,
                                             1.5f, (float) (getHeight() - scrollbar.getHeight())));
     }
 };
 
 //==============================================================================
-class AudioPlaybackDemo  : public Component,
-#if (JUCE_ANDROID || JUCE_IOS)
-private Button::Listener,
-#else
-private FileBrowserListener,
-#endif
-private ChangeListener
+class Standalone_Trainer  : 
+    public juce::Component,
+    private juce::FileBrowserListener,
+    private juce::ChangeListener
 {
 public:
-    AudioPlaybackDemo()
+    Standalone_Trainer()
     {
         addAndMakeVisible (zoomLabel);
-        zoomLabel.setFont (Font (15.00f, Font::plain));
-        zoomLabel.setJustificationType (Justification::centredRight);
+        zoomLabel.setFont (juce::Font (15.00f, juce::Font::plain));
+        zoomLabel.setJustificationType (juce::Justification::centredRight);
         zoomLabel.setEditable (false, false, false);
-        zoomLabel.setColour (TextEditor::textColourId, Colours::black);
-        zoomLabel.setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+        zoomLabel.setColour (juce::TextEditor::textColourId, juce::Colours::black);
+        zoomLabel.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 
         addAndMakeVisible (followTransportButton);
         followTransportButton.onClick = [this] { updateFollowTransportState(); };
@@ -294,18 +289,18 @@ public:
 #else
         addAndMakeVisible (fileTreeComp);
 
-        directoryList.setDirectory (File::getSpecialLocation (File::userHomeDirectory), true, true);
+        directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
 
         fileTreeComp.setTitle ("Files");
-        fileTreeComp.setColour (FileTreeComponent::backgroundColourId, Colours::lightgrey.withAlpha (0.6f));
+        fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
         fileTreeComp.addListener (this);
 
         addAndMakeVisible (explanation);
-        explanation.setFont (Font (14.00f, Font::plain));
-        explanation.setJustificationType (Justification::bottomRight);
+        explanation.setFont (juce::Font (14.00f, juce::Font::plain));
+        explanation.setJustificationType (juce::Justification::bottomRight);
         explanation.setEditable (false, false, false);
-        explanation.setColour (TextEditor::textColourId, Colours::black);
-        explanation.setColour (TextEditor::backgroundColourId, Colour (0x00000000));
+        explanation.setColour (juce::TextEditor::textColourId, juce::Colours::black);
+        explanation.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
 #endif
 
         addAndMakeVisible (zoomSlider);
@@ -318,8 +313,8 @@ public:
         thumbnail->addChangeListener (this);
 
         addAndMakeVisible (startStopButton);
-        startStopButton.setColour (TextButton::buttonColourId, Colour (0xff79ed7f));
-        startStopButton.setColour (TextButton::textColourOffId, Colours::black);
+        startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
+        startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
         startStopButton.onClick = [this] { startOrStop(); };
 
         // audio setup
@@ -327,14 +322,12 @@ public:
 
         thread.startThread (3);
 
-#ifndef JUCE_DEMO_RUNNER
-        RuntimePermissions::request (RuntimePermissions::recordAudio,
+        juce::RuntimePermissions::request (juce::RuntimePermissions::recordAudio,
                                      [this] (bool granted)
                                      {
                                      int numInputChannels = granted ? 2 : 0;
                                      audioDeviceManager.initialise (numInputChannels, 2, nullptr, true, {}, nullptr);
                                      });
-#endif
 
         audioDeviceManager.addAudioCallback (&audioSourcePlayer);
         audioSourcePlayer.setSource (&transportSource);
@@ -343,25 +336,21 @@ public:
         setSize (500, 500);
     }
 
-    ~AudioPlaybackDemo() override
+    ~Standalone_Trainer() override
     {
         transportSource  .setSource (nullptr);
         audioSourcePlayer.setSource (nullptr);
 
         audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
 
-#if (JUCE_ANDROID || JUCE_IOS)
-        chooseFileButton.removeListener (this);
-#else
         fileTreeComp.removeListener (this);
-#endif
 
         thumbnail->removeChangeListener (this);
     }
 
-    void paint (Graphics& g) override
+    void paint (juce::Graphics& g) override
     {
-        g.fillAll (getUIColourIfAvailable (LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
+        g.fillAll (getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
     }
 
     void resized() override
@@ -372,11 +361,7 @@ public:
 
         auto controlRightBounds = controls.removeFromRight (controls.getWidth() / 3);
 
-#if (JUCE_ANDROID || JUCE_IOS)
-        chooseFileButton.setBounds (controlRightBounds.reduced (10));
-#else
         explanation.setBounds (controlRightBounds);
-#endif
 
         auto zoom = controls.removeFromTop (25);
         zoomLabel .setBounds (zoom.removeFromLeft (50));
@@ -387,58 +372,45 @@ public:
 
         r.removeFromBottom (6);
 
-#if JUCE_ANDROID || JUCE_IOS
-        thumbnail->setBounds (r);
-#else
         thumbnail->setBounds (r.removeFromBottom (140));
         r.removeFromBottom (6);
 
         fileTreeComp.setBounds (r);
-#endif
     }
 
 private:
     // if this PIP is running inside the demo runner, we'll use the shared device manager instead
-   #ifndef JUCE_DEMO_RUNNER
-    AudioDeviceManager audioDeviceManager;
-   #else
-    AudioDeviceManager& audioDeviceManager { getSharedAudioDeviceManager (0, 2) };
-   #endif
+    juce::AudioDeviceManager audioDeviceManager;
 
-    AudioFormatManager formatManager;
-    TimeSliceThread thread  { "audio file preview" };
+    juce::AudioFormatManager formatManager;
+    juce::TimeSliceThread thread  { "audio file preview" };
 
-   #if (JUCE_ANDROID || JUCE_IOS)
-    std::unique_ptr<FileChooser> fileChooser;
-    TextButton chooseFileButton {"Choose Audio File...", "Choose an audio file for playback"};
-   #else
-    DirectoryContentsList directoryList {nullptr, thread};
-    FileTreeComponent fileTreeComp {directoryList};
-    Label explanation { {}, "Select an audio file in the treeview above, and this page will display its waveform, and let you play it.." };
-   #endif
+    juce::DirectoryContentsList directoryList {nullptr, thread};
+    juce::FileTreeComponent fileTreeComp {directoryList};
+    juce::Label explanation { {}, "Select an audio file in the treeview above, and this page will display its waveform, and let you play it.." };
 
-    URL currentAudioFile;
-    AudioSourcePlayer audioSourcePlayer;
-    AudioTransportSource transportSource;
-    std::unique_ptr<AudioFormatReaderSource> currentAudioFileSource;
+    juce::URL currentAudioFile;
+    juce::AudioSourcePlayer audioSourcePlayer;
+    juce::AudioTransportSource transportSource;
+    std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
 
     std::unique_ptr<DemoThumbnailComp> thumbnail;
-    Label zoomLabel                     { {}, "zoom:" };
-    Slider zoomSlider                   { Slider::LinearHorizontal, Slider::NoTextBox };
-    ToggleButton followTransportButton  { "Follow Transport" };
-    TextButton startStopButton          { "Play/Stop" };
+    juce::Label zoomLabel                     { {}, "zoom:" };
+    juce::Slider zoomSlider                   { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
+    juce::ToggleButton followTransportButton  { "Follow Transport" };
+    juce::TextButton startStopButton          { "Play/Stop" };
 
     //==============================================================================
-    void showAudioResource (URL resource)
+    void showAudioResource (juce::URL resource)
     {
         if (loadURLIntoTransport (resource))
             currentAudioFile = std::move (resource);
 
-        zoomSlider.setValue (0, dontSendNotification);
+        zoomSlider.setValue (0, juce::dontSendNotification);
         thumbnail->setURL (currentAudioFile);
     }
 
-    bool loadURLIntoTransport (const URL& audioURL)
+    bool loadURLIntoTransport (const juce::URL& audioURL)
     {
         // unload the previous file source and delete it..
         transportSource.stop();
@@ -450,17 +422,17 @@ private:
         if (source == nullptr)
             return false;
 
-        auto stream = rawToUniquePtr (source->createInputStream());
+        auto stream = juce::rawToUniquePtr (source->createInputStream());
 
         if (stream == nullptr)
             return false;
 
-        auto reader = rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
+        auto reader = juce::rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
 
         if (reader == nullptr)
             return false;
 
-        currentAudioFileSource = std::make_unique<AudioFormatReaderSource> (reader.release(), true);
+        currentAudioFileSource = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
 
         // ..and plug it into our transport source
         transportSource.setSource (currentAudioFileSource.get(),
@@ -488,69 +460,21 @@ private:
     {
         thumbnail->setFollowsTransport (followTransportButton.getToggleState());
     }
-
-   #if (JUCE_ANDROID || JUCE_IOS)
-    void buttonClicked (Button* btn) override
-    {
-        if (btn == &chooseFileButton && fileChooser.get() == nullptr)
-        {
-            if (! RuntimePermissions::isGranted (RuntimePermissions::readExternalStorage))
-            {
-                SafePointer<AudioPlaybackDemo> safeThis (this);
-                RuntimePermissions::request (RuntimePermissions::readExternalStorage,
-                                             [safeThis] (bool granted) mutable
-                                             {
-                                             if (safeThis != nullptr && granted)
-                                             safeThis->buttonClicked (&safeThis->chooseFileButton);
-                                             });
-                return;
-            }
-
-            if (FileChooser::isPlatformDialogAvailable())
-            {
-                fileChooser = std::make_unique<FileChooser> ("Select an audio file...", File(), "*.wav;*.mp3;*.aif");
-
-                fileChooser->launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
-                                          [this] (const FileChooser& fc) mutable
-                                          {
-                                          if (fc.getURLResults().size() > 0)
-                                          {
-                                          auto u = fc.getURLResult();
-
-                                          showAudioResource (std::move (u));
-                                          }
-
-                                          fileChooser = nullptr;
-                                          }, nullptr);
-            }
-            else
-            {
-                NativeMessageBox::showAsync (MessageBoxOptions()
-                                             .withIconType (MessageBoxIconType::WarningIcon)
-                                             .withTitle ("Enable Code Signing")
-                                             .withMessage ("You need to enable code-signing for your iOS project and enable \"iCloud Documents\" "
-                                                           "permissions to be able to open audio files on your iDevice. See: "
-                                                           "https://forum.juce.com/t/native-ios-android-file-choosers"),
-                                                           nullptr);
-            }
-        }
-    }
-   #else
+    
     void selectionChanged() override
     {
-        showAudioResource (URL (fileTreeComp.getSelectedFile()));
+        showAudioResource (juce::URL (fileTreeComp.getSelectedFile()));
     }
 
-    void fileClicked (const File&, const MouseEvent&) override          {}
-    void fileDoubleClicked (const File&) override                       {}
-    void browserRootChanged (const File&) override                      {}
-   #endif
+    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
+    void fileDoubleClicked (const juce::File&) override                       {}
+    void browserRootChanged (const juce::File&) override                      {}
 
-    void changeListenerCallback (ChangeBroadcaster* source) override
+    void changeListenerCallback (juce::ChangeBroadcaster* source) override
     {
         if (source == thumbnail.get())
-            showAudioResource (URL (thumbnail->getLastDroppedFile()));
+            showAudioResource (juce::URL (thumbnail->getLastDroppedFile()));
     }
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioPlaybackDemo)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Standalone_Trainer)
 };

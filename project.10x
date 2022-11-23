@@ -47,6 +47,9 @@
 				<Path>Host.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
+				<Path>Standalone.10x</Path>
+			</WorkspaceReference>
+			<WorkspaceReference>
 				<Path>Track.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
