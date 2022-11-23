@@ -5,3 +5,10 @@ Hierarchical FSM ?
 
 escape spaces when broadcasting name
 design a save system 
+
+
+
+
+
+
+utiliser que des files, pas des URL

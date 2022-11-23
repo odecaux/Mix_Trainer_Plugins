@@ -138,7 +138,7 @@ struct FilePlayer {
     juce::AudioTransportSource transportSource;
     std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
 
-    std::vector<juce::URL> file_list;
+    std::vector<juce::File> file_list;
 };
 
 //==============================================================================
@@ -379,7 +379,7 @@ public:
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(player.file_list[rowNumber].toString(false), bounds, juce::Justification::centredLeft);
+            g.drawText(player.file_list[rowNumber].getFileName(), bounds, juce::Justification::centredLeft);
         }
     }
 
@@ -394,9 +394,19 @@ public:
     {
         jassert(dragSourceDetails.sourceComponent == dropSource);
         juce::File file = ((juce::FileTreeComponent*)dropSource)->getSelectedFile();
-        player.file_list.emplace_back(file);
-        fileListComp.updateContent();
-        DBG(file.getFullPathName());
+        if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+        {
+            //DBG(file.getFullPathName());
+            player.file_list.emplace_back(std::move(file));
+            fileListComp.updateContent();
+            delete reader;
+        }
+    }
+
+    void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
+    {
+        jassert(row < player.file_list.size());
+        
     }
 
 private:
