@@ -1,10 +1,10 @@
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "shared.h"
+#include "../shared/shared.h"
 
 #include "Game.h"
 #include "Game_Mixer.h"
-#include "MainMenu.h"
-#include "Application.h"
+#include "../Application/MainMenu.h"
+#include "../Application/Application.h"
 
 
 void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)

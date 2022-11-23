@@ -26,13 +26,12 @@ juce_add_plugin(MixTrainer_Host
 
 target_sources(MixTrainer_Host
     PRIVATE
-        Processor_Host.cpp
-        Game.cpp
-        Game_Mixer.cpp
-        Game_Mixer_Tries.cpp
-        Game_Mixer_Timer.cpp
-        # Game_Solo.cpp
-        Application.cpp)
+        Plugin_Host/Processor_Host.cpp
+        Game/Game.cpp
+        Game/Game_Mixer.cpp
+        Game/Game_Mixer_Tries.cpp
+        Game/Game_Mixer_Timer.cpp
+        Application/Application.cpp)
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC
@@ -68,7 +67,7 @@ juce_add_plugin(MixTrainer_Track
 
 target_sources(MixTrainer_Track
     PRIVATE
-        Processor_Track.cpp)
+        Plugin_Track/Processor_Track.cpp)
 
 target_compile_definitions(MixTrainer_Track
     PUBLIC

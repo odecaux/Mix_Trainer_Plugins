@@ -1,12 +1,12 @@
 #include <juce_audio_processors/juce_audio_processors.h>
-#include "shared.h"
+#include "../shared/shared.h"
 
-#include "Game.h"
-#include "Game_Mixer.h"
+#include "../Game/Game.h"
+#include "../Game/Game_Mixer.h"
 #include "MainMenu.h"
 #include "Application.h"
-#include "Processor_Host.h"
-#include "PluginEditor_Host.h"
+#include "../Plugin_Host/Processor_Host.h"
+#include "../Plugin_Host/PluginEditor_Host.h"
 
 Application::Application(ProcessorHost &host) :
     type(PanelType::MainMenu),
