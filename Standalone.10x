@@ -2,8 +2,8 @@
 <N10X>
 	<Workspace>
 		<IncludeFilter></IncludeFilter>
-		<ExcludeFilter></ExcludeFilter>
-		<SyncFiles>true</SyncFiles>
+		<ExcludeFilter>*</ExcludeFilter>
+		<SyncFiles>false</SyncFiles>
 		<Recursive>false</Recursive>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
@@ -44,6 +44,16 @@
 				<Defines></Defines>
 			</Platform>
 		</ConfigProperties>
-		<Children></Children>
+		<Children>
+			<File>
+				<Path>Standalone/Standalone.cpp</Path>
+			</File>
+			<File>
+				<Path>Standalone/Standalone.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/FrequencyWidget.h</Path>
+			</File>
+		</Children>
 	</Workspace>
 </N10X>

@@ -3,7 +3,7 @@
 	<Workspace>
 		<IncludeFilter></IncludeFilter>
 		<ExcludeFilter>.git,.vs,out,cmake-build,</ExcludeFilter>
-		<SyncFiles>true</SyncFiles>
+		<SyncFiles>false</SyncFiles>
 		<Recursive>false</Recursive>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
@@ -42,6 +42,16 @@
 				<Defines></Defines>
 			</Platform>
 		</ConfigProperties>
-		<Children></Children>
+		<Children>
+			<File>
+				<Path>Plugin_Host/Processor_Host.cpp</Path>
+			</File>
+			<File>
+				<Path>Plugin_Host/Processor_Host.h</Path>
+			</File>
+			<File>
+				<Path>Plugin_Host/PluginEditor_Host.h</Path>
+			</File>
+		</Children>
 	</Workspace>
 </N10X>

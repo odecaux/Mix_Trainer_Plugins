@@ -3,8 +3,8 @@
 	<Workspace>
 		<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,.gitignore,*.rdbg,</IncludeFilter>
 		<ExcludeFilter>.git,.vs,out,cmake-build,</ExcludeFilter>
-		<SyncFiles>true</SyncFiles>
-		<Recursive>true</Recursive>
+		<SyncFiles>false</SyncFiles>
+		<Recursive>false</Recursive>
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
 		<BuildCommand>build_all.bat</BuildCommand>
@@ -55,6 +55,95 @@
 			<WorkspaceReference>
 				<Path>../JUCE/juce.10x</Path>
 			</WorkspaceReference>
+			<Folder>
+				<Path>Application</Path>
+				<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,.gitignore,*.rdbg,</IncludeFilter>
+				<ExcludeFilter>.git,.vs,out,cmake-build,</ExcludeFilter>
+				<SyncFiles>true</SyncFiles>
+				<Recursive>true</Recursive>
+				<IsVirtual>false</IsVirtual>
+				<Children>
+					<File>
+						<Path>Application/Application.h</Path>
+					</File>
+					<File>
+						<Path>Application/Application.cpp</Path>
+					</File>
+					<File>
+						<Path>Application/MainMenu.h</Path>
+					</File>
+				</Children>
+			</Folder>
+			<Folder>
+				<Path>Game</Path>
+				<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,.gitignore,*.rdbg,</IncludeFilter>
+				<ExcludeFilter>.git,.vs,out,cmake-build,</ExcludeFilter>
+				<SyncFiles>true</SyncFiles>
+				<Recursive>true</Recursive>
+				<IsVirtual>false</IsVirtual>
+				<Children>
+					<File>
+						<Path>Game/Game.cpp</Path>
+					</File>
+					<File>
+						<Path>Game/Game.h</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer.cpp</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer.h</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer_Timer.cpp</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer_Timer.h</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer_Tries.cpp</Path>
+					</File>
+					<File>
+						<Path>Game/Game_Mixer_Tries.h</Path>
+					</File>
+				</Children>
+			</Folder>
+			<Folder>
+				<Path>shared</Path>
+				<IncludeFilter>*.c,*.cc,*.cpp,*.c++,*.cp,*.cxx,*.h,*.hh,*.hpp,*.h++,*.hp,*.hxx,*.inl,*.cs,*.rs,*.java,*.jav,*.js,*.jsc,*.jsx,*.json,*.cls,*.py,*.rpy,*.php,*.php3,*.phl,*.phtml,*.rhtml,*.tpl,*.phps,*.lua,*.html,*.html5,*.htm,*.xml,*.xaml,*.css,*.ssi,*.haml,*.yaml,*.bat,*.wbf,*.wbt,*.txt,*.cmake,*.make,*.makefile,*.mak,*.mk,*.sh,*.bash,*.csv,*.asp,*.pl,*.mac,*.ws,*.vbs,*.perl,*.src,*.rss,*.inc,*.f,*.go,*.prl,*.plx,*.rb,*.lsp,*.lpx,*.ps1,*.command,*.cbl,*.cob,*.qs,*.wxs,*.ph,*.msc,*.glsl,*.hlsl,*.fx,*.vert,*.tesc,*.tese,*.geom,*.frag,*.comp,*.pssl,*.scons,.gitignore,*.rdbg,</IncludeFilter>
+				<ExcludeFilter>.git,.vs,out,cmake-build,</ExcludeFilter>
+				<SyncFiles>true</SyncFiles>
+				<Recursive>true</Recursive>
+				<IsVirtual>false</IsVirtual>
+				<Children></Children>
+			</Folder>
+			<File>
+				<Path>.gitignore</Path>
+			</File>
+			<File>
+				<Path>CMakeLists.txt</Path>
+			</File>
+			<File>
+				<Path>build_all.bat</Path>
+			</File>
+			<File>
+				<Path>build_host.bat</Path>
+			</File>
+			<File>
+				<Path>build_standalone.bat</Path>
+			</File>
+			<File>
+				<Path>build_track.bat</Path>
+			</File>
+			<File>
+				<Path>host.rdbg</Path>
+			</File>
+			<File>
+				<Path>reset.bat</Path>
+			</File>
+			<File>
+				<Path>todo.txt</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>
