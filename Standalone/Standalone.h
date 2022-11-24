@@ -653,8 +653,13 @@ class Main_Component : public juce::Component
         );
 #elif 0
         panel = std::make_unique < FileSelector_Panel > (player);
-#else 
-        panel = std::make_unique < FrequencyWidget > ();
+#else
+        panel = std::make_unique < FrequencyWidget > (
+            [](auto ...){},
+            [this](int new_score) {
+                burger.setButtonText(juce::String(new_score));
+            }
+        );
 #endif
         addAndMakeVisible(*panel);
         addAndMakeVisible (sidePanel);
@@ -665,7 +670,7 @@ class Main_Component : public juce::Component
             sidePanel.showOrHide(true);
         };
 
-        setSize (500, 500);
+        setSize (500, 300);
     }
     
     ~Main_Component()
