@@ -63,6 +63,38 @@ inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
     return std::make_unique<juce::URLInputSource> (url);
 }
 
+enum Transport_Step
+{
+    Transport_Stopped,
+    Transport_Playing,
+    Transport_Paused,
+};
+
+struct Transport_State
+{
+    Transport_Step step;
+};
+
+enum Audio_Command_Type
+{
+    Audio_Command_Play,
+    Audio_Command_Pause,
+    Audio_Command_Stop,
+    Audio_Command_Seek,
+    Audio_Command_Load,
+};
+
+struct Audio_Command
+{
+    Audio_Command_Type type;
+    float value_f;
+    juce::URL value_url;
+};
+
+struct Return_Value
+{
+    bool value_b;
+};
 
 struct FilePlayer {
     FilePlayer()
@@ -119,18 +151,46 @@ struct FilePlayer {
         return true;
     }
 
-    void startOrStop()
+    Return_Value post_command(Audio_Command command)
     {
-        if (transportSource.isPlaying())
+        switch (command.type)
         {
-            transportSource.stop();
+            case Audio_Command_Play :
+            {
+                DBG("Play");
+                transportSource.start();
+                transport_state.step = Transport_Playing;
+            } break;
+            case Audio_Command_Pause :
+            {
+                DBG("Pause");
+                transportSource.stop();
+                transport_state.step = Transport_Paused;
+            } break;
+            case Audio_Command_Stop :
+            {
+                DBG("Stop");
+                transportSource.stop();
+                transportSource.setPosition(0);
+                transport_state.step = Transport_Stopped;
+            } break;
+            case Audio_Command_Seek :
+            {
+                DBG("Seek : "<<command.value_f);
+                transportSource.setPosition(command.value_f);
+            } break;
+            case Audio_Command_Load :
+            {
+                DBG("Load : "<<command.value_url.toString(false));
+                bool success = loadURLIntoTransport(command.value_url);
+                transport_state.step = Transport_Stopped;
+                return { .value_b = success };
+            } break;
         }
-        else
-        {
-            transportSource.setPosition (0);
-            transportSource.start();
-        }
+        return { .value_b = true };
     }
+
+    Transport_State transport_state;
     
     juce::AudioDeviceManager audioDeviceManager;
     juce::AudioFormatManager formatManager;
@@ -410,8 +470,9 @@ public:
     {
         jassert(row < player.file_list.size());
         auto url = juce::URL(player.file_list[row]);
-        jassert(player.loadURLIntoTransport(url));
-        player.startOrStop();
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = url });
+        jassert(ret.value_b); //file still exists on drive ?
+        player.post_command( { .type = Audio_Command_Play });
     }
 
 private:
@@ -474,8 +535,9 @@ private:
     
     void selectionChanged() override
     {
-        if(player.loadURLIntoTransport(juce::URL (fileTreeComp.getSelectedFile())))
-            player.startOrStop();
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = juce::URL (fileTreeComp.getSelectedFile()) });
+        if (ret.value_b)
+            player.post_command({ .type = Audio_Command_Play });
     }
 
     void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
@@ -541,7 +603,12 @@ public:
             addAndMakeVisible (startStopButton);
             startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
             startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
-            startStopButton.onClick = [this] { this->player.startOrStop(); };
+            startStopButton.onClick = [&player] { 
+                if (player.transport_state.step == Transport_Playing)
+                    player.post_command( { .type = Audio_Command_Stop });
+                else 
+                    player.post_command( { .type = Audio_Command_Play });
+            };
         }
 
 
@@ -602,7 +669,8 @@ private:
     //==============================================================================
     void showAudioResource (juce::URL resource)
     {
-        if (player.loadURLIntoTransport (resource))
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = resource });
+        if (ret.value_b)
         {
             zoomSlider.setValue (0, juce::dontSendNotification);
             thumbnail->setURL (resource);
@@ -649,6 +717,7 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
+#if 0
         state = frequency_game_state_init();
         frequency_game_add_audio_observer(state.get(), 
                                       [this] (auto &&effect) { 
@@ -661,11 +730,12 @@ class Main_Component : public juce::Component
         }
         );
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
+#endif
 #if 0
         panel = std::make_unique < Main_Panel > (
             player
         );
-#elif 0
+#elif 1
         panel = std::make_unique < FileSelector_Panel > (player);
 #else
         auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
@@ -709,7 +779,9 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
+#if 0
     std::unique_ptr<FrequencyGame_State> state;
+#endif
     std::unique_ptr<juce::Component> panel;
     
 #if 0
