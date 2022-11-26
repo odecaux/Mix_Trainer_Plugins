@@ -2,11 +2,6 @@
 #include "../shared/shared.h"
 
 #include "Game.h"
-#include "Game_Mixer.h"
-#include "../Application/MainMenu.h"
-#include "../Application/Application.h"
-//#include "../Plugin_Host/Processor_Host.h"
-//#include "../Plugin_Host/PluginEditor_Host.h"
 
 juce::String step_to_str(GameStep step)
 {

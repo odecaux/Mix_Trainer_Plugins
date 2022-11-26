@@ -51,7 +51,7 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             jassert(state->target_slider_pos.size() == 0);
             transition = Transition_To_Exercice;
         } break;
-        case Event_Click_Start_Answering_RENAME : {
+        case Event_Click_Done_Listening : {
             jassert(state->timer.isTimerRunning());
             state->timer.stopTimer();
             jassert(step == GameStep_Listening);
@@ -209,7 +209,7 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             {
                 header_text = "Listen";
                 button_text = "Go";
-                button_event = Event_Click_Start_Answering_RENAME;
+                button_event = Event_Click_Done_Listening;
             } break;
             case GameStep_Editing :
             {
@@ -232,7 +232,7 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
         Mix mix = Mix_Hidden;
 
         effects.ui = Effect_UI {
-            .step = step,
+            .fader_step = gameStepToFaderStep(state->step),
             .header_text = std::move(header_text),
             .score = state->score,
             .slider_pos_to_display = std::move(slider_pos_to_display),

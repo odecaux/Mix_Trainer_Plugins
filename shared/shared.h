@@ -9,6 +9,16 @@
 
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
+struct Timer: public juce::Timer
+{
+    void timerCallback() override {
+        stopTimer();
+        callback();
+    }
+    std::function<void()> callback;
+};
+
+
 struct ChannelDSPState{
     double gain;
     double low_shelf_gain;

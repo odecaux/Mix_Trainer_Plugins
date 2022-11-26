@@ -66,10 +66,11 @@ enum Event_Type{
     Event_Click_Track,
     Event_Toggle_Track,
     Event_Slider, //value_i = slider_position
+    Event_Click_Frequency,
     Event_Toggle_Input_Target, //value_b = was_target
     Event_Timeout,
     Event_Click_Begin,
-    Event_Click_Start_Answering_RENAME,
+    Event_Click_Done_Listening,
     Event_Click_Answer,
     Event_Click_Next,
     Event_Click_Back,
@@ -105,50 +106,6 @@ enum Transition {
     Transition_None,
 };
 
-struct Timer: public juce::Timer
-{
-    void timerCallback() override {
-        stopTimer();
-        callback();
-    }
-    std::function<void()> callback;
-};
-
-struct Effect_DSP {
-    std::unordered_map<int, ChannelDSPState> dsp_states;
-};
-
-struct Effect_UI {
-    GameStep step; 
-    juce::String header_text;
-    int score; 
-    std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    int remaining_listens;
-    juce::String button_text;
-    Mix mix;
-    Event_Type button_event;
-};
-
-struct Effect_Rename {
-    int id;
-    std::string new_name;
-};
-
-struct Effect_Timer {
-    int timeout_ms;
-    std::function<void()> callback;
-};
-
-struct Effects {
-    std::optional < Effect_DSP> dsp;
-    std::optional < Effect_UI > ui;
-    std::optional < Effect_Rename > rename;
-    bool quit;
-    std::optional < Effect_Timer > timer;
-};
-
-using audio_observer_t = std::function<void(Effect_DSP)>;
-using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct GameUI_Header : public juce::Component
 {

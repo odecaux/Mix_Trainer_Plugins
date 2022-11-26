@@ -250,7 +250,7 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         };
 
         effects.ui = Effect_UI {
-            .step = step,
+            .fader_step = gameStepToFaderStep(state->step),
             .header_text = std::move(header_text),
             .score = state->score,
             .slider_pos_to_display = std::move(slider_pos_to_display),

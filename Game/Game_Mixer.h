@@ -1,5 +1,42 @@
 struct MixerGameUI;
 
+
+struct Effect_DSP {
+    std::unordered_map<int, ChannelDSPState> dsp_states;
+};
+
+struct Effect_UI {
+    FaderStep fader_step; 
+    juce::String header_text;
+    int score; 
+    std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+    int remaining_listens;
+    juce::String button_text;
+    Mix mix;
+    Event_Type button_event;
+};
+
+struct Effect_Rename {
+    int id;
+    std::string new_name;
+};
+
+struct Effect_Timer {
+    int timeout_ms;
+    std::function<void()> callback;
+};
+
+struct Effects {
+    std::optional < Effect_DSP> dsp;
+    std::optional < Effect_UI > ui;
+    std::optional < Effect_Rename > rename;
+    bool quit;
+    std::optional < Effect_Timer > timer;
+};
+
+using audio_observer_t = std::function<void(Effect_DSP)>;
+using ui_observer_t = std::function<void(Effect_UI &)>;
+
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     //state

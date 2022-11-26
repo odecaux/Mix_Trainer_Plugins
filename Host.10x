@@ -26,7 +26,27 @@
 			<Platform>Win32</Platform>
 		</Platforms>
 		<AdditionalIncludePaths></AdditionalIncludePaths>
-		<Defines></Defines>
+		<Defines>
+            <Define>WIN32</Define>
+            <Define>_WINDOWS</Define>
+            <Define>JUCE_STANDALONE_APPLICATION=1</Define>
+            <Define>JUCE_WEB_BROWSER=0</Define>
+            <Define>JUCE_USE_CURL=0</Define>
+            <Define>JUCE_APPLICATION_NAME_STRING="Gui App Example"</Define>
+            <Define>JUCE_APPLICATION_VERSION_STRING="0.0.1"</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_gui_extra=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_gui_basics=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_graphics=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_events=1</Define>
+            <Define>JUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_core=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_data_structures=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_audio_utils=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_audio_processors=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_audio_basics=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_audio_formats=1</Define>
+            <Define>JUCE_MODULE_AVAILABLE_juce_audio_devices=1</Define>
+        </Defines>
 		<ConfigProperties>
 			<ConfigAndPlatform>
 				<Name>Debug:x64</Name>

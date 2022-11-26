@@ -15,9 +15,8 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
     }
     for(auto& [id, fader] : ui.faders)
     {
-        auto fader_step = gameStepToFaderStep(new_ui.step);
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
-        fader->update(fader_step, pos);
+        fader->update(new_ui.fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     game_ui_bottom_update(&ui.bottom, new_ui.button_text, new_ui.mix, new_ui.button_event);
@@ -104,12 +103,12 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             update_ui = true;
         } break;
         case Event_Click_Begin : {
-            jassert(step == GameStep_Begin);
+            jassert(old_step == GameStep_Begin);
             jassert(state->target_slider_pos.size() == 0);
             transition = Transition_To_Exercice;
         } break;
         case Event_Click_Answer : {
-            jassert(step == GameStep_Listening || step == GameStep_Editing);
+            jassert(old_step == GameStep_Listening || old_step == GameStep_Editing);
 
             int points_awarded = 0;
             for (auto& [id, edited] : state->edited_slider_pos)
@@ -284,7 +283,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         };
         
         effects.ui = Effect_UI {
-            .step = step,
+            .fader_step = gameStepToFaderStep(state->step),
             .header_text = std::move(header_text),
             .score = state->score,
             .slider_pos_to_display = std::move(slider_pos_to_display),

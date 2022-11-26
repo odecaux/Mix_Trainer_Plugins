@@ -2,6 +2,8 @@
 #pragma once
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "../shared/shared.h"
+#include "../Game/Game.h"
 #include "FrequencyWidget.h"
 
 inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
@@ -647,6 +649,18 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
+        state = frequency_game_state_init();
+        frequency_game_add_audio_observer(state.get(), 
+                                      [this] (auto &&effect) { 
+                                      //broadcastDSP(effect.dsp_states); 
+        }
+        );
+        frequency_game_add_audio_observer(state.get(), 
+                                      [this] (auto &&effect){ 
+                                      //channel_dsp_log(effect.dsp_states, channels); 
+        }
+        );
+        frequency_game_post_event(state.get(), Event { .type = Event_Init });
 #if 0
         panel = std::make_unique < Main_Panel > (
             player
@@ -654,14 +668,16 @@ class Main_Component : public juce::Component
 #elif 0
         panel = std::make_unique < FileSelector_Panel > (player);
 #else
-        panel = std::make_unique < FrequencyWidget > (
-            [](auto ...){},
-            [this](int new_score) {
-                burger.setButtonText(juce::String(new_score));
-            }
-        );
+        auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
+        frequency_game_add_ui_observer(state.get(), 
+                                       [ui = game_ui.get()] (Effect_UI &effect){ 
+                                       frequency_game_ui_update(*ui, effect); 
+        });
+        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
+        panel = std::move(game_ui);
 #endif
         addAndMakeVisible(*panel);
+#if 0
         addAndMakeVisible (sidePanel);
         sidePanel.setContent(&empty, false);
         addAndMakeVisible(burger);
@@ -669,7 +685,7 @@ class Main_Component : public juce::Component
         burger.onClick = [&] {
             sidePanel.showOrHide(true);
         };
-
+#endif
         setSize (500, 300);
     }
     
@@ -680,23 +696,27 @@ class Main_Component : public juce::Component
     void resized() override 
     {
         auto r = getLocalBounds();
+#if 0
         auto headerBounds = r.withHeight(50);
         {
             auto burgerBounds = headerBounds.withWidth(50);
             burger.setBounds(burgerBounds);
         }
-       auto panelBounds = r.withTrimmedTop(50);
+#endif
+        auto panelBounds = r.withTrimmedTop(50);
         panel->setBounds(panelBounds);
     }
 
     private :
     FilePlayer player;
+    std::unique_ptr<FrequencyGame_State> state;
     std::unique_ptr<juce::Component> panel;
     
+#if 0
     juce::TextButton burger { "menu" };
     Empty empty;
     juce::SidePanel sidePanel { "Menu", 150, true };
-
+#endif
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };

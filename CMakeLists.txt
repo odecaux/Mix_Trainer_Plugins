@@ -93,7 +93,8 @@ juce_add_gui_app(Standalone
 
 target_sources(Standalone
     PRIVATE
-        Standalone/Standalone.cpp)
+        Standalone/Standalone.cpp
+        Game/Game.cpp)
 
 target_compile_definitions(Standalone
     PRIVATE
