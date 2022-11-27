@@ -175,10 +175,10 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
 
     if (update_audio)
     {
-        std::unordered_map < int, ChannelDSPState > dsp;
+        std::unordered_map < int, Channel_DSP_State > dsp;
         std::transform(edit_or_target->begin(), edit_or_target->end(), 
                        std::inserter(dsp, dsp.end()), 
-                       [state](const auto &a) -> std::pair<int, ChannelDSPState> {
+                       [state](const auto &a) -> std::pair<int, Channel_DSP_State> {
                        double gain = slider_pos_to_gain(a.second, state->db_slider_values);
                        return { a.first, ChannelDSP_gain(gain) };
         });

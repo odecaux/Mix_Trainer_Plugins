@@ -791,4 +791,8 @@ class Main_Component : public juce::Component
 #endif
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
+}; 150, true };
+#endif
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };

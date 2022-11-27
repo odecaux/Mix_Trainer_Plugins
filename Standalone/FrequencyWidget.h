@@ -156,7 +156,7 @@ public:
 };
 
 struct Effect_DSP {
-    ChannelDSPState dsp_state;
+    Channel_DSP_State dsp_state;
 };
 
 struct Effect_UI {
@@ -466,7 +466,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 
     if (update_audio)
     {
-        ChannelDSPState dsp = {};
+        Channel_DSP_State dsp = {};
         effects.dsp = Effect_DSP { dsp };
     }
 

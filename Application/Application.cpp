@@ -35,7 +35,7 @@ void Application::toMainMenu()
     editor->changePanel(std::move(main_menu));
 }
 
-void channel_dsp_log(const std::unordered_map<int, ChannelDSPState> &dsps, 
+void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps, 
                     const std::unordered_map<int, ChannelInfos> &channels)
 {
     jassert(dsps.size() == channels.size());
@@ -172,7 +172,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
     editor->changePanel(std::move(panel));
 }
 
-void Application::broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states)
+void Application::broadcastDSP(const std::unordered_map < int, Channel_DSP_State > &dsp_states)
 {
     host.broadcastAllDSP(dsp_states);
 }

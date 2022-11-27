@@ -59,7 +59,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void setStateInformation(const void* data, int sizeInBytes) override;
     
 
-    void broadcastAllDSP(const std::unordered_map<int, ChannelDSPState> &dsp_states)
+    void broadcastAllDSP(const std::unordered_map<int, Channel_DSP_State> &dsp_states)
     {
         for (const auto &[id, state] : dsp_states)
         {

@@ -213,9 +213,9 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
         auto blob = juce::MemoryBlock{};
         blob.loadFromHexString(tokens[2]);
         size_t blob_size = blob.getSize();
-        size_t dsp_state_size = sizeof(ChannelDSPState);
+        size_t dsp_state_size = sizeof(Channel_DSP_State);
         jassert(blob_size == dsp_state_size);
-        ChannelDSPState state = *(ChannelDSPState*)blob.getData();
+        Channel_DSP_State state = *(Channel_DSP_State*)blob.getData();
         gain = state.gain;
     }
     else if(tokens[0] == "name_from_ui")

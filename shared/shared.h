@@ -19,7 +19,7 @@ struct Timer: public juce::Timer
 };
 
 
-struct ChannelDSPState{
+struct Channel_DSP_State{
     double gain;
     double low_shelf_gain;
     double low_shelf_freq;
@@ -27,7 +27,7 @@ struct ChannelDSPState{
     double high_shelf_freq;
 };
 
-static ChannelDSPState ChannelDSP_on()
+static Channel_DSP_State ChannelDSP_on()
 {
     return {
         .gain = 1.0,
@@ -36,7 +36,7 @@ static ChannelDSPState ChannelDSP_on()
     };
 }
 
-static ChannelDSPState ChannelDSP_off()
+static Channel_DSP_State ChannelDSP_off()
 {
     return {
         .gain = 0.0,
@@ -44,7 +44,7 @@ static ChannelDSPState ChannelDSP_off()
 }
 
 
-static ChannelDSPState ChannelDSP_gain(double gain)
+static Channel_DSP_State ChannelDSP_gain(double gain)
 {
     return {
         .gain = gain,

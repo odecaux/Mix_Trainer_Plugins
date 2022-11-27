@@ -19,18 +19,18 @@ public:
     void quitGame();
     
     //TODO rename
-    static std::unordered_map < int, ChannelDSPState > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
-        std::unordered_map < int, ChannelDSPState > dsp_states;
+    static std::unordered_map < int, Channel_DSP_State > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
+        std::unordered_map < int, Channel_DSP_State > dsp_states;
         
         std::transform(channels.begin(), channels.end(), 
                        std::inserter(dsp_states, dsp_states.end()), 
-                       [](const auto &a) -> std::pair<int, ChannelDSPState>{
+                       [](const auto &a) -> std::pair<int, Channel_DSP_State>{
                        return { a.first, ChannelDSP_on() };
         });
         return dsp_states;
     }
 
-    void broadcastDSP(const std::unordered_map < int, ChannelDSPState > &dsp_states);
+    void broadcastDSP(const std::unordered_map < int, Channel_DSP_State > &dsp_states);
 
     void createChannel(int id);
     void deleteChannel(int id);

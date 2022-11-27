@@ -2,7 +2,7 @@ struct MixerGameUI;
 
 
 struct Effect_DSP {
-    std::unordered_map<int, ChannelDSPState> dsp_states;
+    std::unordered_map<int, Channel_DSP_State> dsp_states;
 };
 
 struct Effect_UI {
