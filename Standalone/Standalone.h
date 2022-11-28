@@ -15,50 +15,6 @@ inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::
     return fallback;
 }
 
-inline juce::File getExamplesDirectory() noexcept
-{
-    auto currentFile = juce::File::getSpecialLocation (juce::File::SpecialLocationType::currentApplicationFile);
-    auto exampleDir = currentFile.getParentDirectory().getChildFile ("examples");
-
-    if (exampleDir.exists())
-        return exampleDir;
-
-    // keep track of the number of parent directories so we don't go on endlessly
-    for (int numTries = 0; numTries < 15; ++numTries)
-    {
-        if (currentFile.getFileName() == "examples")
-            return currentFile;
-
-        const auto sibling = currentFile.getSiblingFile ("examples");
-
-        if (sibling.exists())
-            return sibling;
-
-        currentFile = currentFile.getParentDirectory();
-    }
-
-    return currentFile;
-}
-
-inline std::unique_ptr<juce::InputStream> createAssetInputStream (const char* resourcePath)
-{
-   #if JUCE_MAC
-    auto assetsDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile)
-        .getParentDirectory().getParentDirectory().getChildFile ("Resources").getChildFile ("Assets");
-
-    if (! assetsDir.exists())
-        assetsDir = getExamplesDirectory().getChildFile ("Assets");
-   #else
-    auto assetsDir = getExamplesDirectory().getChildFile ("Assets");
-   #endif
-
-    auto resourceFile = assetsDir.getChildFile (resourcePath);
-    jassert (resourceFile.existsAsFile());
-
-    return resourceFile.createInputStream();
-}
-
-
 inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
 {
     return std::make_unique<juce::URLInputSource> (url);
