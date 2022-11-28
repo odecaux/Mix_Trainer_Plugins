@@ -145,7 +145,6 @@ struct Channel_DSP_Callback : public juce::AudioSource
         jassert(bufferToFill.buffer != nullptr);
         input_source->getNextAudioBlock (bufferToFill);
 
-        jassert(initialized);
         juce::ScopedNoDenormals noDenormals;
 
         juce::dsp::AudioBlock<float>              block(*bufferToFill.buffer,
@@ -159,7 +158,6 @@ struct Channel_DSP_Callback : public juce::AudioSource
     
     void prepareToPlay (int blockSize, double sampleRate) override
     {
-        jassert(initialized);
         sample_rate = sampleRate;
         input_source->prepareToPlay (blockSize, sampleRate);
         dsp_chain.prepare ({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
@@ -173,9 +171,9 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
     void push_new_dsp_state(Channel_DSP_State new_state)
     {
-        initialized = true;
         state = new_state;
-        updateDspChain();
+        if(sample_rate != -1.0)
+            updateDspChain();
     }
 
     Channel_DSP_State state;
@@ -183,15 +181,13 @@ struct Channel_DSP_Callback : public juce::AudioSource
     using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     using Gain       = juce::dsp::Gain<float>;
     juce::dsp::ProcessorChain<FilterBand, Gain> dsp_chain;
-    double sample_rate;
+    double sample_rate = -1.0;
     juce::CriticalSection lock;
-    bool initialized = false;
     juce::AudioSource *input_source;
 
 private:
     void updateDspChain()
     {
-        
         for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
             auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
             jassert(new_coefficients);
