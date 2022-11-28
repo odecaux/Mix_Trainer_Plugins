@@ -18,39 +18,62 @@ struct Timer: public juce::Timer
     std::function<void()> callback;
 };
 
+enum DSP_Filter_Type
+{
+    Filter_None = 0,
+    Filter_HighPass,
+    Filter_HighPass1st,
+    Filter_LowShelf,
+    Filter_BandPass,
+    Filter_AllPass,
+    Filter_AllPass1st,
+    Filter_Notch,
+    Filter_Peak,
+    Filter_HighShelf,
+    Filter_LowPass1st,
+    Filter_Low_Pass,
+    Filter_LastID
+};
+
+struct DSP_EQ_Band {
+    DSP_Filter_Type type;
+    float frequency;
+    float quality;
+    float gain;
+};
+
 
 struct Channel_DSP_State{
     double gain;
-    double low_shelf_gain;
-    double low_shelf_freq;
-    double high_shelf_gain;
-    double high_shelf_freq;
+    DSP_EQ_Band bands[1];
 };
 
 static Channel_DSP_State ChannelDSP_on()
 {
-    return {
+    Channel_DSP_State state = {
         .gain = 1.0,
-        .low_shelf_gain = 1.0,
-        .high_shelf_gain = 1.0,
     };
+    jassert(state.bands[0].type == Filter_None);
+    return state;
 }
 
 static Channel_DSP_State ChannelDSP_off()
 {
-    return {
+    Channel_DSP_State state = {
         .gain = 0.0,
     };
+    jassert(state.bands[0].type == Filter_None);
+    return state;
 }
 
 
 static Channel_DSP_State ChannelDSP_gain(double gain)
 {
-    return {
+    Channel_DSP_State state = {
         .gain = gain,
-        .low_shelf_gain = 1.0,
-        .high_shelf_gain = 1.0,
     };
+    jassert(state.bands[0].type == Filter_None);
+    return state;
 }
 
 struct Settings{

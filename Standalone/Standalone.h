@@ -2,6 +2,7 @@
 #pragma once
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include <juce_dsp/juce_dsp.h>
 #include "../shared/shared.h"
 #include "../Game/Game.h"
 #include "FrequencyWidget.h"
@@ -96,8 +97,119 @@ struct Return_Value
     bool value_b;
 };
 
+
+juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
+{
+    switch (type) {
+        case Filter_None:
+            return new juce::dsp::IIR::Coefficients<float> (1, 0, 1, 0);
+        case Filter_Low_Pass:
+            return juce::dsp::IIR::Coefficients<float>::makeLowPass (sample_rate, frequency, quality);
+        case Filter_LowPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderLowPass (sample_rate, frequency);
+        case Filter_LowShelf:
+            return juce::dsp::IIR::Coefficients<float>::makeLowShelf (sample_rate, frequency, quality, gain);
+        case Filter_BandPass:
+            return juce::dsp::IIR::Coefficients<float>::makeBandPass (sample_rate, frequency, quality);
+        case Filter_AllPass:
+            return juce::dsp::IIR::Coefficients<float>::makeAllPass (sample_rate, frequency, quality);
+        case Filter_AllPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass (sample_rate, frequency);
+        case Filter_Notch:
+            return juce::dsp::IIR::Coefficients<float>::makeNotch (sample_rate, frequency, quality);
+        case Filter_Peak:
+            return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sample_rate, frequency, quality, gain);
+        case Filter_HighShelf:
+            return juce::dsp::IIR::Coefficients<float>::makeHighShelf (sample_rate, frequency, quality, gain);
+        case Filter_HighPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderHighPass (sample_rate, frequency);
+        case Filter_HighPass:
+            return juce::dsp::IIR::Coefficients<float>::makeHighPass (sample_rate, frequency, quality);
+        case Filter_LastID:
+        default:
+            return nullptr;
+    }
+}
+
+
+struct Channel_DSP_Callback : public juce::AudioSource
+{
+    Channel_DSP_Callback(juce::AudioSource* inputSource) : input_source(inputSource)
+    {
+    }
+    
+    virtual ~Channel_DSP_Callback() {}
+
+    void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override
+    {
+        jassert(bufferToFill.buffer != nullptr);
+        input_source->getNextAudioBlock (bufferToFill);
+
+        jassert(initialized);
+        juce::ScopedNoDenormals noDenormals;
+
+        juce::dsp::AudioBlock<float>              block(*bufferToFill.buffer,
+                                                        (size_t) bufferToFill.startSample);
+        juce::dsp::ProcessContextReplacing<float> context  (block);
+        {
+            juce::ScopedLock processLock (lock);
+            dsp_chain.process (context);
+        }
+    }
+    
+    void prepareToPlay (int blockSize, double sampleRate) override
+    {
+        jassert(initialized);
+        sample_rate = sampleRate;
+        input_source->prepareToPlay (blockSize, sampleRate);
+        dsp_chain.prepare ({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
+        updateDspChain();
+    }
+
+    void releaseResources() override 
+    {
+        input_source->releaseResources();
+    };
+
+    void push_new_dsp_state(Channel_DSP_State new_state)
+    {
+        initialized = true;
+        state = new_state;
+        updateDspChain();
+    }
+
+    Channel_DSP_State state;
+
+    using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
+    using Gain       = juce::dsp::Gain<float>;
+    juce::dsp::ProcessorChain<FilterBand, Gain> dsp_chain;
+    double sample_rate;
+    juce::CriticalSection lock;
+    bool initialized = false;
+    juce::AudioSource *input_source;
+
+private:
+    void updateDspChain()
+    {
+        
+        for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
+            auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
+            jassert(new_coefficients);
+            // minimise lock scope, get<0>() needs to be a  compile time constant
+            {
+                juce::ScopedLock processLock (lock);
+                if (i == 0)
+                    *dsp_chain.get<0>().state = *new_coefficients;
+            }
+        }
+        //gain
+        dsp_chain.get<1>().setGainLinear ((float)state.gain);
+    }
+};
+
 struct FilePlayer {
     FilePlayer()
+    : dsp_callback(&transportSource)
     {
         // audio setup
         formatManager.registerBasicFormats();
@@ -105,9 +217,10 @@ struct FilePlayer {
         readAheadThread.startThread (3);
 
         audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
-
+        
+        dsp_callback.push_new_dsp_state(ChannelDSP_on());
+        audioSourcePlayer.setSource (&dsp_callback);
         audioDeviceManager.addAudioCallback (&audioSourcePlayer);
-        audioSourcePlayer.setSource (&transportSource);
     }
 
     ~FilePlayer()
@@ -200,6 +313,7 @@ struct FilePlayer {
     juce::AudioSourcePlayer audioSourcePlayer;
     juce::AudioTransportSource transportSource;
     std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
+    Channel_DSP_Callback dsp_callback;
 
     std::vector<juce::File> file_list;
 };
@@ -788,10 +902,6 @@ class Main_Component : public juce::Component
     juce::TextButton burger { "menu" };
     Empty empty;
     juce::SidePanel sidePanel { "Menu", 150, true };
-#endif
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
-}; 150, true };
 #endif
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)

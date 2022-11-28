@@ -10,7 +10,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
-#include "shared.h"
+#include "../shared/shared.h"
 #include "Processor_Track.h"
 #include "PluginEditor_Track.h"
 
