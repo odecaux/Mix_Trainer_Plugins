@@ -478,7 +478,11 @@ public:
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(player.file_list[rowNumber].getFileNameWithoutExtension(), bounds, juce::Justification::centredLeft);
+            g.drawText(player.file_list[rowNumber].getFileNameWithoutExtension(), bounds.reduced(2), juce::Justification::centredLeft);
+            if (rowIsSelected)
+            {
+                g.drawRect(bounds);
+            }
         }
     }
 
@@ -502,6 +506,11 @@ public:
         }
     }
 
+    
+    void listBoxItemClicked (int row, const juce::MouseEvent&)
+    {
+    }
+
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
         jassert(row < player.file_list.size());
@@ -509,6 +518,13 @@ public:
         auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
         jassert(ret.value_b); //file still exists on drive ?
         player.post_command( { .type = Audio_Command_Play });
+    }
+    
+    void deleteKeyPressed (int lastRowSelected) override
+    {
+        jassert(lastRowSelected >= 0 && lastRowSelected < player.file_list.size());
+        player.file_list.erase(player.file_list.begin() + lastRowSelected);
+        fileListComp.updateContent();
     }
 
 private:
