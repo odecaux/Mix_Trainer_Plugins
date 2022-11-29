@@ -339,6 +339,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 
     Effects effects = { 
         .dsp = std::nullopt, 
+        .player = std::nullopt, 
         .ui = std::nullopt, 
         .quit = false, 
         .timer = std::nullopt 
@@ -472,7 +473,27 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 
     if (update_audio)
     {
-        Channel_DSP_State dsp = {};
+        Channel_DSP_State dsp = ChannelDSP_on();
+        
+        switch (step)
+        {
+            case GameStep_Begin :
+            {
+            } break;
+            case GameStep_Editing :
+            case GameStep_ShowingTruth :
+            {
+                dsp.bands[0].type = Filter_Peak;
+                dsp.bands[0].frequency = state->target_frequency;
+                dsp.bands[0].gain = 4.0f;
+                dsp.bands[0].quality = 0.7f;;
+            } break;
+            case GameStep_Listening :
+            case GameStep_ShowingAnswer :
+            {
+                jassertfalse;
+            } break;
+        }
         effects.dsp = Effect_DSP { dsp };
     }
 
