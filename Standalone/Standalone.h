@@ -564,7 +564,7 @@ public:
             fileExplorerThread.startThread (3);
             addAndMakeVisible (fileTreeComp);
 
-            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
+            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
             directoryList.setIgnoresHiddenFiles(true);
 
             fileTreeComp.setTitle ("Files");

@@ -5,7 +5,7 @@ File explorer
 files : active, desactivate, delete
 save file list & settings
 ajouter preview et bounds au file selector panel
-
+save current directory ?
 
 
 Priority 2 :
