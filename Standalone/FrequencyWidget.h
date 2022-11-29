@@ -213,6 +213,14 @@ struct FrequencyGame_Settings
     int next_question_timeout_ms;
 };
 
+
+struct Audio_File
+{
+    juce::File file;
+    juce::String title;
+    juce::Range<juce::int64> loop_bounds;
+};
+
 struct FrequencyGame_State
 {
     GameStep step;
@@ -220,7 +228,7 @@ struct FrequencyGame_State
     int target_frequency;
     float correct_answer_window;
     int current_file_idx;
-    std::vector<juce::File> file_list;
+    std::vector<Audio_File> files;
     FrequencyGame_Settings settings;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
@@ -338,12 +346,12 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
 }
 
-std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, std::vector<juce::File> file_list)
+std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, std::vector<Audio_File> files)
 {
-    if(file_list.empty())
+    if(files.empty())
         return nullptr;
     auto state = FrequencyGame_State {
-        .file_list = std::move(file_list),
+        .files = std::move(files),
         .settings = settings
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
@@ -480,10 +488,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 }
             };
 #endif
-            state->current_file_idx = juce::Random::getSystemRandom().nextInt(state->file_list.size());
+            state->current_file_idx = juce::Random::getSystemRandom().nextInt(state->files.size());
             effects.player = Effect_Player {
                 .commands = { 
-                    { .type = Audio_Command_Load, .value_file = state->file_list[state->current_file_idx] },
+                    { .type = Audio_Command_Load, .value_file = state->files[state->current_file_idx].file },
                     { .type = Audio_Command_Play },
                 }
             };

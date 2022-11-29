@@ -236,8 +236,6 @@ struct FilePlayer {
     juce::AudioTransportSource transportSource;
     std::unique_ptr<juce::AudioFormatReaderSource> currentAudioFileSource;
     Channel_DSP_Callback dsp_callback;
-
-    std::vector<juce::File> file_list;
 };
 
 //==============================================================================
@@ -450,8 +448,11 @@ class AudioFileList :
     public juce::DragAndDropTarget
 {
 public:
-    AudioFileList(FilePlayer &player, juce::Component *dropSource) : 
+    AudioFileList(FilePlayer &player, 
+                  std::vector<Audio_File> &files,
+                  juce::Component *dropSource) : 
         player(player), 
+        files(files),
         dropSource(dropSource)
     {
         fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
@@ -466,7 +467,7 @@ public:
 
     int getNumRows() override 
     {
-        return (int)player.file_list.size();
+        return (int)files.size();
     }
 
     void paintListBoxItem (int rowNumber,
@@ -474,11 +475,11 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber < player.file_list.size())
+        if (rowNumber < files.size())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(player.file_list[rowNumber].getFileNameWithoutExtension(), bounds.reduced(2), juce::Justification::centredLeft);
+            g.drawText(files[rowNumber].title, bounds.reduced(2), juce::Justification::centredLeft);
             if (rowIsSelected)
             {
                 g.drawRect(bounds);
@@ -498,12 +499,23 @@ public:
         jassert(dragSourceDetails.sourceComponent == dropSource);
         juce::File file = ((juce::FileTreeComponent*)dropSource)->getSelectedFile();
         //can't have the same file twice
-        if (auto result = std::ranges::find(player.file_list, file); result == player.file_list.end())
+        if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
         {
             if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
             {
+                /*
+                for (const auto &key : reader->metadataValues.getAllKeys())
+                {
+                    DBG(key);
+                }
+                */
                 //DBG(file.getFullPathName());
-                player.file_list.emplace_back(std::move(file));
+                Audio_File new_audio_file = {
+                    .file = file,
+                    .title = file.getFileNameWithoutExtension(),
+                    .loop_bounds = { 0, reader->lengthInSamples }
+                };
+                files.emplace_back(std::move(new_audio_file));
                 fileListComp.updateContent();
                 delete reader;
             }
@@ -517,8 +529,8 @@ public:
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
-        jassert(row < player.file_list.size());
-        auto file = player.file_list[row];
+        jassert(row < files.size());
+        const auto &file = files[row].file;
         auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
         jassert(ret.value_b); //file still exists on drive ?
         player.post_command( { .type = Audio_Command_Play });
@@ -526,8 +538,8 @@ public:
     
     void deleteKeyPressed (int lastRowSelected) override
     {
-        jassert(lastRowSelected >= 0 && lastRowSelected < player.file_list.size());
-        player.file_list.erase(player.file_list.begin() + lastRowSelected);
+        jassert(lastRowSelected >= 0 && lastRowSelected < files.size());
+        files.erase(files.begin() + lastRowSelected);
         //fileListComp.deselectAllRows();
         fileListComp.updateContent();
     }
@@ -547,6 +559,7 @@ public:
 
 private:
     FilePlayer &player;
+    std::vector<Audio_File> &files;
     juce::ListBox fileListComp = { {}, this};
 
     juce::Component *dropSource;
@@ -560,8 +573,9 @@ class FileSelector_Panel :
 public:
     
     FileSelector_Panel(FilePlayer &player, 
+                       std::vector<Audio_File> &files,
                        std::function < void() > onClickNext) 
-    : fileList(player, &fileTreeComp), 
+    : fileList(player, files, &fileTreeComp), 
       player(player)
     {
         {
@@ -825,7 +839,7 @@ class Main_Component : public juce::Component
     void toFileSelector()
     {
         jassert(state == nullptr);
-        panel = std::make_unique < FileSelector_Panel > (player, [&] { toGame(); } );
+        panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toGame(); } );
         addAndMakeVisible(*panel);
     }
 
@@ -842,7 +856,7 @@ class Main_Component : public juce::Component
             .initial_correct_answer_window = 0.15f,
             .next_question_timeout_ms = 1000
         };
-        state = frequency_game_state_init(settings, player.file_list);
+        state = frequency_game_state_init(settings, files);
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
@@ -893,7 +907,9 @@ class Main_Component : public juce::Component
     FilePlayer player;
     std::unique_ptr<FrequencyGame_State> state;
     std::unique_ptr<juce::Component> panel;
+    
 
+    std::vector<Audio_File> files;
     //FrequencyGame_Settings settings;
     
 #if 0

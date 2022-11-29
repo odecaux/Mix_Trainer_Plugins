@@ -2,7 +2,7 @@ Priority 1 :
 File struct : bounds, track name
 Settings panel
 File explorer
-files : active, desactivate, delete
+files : active, desactivate
 save file list & settings
 ajouter preview et bounds au file selector panel
 save current directory ?
