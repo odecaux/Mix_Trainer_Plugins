@@ -181,8 +181,14 @@ struct Effect_Player {
     std::vector<Audio_Command> commands;
 };
 
+enum Effect_Timer_Type
+{
+    Effect_Timer_Task,
+    Effect_Timer_Cancel
+};
 
 struct Effect_Timer {
+    Effect_Timer_Type type;
     int timeout_ms;
     std::function<void()> callback;
 };
@@ -305,9 +311,12 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
     if (effects.timer)
     {
-        jassert(!state->timer.isTimerRunning());
-        state->timer.callback = std::move(effects.timer->callback); 
-        state->timer.startTimer(effects.timer->timeout_ms);
+        state->timer.stopTimer();
+        if (effects.timer->type == Effect_Timer_Task)
+        {
+            state->timer.callback = std::move(effects.timer->callback);
+            state->timer.startTimer(effects.timer->timeout_ms);
+        }
     }
     if (effects.player)
     {
@@ -393,8 +402,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Timeout :
         {
-            jassertfalse;
-            //temp
+            jassert(old_step == GameStep_ShowingTruth);
+            transition = Transition_To_Exercice;
         } break;
         case Event_Click_Begin :
         {
@@ -469,11 +478,23 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 }
             };
             
+            effects.timer = Effect_Timer {
+                .type = Effect_Timer_Cancel
+            };
+            
             update_audio = true;
             update_ui = true;
         }break;
         case Transition_To_Answer : {
             step = GameStep_ShowingTruth;
+            
+            effects.timer = Effect_Timer {
+                .type = Effect_Timer_Task,
+                .timeout_ms = 1000 ,
+                .callback = [state] {
+                    frequency_game_post_event(state, Event { .type = Event_Timeout });
+                }
+            };
             update_audio = true;
             update_ui = true;
         }break;
