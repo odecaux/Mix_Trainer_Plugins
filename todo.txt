@@ -1,5 +1,4 @@
 Priority 1 :
-File struct : bounds, track name
 Settings panel
 File explorer
 files : active, desactivate

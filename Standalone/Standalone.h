@@ -596,11 +596,9 @@ public:
         }
 
         {
-            nextButton.onClick = [onClickNext = std::move(onClickNext)]
-            {
+            nextButton.onClick = [onClickNext = std::move(onClickNext)] {
                 onClickNext();
             };
-            nextButton.setButtonText("Next");
             addAndMakeVisible(nextButton);
         }
     }
@@ -629,7 +627,7 @@ private:
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent fileTreeComp { directoryList };
-    juce::TextButton nextButton;
+    juce::TextButton nextButton { "Next" };
 
     FilePlayer &player;
     
@@ -643,6 +641,35 @@ private:
     void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
     void fileDoubleClicked (const juce::File&) override                       {}
     void browserRootChanged (const juce::File&) override                      {}
+};
+
+struct Settings_Panel : public juce::Component
+{
+    Settings_Panel(FrequencyGame_Settings &settings,
+                   std::function<void()> onClickNext) : 
+        settings(settings)
+    {
+        {
+            nextButton.onClick = [onClickNext = std::move(onClickNext)] {
+                onClickNext();
+            };
+            addAndMakeVisible(nextButton);
+        }
+    }
+
+    void resized()
+    {
+        auto r = getLocalBounds().reduced (4);
+        auto bottom_bounds = r.removeFromBottom(50);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
+        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+        
+        auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
+        nextButton.setBounds(button_bounds);
+    }
+
+    FrequencyGame_Settings &settings;
+    juce::TextButton nextButton { "Next" };
 };
 
 //==============================================================================
@@ -839,23 +866,27 @@ class Main_Component : public juce::Component
     void toFileSelector()
     {
         jassert(state == nullptr);
-        panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toGame(); } );
+        panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toSettings(); } );
         addAndMakeVisible(*panel);
+        resized();
     }
 
     void toSettings()
     {
-
-    }
-    
-    void toGame()
-    {        
-        FrequencyGame_Settings settings = {
+        settings = {
             .eq_gain = 4.0f,
             .eq_quality = 0.7f,
             .initial_correct_answer_window = 0.15f,
             .next_question_timeout_ms = 1000
         };
+        jassert(state == nullptr);
+        panel = std::make_unique < Settings_Panel > (settings, [&] { toGame(); } );
+        addAndMakeVisible(*panel);
+        resized();
+    }
+    
+    void toGame()
+    {        
         state = frequency_game_state_init(settings, files);
         if(state == nullptr)
             return;
@@ -910,7 +941,7 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    //FrequencyGame_Settings settings;
+    FrequencyGame_Settings settings;
     
 #if 0
     juce::TextButton burger { "menu" };
