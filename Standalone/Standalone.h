@@ -563,6 +563,8 @@ private:
     juce::ListBox fileListComp = { {}, this};
 
     juce::Component *dropSource;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
 };
 
 class FileSelector_Panel : 
@@ -641,6 +643,9 @@ private:
     void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
     void fileDoubleClicked (const juce::File&) override                       {}
     void browserRootChanged (const juce::File&) override                      {}
+
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileSelector_Panel)
 };
 
 struct Settings_Panel : public juce::Component
@@ -649,6 +654,52 @@ struct Settings_Panel : public juce::Component
                    std::function<void()> onClickNext) : 
         settings(settings)
     {
+        {
+            eq_gain.setValue(settings.eq_gain);
+            eq_gain.setRange( { -15.0, 15.0 }, 3.0);
+            eq_gain.onValueChange = [&] {
+                settings.eq_gain = (float) eq_gain.getValue();
+            };
+            addAndMakeVisible(eq_gain);
+
+            eq_gain_label.attachToComponent(&eq_gain, true);
+            addAndMakeVisible(eq_gain_label);
+        }
+        {
+            eq_quality.setValue(settings.eq_quality);
+            eq_quality.setRange( { 0.5, 4 }, 0.1);
+            eq_quality.onValueChange = [&] {
+                settings.eq_quality = (float) eq_quality.getValue();
+            };
+            addAndMakeVisible(eq_quality);
+            
+            eq_quality_label.attachToComponent(&eq_quality, true);
+            addAndMakeVisible(eq_quality_label);
+        }
+        {
+            initial_correct_answer_window.setValue(settings.initial_correct_answer_window);
+            initial_correct_answer_window.setRange( { 0.01, 0.4 }, 0.01);
+            initial_correct_answer_window.onValueChange = [&] {
+                settings.initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+            };
+            addAndMakeVisible(initial_correct_answer_window);
+            
+            initial_correct_answer_window_label.attachToComponent(&initial_correct_answer_window, true);
+            addAndMakeVisible(initial_correct_answer_window_label);
+        }
+        {
+            next_question_timeout_ms.setValue((double)settings.next_question_timeout_ms);
+            next_question_timeout_ms.setRange( { 1000, 4000 }, 500);
+            next_question_timeout_ms.setTextValueSuffix (" ms");
+            next_question_timeout_ms.onValueChange = [&] {
+                settings.next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
+            };
+            next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+            addAndMakeVisible(next_question_timeout_ms);
+
+            next_question_timeout_ms_label.attachToComponent(&next_question_timeout_ms, true);
+            addAndMakeVisible(next_question_timeout_ms_label);
+        }
         {
             nextButton.onClick = [onClickNext = std::move(onClickNext)] {
                 onClickNext();
@@ -661,15 +712,33 @@ struct Settings_Panel : public juce::Component
     {
         auto r = getLocalBounds().reduced (4);
         auto bottom_bounds = r.removeFromBottom(50);
-        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
-        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+        //auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
+        //auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+        auto right_bounds = r.withTrimmedLeft(100);
+
+        eq_gain.setBounds(right_bounds.removeFromTop(50));
+        eq_quality.setBounds(right_bounds.removeFromTop(50));
+        initial_correct_answer_window.setBounds(right_bounds.removeFromTop(50));
+        next_question_timeout_ms.setBounds(right_bounds.removeFromTop(50));
         
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
 
     FrequencyGame_Settings &settings;
+    
+    juce::Slider eq_gain {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Label eq_gain_label { {}, "Gain"};
+    juce::Slider eq_quality {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Label eq_quality_label { {}, "Q" };
+    juce::Slider initial_correct_answer_window {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
+    juce::Slider next_question_timeout_ms {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Label next_question_timeout_ms_label { {}, "Post answer timeout"};
     juce::TextButton nextButton { "Next" };
+
+private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_Panel)
 };
 
 //==============================================================================
