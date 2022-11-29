@@ -794,10 +794,21 @@ class Main_Component : public juce::Component
         panel = std::make_unique < FileSelector_Panel > (player, [&] { toGame(); } );
         addAndMakeVisible(*panel);
     }
+
+    void toSettings()
+    {
+
+    }
     
     void toGame()
     {        
-        state = frequency_game_state_init(player.file_list);
+        FrequencyGame_Settings settings = {
+            .eq_gain = 4.0f,
+            .eq_quality = 0.7f,
+            .initial_correct_answer_window = 0.15f,
+            .next_question_timeout_ms = 1000
+        };
+        state = frequency_game_state_init(settings, player.file_list);
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
@@ -848,6 +859,8 @@ class Main_Component : public juce::Component
     FilePlayer player;
     std::unique_ptr<FrequencyGame_State> state;
     std::unique_ptr<juce::Component> panel;
+
+    //FrequencyGame_Settings settings;
     
 #if 0
     juce::TextButton burger { "menu" };

@@ -205,14 +205,23 @@ using audio_observer_t = std::function<void(Effect_DSP &)>;
 using player_observer_t = std::function<void(Effect_Player &)>;
 using ui_observer_t = std::function<void(Effect_UI &)>;
 
+struct FrequencyGame_Settings
+{
+    float eq_gain;
+    float eq_quality;
+    float initial_correct_answer_window;
+    int next_question_timeout_ms;
+};
+
 struct FrequencyGame_State
 {
     GameStep step;
     int score;
     int target_frequency;
     float correct_answer_window;
-    std::vector<juce::File> file_list;
     int current_file_idx;
+    std::vector<juce::File> file_list;
+    FrequencyGame_Settings settings;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
@@ -329,12 +338,13 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
 }
 
-std::unique_ptr<FrequencyGame_State> frequency_game_state_init(std::vector<juce::File> file_list)
+std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, std::vector<juce::File> file_list)
 {
     if(file_list.empty())
         return nullptr;
     auto state = FrequencyGame_State {
-        .file_list = std::move(file_list)
+        .file_list = std::move(file_list),
+        .settings = settings
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
 }
@@ -454,7 +464,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case Transition_To_Begin : {
             step = GameStep_Begin;
             state->score = 0;
-            state->correct_answer_window = 0.15f;
+            state->correct_answer_window = state->settings.initial_correct_answer_window;
             state->current_file_idx = -1;
             update_audio = true;
             update_ui = true;
@@ -490,7 +500,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             
             effects.timer = Effect_Timer {
                 .type = Effect_Timer_Task,
-                .timeout_ms = 1000 ,
+                .timeout_ms = state->settings.next_question_timeout_ms,
                 .callback = [state] {
                     frequency_game_post_event(state, Event { .type = Event_Timeout });
                 }
@@ -516,8 +526,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             {
                 dsp.bands[0].type = Filter_Peak;
                 dsp.bands[0].frequency = state->target_frequency;
-                dsp.bands[0].gain = 4.0f;
-                dsp.bands[0].quality = 0.7f;;
+                dsp.bands[0].gain = state->settings.eq_gain;
+                dsp.bands[0].quality = state->settings.eq_quality;
             } break;
             case GameStep_Listening :
             case GameStep_ShowingAnswer :

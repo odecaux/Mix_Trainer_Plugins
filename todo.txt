@@ -1,15 +1,38 @@
+Priority 1 :
+File struct : bounds, track name
+Settings panel
+File explorer
+files : active, desactivate, delete
+save file list & settings
+
+
+
+
+Priority 2 :
+
+
+
+
+Priority 3 :
+
 epoch pour le timer ?
+Hierarchical FSM ?
 transition to et from, surtout pour le timer
 
-Hierarchical FSM ?
 
-escape spaces when broadcasting name
 design a save system 
+escape spaces when broadcasting name
 
 
 
-File struct : bounds
+
+
+
+
+
+
+
+
 Enlever le sidebar/burger
 Main menu : files et exercice
-files : ajouter ou supprimer
 exercice : select active files -> begin -> exercice loop
