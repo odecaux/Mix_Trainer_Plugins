@@ -497,12 +497,16 @@ public:
     {
         jassert(dragSourceDetails.sourceComponent == dropSource);
         juce::File file = ((juce::FileTreeComponent*)dropSource)->getSelectedFile();
-        if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+        //can't have the same file twice
+        if (auto result = std::ranges::find(player.file_list, file); result == player.file_list.end())
         {
-            //DBG(file.getFullPathName());
-            player.file_list.emplace_back(std::move(file));
-            fileListComp.updateContent();
-            delete reader;
+            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+            {
+                //DBG(file.getFullPathName());
+                player.file_list.emplace_back(std::move(file));
+                fileListComp.updateContent();
+                delete reader;
+            }
         }
     }
 
@@ -524,7 +528,7 @@ public:
     {
         jassert(lastRowSelected >= 0 && lastRowSelected < player.file_list.size());
         player.file_list.erase(player.file_list.begin() + lastRowSelected);
-        fileListComp.deselectAllRows();
+        //fileListComp.deselectAllRows();
         fileListComp.updateContent();
     }
 
