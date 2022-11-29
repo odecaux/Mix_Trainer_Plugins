@@ -526,7 +526,10 @@ class FileSelector_Panel :
 {
 public:
     
-    FileSelector_Panel(FilePlayer &player) : fileList(player, &fileTreeComp), player(player)
+    FileSelector_Panel(FilePlayer &player, 
+                       std::function < void() > onClickNext) 
+    : fileList(player, &fileTreeComp), 
+      player(player)
     {
         {
             fileExplorerThread.startThread (3);
@@ -544,6 +547,15 @@ public:
         {
             addAndMakeVisible(fileList);
         }
+
+        {
+            nextButton.onClick = [onClickNext = std::move(onClickNext)]
+            {
+                onClickNext();
+            };
+            nextButton.setButtonText("Next");
+            addAndMakeVisible(nextButton);
+        }
     }
 
     ~FileSelector_Panel()
@@ -554,11 +566,15 @@ public:
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
-        auto leftBounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
-        auto rightBounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+        auto bottom_bounds = r.removeFromBottom(50);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
+        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
 
-        fileTreeComp.setBounds (leftBounds);
-        fileList.setBounds (rightBounds);
+        fileTreeComp.setBounds (left_bounds);
+        fileList.setBounds (right_bounds);
+        
+        auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
+        nextButton.setBounds(button_bounds);
     }
 private:
     AudioFileList fileList;
@@ -566,9 +582,9 @@ private:
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent fileTreeComp { directoryList };
-    
-    FilePlayer &player;
+    juce::TextButton nextButton;
 
+    FilePlayer &player;
     
     void selectionChanged() override
     {
@@ -754,36 +770,13 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
-#if 1
-        state = frequency_game_state_init();
-        frequency_game_add_audio_observer(state.get(), 
-                                      [this] (auto &&effect) { 
-                                          player.push_new_dsp_state(effect.dsp_state);
-        }
-        );
-        frequency_game_add_player_observer(state.get(), 
-                                      [this] (auto &&effect){ 
-                                           player.post_command(effect.command);
-        }
-        );
-        frequency_game_post_event(state.get(), Event { .type = Event_Init });
-#endif
 #if 0
         panel = std::make_unique < Main_Panel > (
             player
         );
-#elif 0
-        panel = std::make_unique < FileSelector_Panel > (player);
-#else
-        auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
-        frequency_game_add_ui_observer(state.get(), 
-                                       [ui = game_ui.get()] (Effect_UI &effect){ 
-                                       frequency_game_ui_update(*ui, effect); 
-        });
-        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
-        panel = std::move(game_ui);
-#endif
-        addAndMakeVisible(*panel);
+#endif 
+        toFileSelector();
+
 #if 0
         addAndMakeVisible (sidePanel);
         sidePanel.setContent(&empty, false);
@@ -795,7 +788,43 @@ class Main_Component : public juce::Component
 #endif
         setSize (500, 300);
     }
+
+    void toFileSelector()
+    {
+        jassert(state == nullptr);
+        panel = std::make_unique < FileSelector_Panel > (player, [&] { toGame(); } );
+        addAndMakeVisible(*panel);
+    }
     
+    void toGame()
+    {        
+        removeChildComponent(panel.get());
+
+        state = frequency_game_state_init();
+        frequency_game_add_audio_observer(
+            state.get(), 
+            [this] (auto &&effect) { 
+                player.push_new_dsp_state(effect.dsp_state);
+        });
+        frequency_game_add_player_observer(
+            state.get(), 
+            [this] (auto &&effect){ 
+                player.post_command(effect.command);
+        });
+        frequency_game_post_event(state.get(), Event { .type = Event_Init });
+
+        auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
+        frequency_game_add_ui_observer(
+            state.get(), 
+            [ui = game_ui.get()] (Effect_UI &effect){ 
+                frequency_game_ui_update(*ui, effect); 
+        });
+        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
+        panel = std::move(game_ui);
+        addAndMakeVisible(*panel);
+        resized();
+    }
+
     ~Main_Component()
     {
     }
@@ -816,9 +845,7 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
-#if 1
     std::unique_ptr<FrequencyGame_State> state;
-#endif
     std::unique_ptr<juce::Component> panel;
     
 #if 0
