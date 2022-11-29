@@ -15,9 +15,9 @@ inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::
     return fallback;
 }
 
-inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
+inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::File& file)
 {
-    return std::make_unique<juce::URLInputSource> (url);
+    return std::make_unique<juce::FileInputSource> (file);
 }
 
 juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
@@ -148,14 +148,14 @@ struct FilePlayer {
         audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
     }
 
-    bool loadURLIntoTransport (const juce::URL& audioURL)
+    bool loadFileIntoTransport (const juce::File& audio_file)
     {
         // unload the previous file source and delete it..
         transportSource.stop();
         transportSource.setSource (nullptr);
         currentAudioFileSource.reset();
 
-        const auto source = makeInputSource (audioURL);
+        const auto source = makeInputSource (audio_file);
 
         if (source == nullptr)
             return false;
@@ -177,7 +177,7 @@ struct FilePlayer {
                                    32768,                   // tells it to buffer this many samples ahead
                                    &readAheadThread,                 // this is the background thread to use for reading-ahead
                                    currentAudioFileSource->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
-
+        transportSource.setLooping(true);
         return true;
     }
 
@@ -211,8 +211,8 @@ struct FilePlayer {
             } break;
             case Audio_Command_Load :
             {
-                DBG("Load : "<<command.value_url.toString(false));
-                bool success = loadURLIntoTransport(command.value_url);
+                DBG("Load : "<<command.value_file.getFileName());
+                bool success = loadFileIntoTransport(command.value_file);
                 transport_state.step = Transport_Stopped;
                 return { .value_b = success };
             } break;
@@ -274,9 +274,9 @@ public:
         thumbnail.removeChangeListener (this);
     }
 
-    void setURL (const juce::URL& url)
+    void setFile (const juce::File& file)
     {
-        if (auto inputSource = makeInputSource (url))
+        if (auto inputSource = makeInputSource (file))
         {
             thumbnail.setSource (inputSource.release());
 
@@ -288,7 +288,7 @@ public:
         }
     }
 
-    juce::URL getLastDroppedFile() const noexcept { return lastFileDropped; }
+    juce::File getLastDroppedFile() const noexcept { return lastFileDropped; }
 
     void setZoomFactor (double amount)
     {
@@ -352,7 +352,7 @@ public:
 
     void filesDropped (const juce::StringArray& files, int /*x*/, int /*y*/) override
     {
-        lastFileDropped = juce::URL (juce::File (files[0]));
+        lastFileDropped = juce::File (files[0]);
         sendChangeMessage();
     }
 
@@ -398,7 +398,7 @@ private:
     juce::AudioThumbnail thumbnail;
     juce::Range<double> visibleRange;
     bool isFollowingTransport = false;
-    juce::URL lastFileDropped;
+    juce::File lastFileDropped;
 
     juce::DrawableRectangle currentPositionMarker;
 
@@ -478,7 +478,7 @@ public:
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(player.file_list[rowNumber].getFileName(), bounds, juce::Justification::centredLeft);
+            g.drawText(player.file_list[rowNumber].getFileNameWithoutExtension(), bounds, juce::Justification::centredLeft);
         }
     }
 
@@ -505,8 +505,8 @@ public:
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
         jassert(row < player.file_list.size());
-        auto url = juce::URL(player.file_list[row]);
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = url });
+        auto file = player.file_list[row];
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
         jassert(ret.value_b); //file still exists on drive ?
         player.post_command( { .type = Audio_Command_Play });
     }
@@ -587,7 +587,7 @@ private:
     
     void selectionChanged() override
     {
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = juce::URL (fileTreeComp.getSelectedFile()) });
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = fileTreeComp.getSelectedFile() });
         if (ret.value_b)
             player.post_command({ .type = Audio_Command_Play });
     }
@@ -719,13 +719,13 @@ private:
     juce::TextButton startStopButton          { "Play/Stop" };
 
     //==============================================================================
-    void showAudioResource (juce::URL resource)
+    void showAudioResource (juce::File resource)
     {
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_url = resource });
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = resource });
         if (ret.value_b)
         {
             zoomSlider.setValue (0, juce::dontSendNotification);
-            thumbnail->setURL (resource);
+            thumbnail->setFile (resource);
         }
     }
 
@@ -736,7 +736,7 @@ private:
     
     void selectionChanged() override
     {
-        showAudioResource (juce::URL (fileTreeComp.getSelectedFile()));
+        showAudioResource (fileTreeComp.getSelectedFile());
     }
 
     void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
@@ -747,7 +747,7 @@ private:
     {
         //file drag and drop
         if (source == thumbnail.get())
-            showAudioResource (juce::URL (thumbnail->getLastDroppedFile()));
+            showAudioResource (thumbnail->getLastDroppedFile());
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)

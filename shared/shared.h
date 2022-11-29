@@ -300,7 +300,7 @@ struct Audio_Command
 {
     Audio_Command_Type type;
     float value_f;
-    juce::URL value_url;
+    juce::File value_file;
 };
 
 struct Return_Value
