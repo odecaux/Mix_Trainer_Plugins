@@ -178,7 +178,7 @@ struct Effect_UI {
 };
 
 struct Effect_Player {
-    Audio_Command command;
+    std::vector<Audio_Command> commands;
 };
 
 
@@ -188,15 +188,15 @@ struct Effect_Timer {
 };
 
 struct Effects {
-    std::optional < Effect_DSP> dsp;
+    std::optional < Effect_DSP > dsp;
     std::optional < Effect_Player > player;
     std::optional < Effect_UI > ui;
     bool quit;
     std::optional < Effect_Timer > timer;
 };
 
-using audio_observer_t = std::function<void(Effect_DSP)>;
-using player_observer_t = std::function<void(Effect_Player)>;
+using audio_observer_t = std::function<void(Effect_DSP &)>;
+using player_observer_t = std::function<void(Effect_Player &)>;
 using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct FrequencyGame_State
@@ -206,6 +206,7 @@ struct FrequencyGame_State
     int target_frequency;
     float correct_answer_window;
     std::vector<juce::File> file_list;
+    int current_file_idx;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
@@ -445,6 +446,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             step = GameStep_Begin;
             state->score = 0;
             state->correct_answer_window = 0.15f;
+            state->current_file_idx = -1;
             update_audio = true;
             update_ui = true;
         }break;
@@ -459,6 +461,14 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 }
             };
 #endif
+            state->current_file_idx = juce::Random::getSystemRandom().nextInt(state->file_list.size());
+            effects.player = Effect_Player {
+                .commands = { 
+                    { .type = Audio_Command_Load, .value_file = state->file_list[state->current_file_idx] },
+                    { .type = Audio_Command_Play },
+                }
+            };
+            
             update_audio = true;
             update_ui = true;
         }break;

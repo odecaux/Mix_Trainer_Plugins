@@ -809,7 +809,8 @@ class Main_Component : public juce::Component
         frequency_game_add_player_observer(
             state.get(), 
             [this] (auto &&effect){ 
-                player.post_command(effect.command);
+                for(const auto& command : effect.commands)
+                    player.post_command(command);
         });
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
 
