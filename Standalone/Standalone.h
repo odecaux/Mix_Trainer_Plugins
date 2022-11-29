@@ -507,7 +507,7 @@ public:
     }
 
     
-    void listBoxItemClicked (int row, const juce::MouseEvent&)
+    void listBoxItemClicked (int row, const juce::MouseEvent&) override
     {
     }
 
@@ -524,7 +524,21 @@ public:
     {
         jassert(lastRowSelected >= 0 && lastRowSelected < player.file_list.size());
         player.file_list.erase(player.file_list.begin() + lastRowSelected);
+        fileListComp.deselectAllRows();
         fileListComp.updateContent();
+    }
+
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.escapeKey)
+        {
+            fileListComp.deselectAllRows();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 private:
