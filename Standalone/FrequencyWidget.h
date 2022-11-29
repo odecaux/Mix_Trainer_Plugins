@@ -177,17 +177,9 @@ struct Effect_UI {
     Event_Type button_event;
 };
 
-
-void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui)
-{
-    widget->display_target = new_ui.display_target;
-    widget->target_frequency = new_ui.target_frequency;
-    widget->is_cursor_locked = new_ui.is_cursor_locked;
-    widget->locked_cursor_frequency = new_ui.locked_cursor_frequency;
-    widget->display_window = new_ui.display_window;
-    widget->correct_answer_window = new_ui.correct_answer_window;
-    widget->repaint();
-}
+struct Effect_Player {
+    Audio_Command command;
+};
 
 
 struct Effect_Timer {
@@ -197,12 +189,14 @@ struct Effect_Timer {
 
 struct Effects {
     std::optional < Effect_DSP> dsp;
+    std::optional < Effect_Player > player;
     std::optional < Effect_UI > ui;
     bool quit;
     std::optional < Effect_Timer > timer;
 };
 
 using audio_observer_t = std::function<void(Effect_DSP)>;
+using player_observer_t = std::function<void(Effect_Player)>;
 using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct FrequencyGame_State
@@ -214,12 +208,13 @@ struct FrequencyGame_State
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
+    std::vector<player_observer_t> observers_player;
 };
 
 struct FrequencyGame_UI;
 
 
-
+void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui);
 void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui);
 Effects frequency_game_update(FrequencyGame_State *state, Event event);
 void frequency_game_post_event(FrequencyGame_State *state, Event event);
@@ -538,4 +533,20 @@ void frequency_game_add_ui_observer(FrequencyGame_State *state, ui_observer_t &&
 void frequency_game_add_audio_observer(FrequencyGame_State *state, audio_observer_t &&observer)
 {
     state->observers_audio.push_back(std::move(observer));
+}
+
+void frequency_game_add_player_observer(FrequencyGame_State *state, player_observer_t &&observer)
+{
+    state->observers_player.push_back(std::move(observer));
+}
+
+void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui)
+{
+    widget->display_target = new_ui.display_target;
+    widget->target_frequency = new_ui.target_frequency;
+    widget->is_cursor_locked = new_ui.is_cursor_locked;
+    widget->locked_cursor_frequency = new_ui.locked_cursor_frequency;
+    widget->display_window = new_ui.display_window;
+    widget->correct_answer_window = new_ui.correct_answer_window;
+    widget->repaint();
 }

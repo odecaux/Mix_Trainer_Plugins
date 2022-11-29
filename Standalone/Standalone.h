@@ -20,40 +20,6 @@ inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::URL& url)
     return std::make_unique<juce::URLInputSource> (url);
 }
 
-enum Transport_Step
-{
-    Transport_Stopped,
-    Transport_Playing,
-    Transport_Paused,
-};
-
-struct Transport_State
-{
-    Transport_Step step;
-};
-
-enum Audio_Command_Type
-{
-    Audio_Command_Play,
-    Audio_Command_Pause,
-    Audio_Command_Stop,
-    Audio_Command_Seek,
-    Audio_Command_Load,
-};
-
-struct Audio_Command
-{
-    Audio_Command_Type type;
-    float value_f;
-    juce::URL value_url;
-};
-
-struct Return_Value
-{
-    bool value_b;
-};
-
-
 juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
 {
     switch (type) {
@@ -253,6 +219,11 @@ struct FilePlayer {
             } break;
         }
         return { .value_b = true };
+    }
+
+    void push_new_dsp_state(Channel_DSP_State new_dsp_state)
+    {
+        dsp_callback.push_new_dsp_state(new_dsp_state);
     }
 
     Transport_State transport_state;
@@ -783,16 +754,16 @@ class Main_Component : public juce::Component
     
     Main_Component()
     {
-#if 0
+#if 1
         state = frequency_game_state_init();
         frequency_game_add_audio_observer(state.get(), 
                                       [this] (auto &&effect) { 
-                                      //broadcastDSP(effect.dsp_states); 
+                                          player.push_new_dsp_state(effect.dsp_state);
         }
         );
-        frequency_game_add_audio_observer(state.get(), 
+        frequency_game_add_player_observer(state.get(), 
                                       [this] (auto &&effect){ 
-                                      //channel_dsp_log(effect.dsp_states, channels); 
+                                           player.post_command(effect.command);
         }
         );
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
@@ -801,7 +772,7 @@ class Main_Component : public juce::Component
         panel = std::make_unique < Main_Panel > (
             player
         );
-#elif 1
+#elif 0
         panel = std::make_unique < FileSelector_Panel > (player);
 #else
         auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
@@ -845,7 +816,7 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
-#if 0
+#if 1
     std::unique_ptr<FrequencyGame_State> state;
 #endif
     std::unique_ptr<juce::Component> panel;

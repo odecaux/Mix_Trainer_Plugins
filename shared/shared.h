@@ -275,5 +275,37 @@ private:
 };
 
 
+enum Transport_Step
+{
+    Transport_Stopped,
+    Transport_Playing,
+    Transport_Paused,
+};
+
+struct Transport_State
+{
+    Transport_Step step;
+};
+
+enum Audio_Command_Type
+{
+    Audio_Command_Play,
+    Audio_Command_Pause,
+    Audio_Command_Stop,
+    Audio_Command_Seek,
+    Audio_Command_Load,
+};
+
+struct Audio_Command
+{
+    Audio_Command_Type type;
+    float value_f;
+    juce::URL value_url;
+};
+
+struct Return_Value
+{
+    bool value_b;
+};
 
 #endif //SHARED_H
