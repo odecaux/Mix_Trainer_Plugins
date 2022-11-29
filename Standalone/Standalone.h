@@ -598,7 +598,9 @@ public:
         }
 
         {
-            nextButton.onClick = [onClickNext = std::move(onClickNext)] {
+            nextButton.onClick = [&files = files, onClickNext = std::move(onClickNext)] {
+                if(files.empty())
+                    return;
                 onClickNext();
             };
             addAndMakeVisible(nextButton);

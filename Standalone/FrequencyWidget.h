@@ -348,8 +348,7 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
 
 std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, std::vector<Audio_File> files)
 {
-    if(files.empty())
-        return nullptr;
+    jassert(!files.empty());
     auto state = FrequencyGame_State {
         .files = std::move(files),
         .settings = settings
