@@ -205,6 +205,7 @@ struct FrequencyGame_State
     int score;
     int target_frequency;
     float correct_answer_window;
+    std::vector<juce::File> file_list;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
@@ -313,9 +314,14 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
 }
 
-std::unique_ptr<FrequencyGame_State> frequency_game_state_init()
+std::unique_ptr<FrequencyGame_State> frequency_game_state_init(std::vector<juce::File> file_list)
 {
-    return std::make_unique<FrequencyGame_State>();
+    if(file_list.empty())
+        return nullptr;
+    auto state = FrequencyGame_State {
+        .file_list = std::move(file_list)
+    };
+    return std::make_unique < FrequencyGame_State > (std::move(state));
 }
 
 Effects frequency_game_update(FrequencyGame_State *state, Event event)

@@ -798,9 +798,10 @@ class Main_Component : public juce::Component
     
     void toGame()
     {        
+        state = frequency_game_state_init(player.file_list);
+        if(state == nullptr)
+            return;
         removeChildComponent(panel.get());
-
-        state = frequency_game_state_init();
         frequency_game_add_audio_observer(
             state.get(), 
             [this] (auto &&effect) { 
