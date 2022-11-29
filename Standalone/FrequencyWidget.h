@@ -308,6 +308,11 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
         state->timer.callback = std::move(effects.timer->callback); 
         state->timer.startTimer(effects.timer->timeout_ms);
     }
+    if (effects.player)
+    {
+        for(auto &observer : state->observers_player)
+            observer(*effects.player);
+    }
     if (effects.quit)
     {
         //state->app->quitGame();

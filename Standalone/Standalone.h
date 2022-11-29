@@ -69,9 +69,8 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
         juce::ScopedNoDenormals noDenormals;
 
-        juce::dsp::AudioBlock<float>              block(*bufferToFill.buffer,
-                                                        (size_t) bufferToFill.startSample);
-        juce::dsp::ProcessContextReplacing<float> context  (block);
+        juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
+        juce::dsp::ProcessContextReplacing<float> context (block);
         {
             juce::ScopedLock processLock (lock);
             dsp_chain.process (context);
