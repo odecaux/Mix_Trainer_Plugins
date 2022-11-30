@@ -478,10 +478,7 @@ public:
         }
     }
 
-    int getNumRows() override 
-    {
-        return (int)files.size();
-    }
+    int getNumRows() override { return (int)files.size(); }
 
     void paintListBoxItem (int rowNumber,
                            juce::Graphics& g,
@@ -500,7 +497,7 @@ public:
         }
     }
 
-    bool isInterestedInFileDrag (const juce::StringArray& files) override { return true; };
+    bool isInterestedInFileDrag (const juce::StringArray&) override { return true; };
 
     bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
     {
@@ -555,9 +552,7 @@ public:
     }
 
     
-    void listBoxItemClicked (int row, const juce::MouseEvent&) override
-    {
-    }
+    void listBoxItemClicked (int, const juce::MouseEvent&) override {}
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
