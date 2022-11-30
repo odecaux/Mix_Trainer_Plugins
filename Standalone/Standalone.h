@@ -455,6 +455,7 @@ public:
         files(files),
         dropSource(dropSource)
     {
+        fileListComp.setMultipleSelectionEnabled(true);
         fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
         fileListComp.setOutlineThickness (2);
         addAndMakeVisible(fileListComp);
@@ -569,10 +570,24 @@ public:
     
     void deleteKeyPressed (int lastRowSelected) override
     {
-        jassert(lastRowSelected >= 0 && lastRowSelected < files.size());
-        files.erase(files.begin() + lastRowSelected);
-        //fileListComp.deselectAllRows();
-        fileListComp.updateContent();
+        auto num_selected = fileListComp.getNumSelectedRows();
+        if ( num_selected > 1)
+        {
+            auto selected_rows = fileListComp.getSelectedRows();
+            fileListComp.deselectAllRows();
+            for (int i = getNumRows(); --i >= 0;)
+            {   
+                if(selected_rows.contains(i))
+                    files.erase(files.begin() + i);
+            }
+            fileListComp.updateContent();
+        }
+        else if (num_selected == 1)
+        {
+
+            files.erase(files.begin() + lastRowSelected);
+            fileListComp.updateContent();
+        }
     }
 
     bool keyPressed (const juce::KeyPress &key) override
