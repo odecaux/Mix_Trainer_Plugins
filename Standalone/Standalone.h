@@ -52,6 +52,7 @@ juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type,
 }
 
 
+//------------------------------------------------------------------------
 struct Channel_DSP_Callback : public juce::AudioSource
 {
     Channel_DSP_Callback(juce::AudioSource* inputSource) : input_source(inputSource)
@@ -122,6 +123,8 @@ private:
     }
 };
 
+
+//------------------------------------------------------------------------
 struct FilePlayer {
     FilePlayer(juce::AudioFormatManager &formatManager)
     : dsp_callback(&transportSource),
@@ -235,21 +238,22 @@ struct FilePlayer {
     Channel_DSP_Callback dsp_callback;
 };
 
+
+
+
+
 //==============================================================================
 class DemoThumbnailComp  :
     public juce::Component,
     public juce::ChangeListener,
-    public juce::FileDragAndDropTarget,
     public juce::ChangeBroadcaster,
     private juce::ScrollBar::Listener,
     private juce::Timer
 {
 public:
     DemoThumbnailComp (juce::AudioFormatManager& formatManager,
-                       juce::AudioTransportSource& source,
-                       juce::Slider& slider)
+                       juce::AudioTransportSource& source)
     : transportSource (source),
-      zoomSlider (slider),
       thumbnail (512, formatManager, thumbnailCache)
     {
         thumbnail.addChangeListener (this);
@@ -282,8 +286,6 @@ public:
             startTimerHz (40);
         }
     }
-
-    juce::File getLastDroppedFile() const noexcept { return lastFileDropped; }
 
     void setZoomFactor (double amount)
     {
@@ -340,17 +342,6 @@ public:
         repaint();
     }
 
-    bool isInterestedInFileDrag (const juce::StringArray& /*files*/) override
-    {
-        return true;
-    }
-
-    void filesDropped (const juce::StringArray& files, int /*x*/, int /*y*/) override
-    {
-        lastFileDropped = juce::File (files[0]);
-        sendChangeMessage();
-    }
-
     void mouseDown (const juce::MouseEvent& e) override
     {
         mouseDrag (e);
@@ -378,7 +369,10 @@ public:
                 setRange ({ newStart, newStart + visibleRange.getLength() });
 
             if (wheel.deltaY != 0.0f)
-                zoomSlider.setValue (zoomSlider.getValue() - wheel.deltaY);
+            {
+                //Set value directly
+                //zoomSlider.setValue (zoomSlider.getValue() - wheel.deltaY);
+            }
 
             repaint();
         }
@@ -386,7 +380,6 @@ public:
 
 private:
     juce::AudioTransportSource& transportSource;
-    juce::Slider& zoomSlider;
     juce::ScrollBar scrollbar  { false };
 
     juce::AudioThumbnailCache thumbnailCache  { 5 };
@@ -439,6 +432,10 @@ private:
     }
 };
 
+
+
+
+//------------------------------------------------------------------------
 class AudioFileList : 
     public juce::Component,
     public juce::ListBoxModel,
@@ -606,6 +603,11 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
 };
 
+
+
+
+
+//------------------------------------------------------------------------
 class FileSelector_Panel : 
     public juce::Component,
     private juce::FileBrowserListener,
@@ -711,6 +713,10 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileSelector_Panel)
 };
 
+
+
+
+//------------------------------------------------------------------------
 struct Settings_Panel : public juce::Component
 {
     Settings_Panel(FrequencyGame_Settings &settings,
@@ -818,160 +824,45 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_Panel)
 };
 
+
+
+
 //==============================================================================
-class Main_Panel  : 
-    public juce::Component,
-    private juce::FileBrowserListener,
-    private juce::ChangeListener
+class Demo_Panel  : 
+    public juce::Component
 {
 public:
-    Main_Panel(FilePlayer &player) :
+    Demo_Panel(FilePlayer &player) :
         player(player)
     {
-        
-
-        //UI (boring)
-        {
-            addAndMakeVisible (zoomLabel);
-            zoomLabel.setFont (juce::Font (15.00f, juce::Font::plain));
-            zoomLabel.setJustificationType (juce::Justification::centredRight);
-            zoomLabel.setEditable (false, false, false);
-            zoomLabel.setColour (juce::TextEditor::textColourId, juce::Colours::black);
-            zoomLabel.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-        }
-        {
-            addAndMakeVisible (followTransportButton);
-            followTransportButton.onClick = [this] { updateFollowTransportState(); };
-        }
-        {
-            fileExplorerThread.startThread (3);
-            addAndMakeVisible (fileTreeComp);
-
-            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userHomeDirectory), true, true);
-
-            fileTreeComp.setTitle ("Files");
-            fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
-            fileTreeComp.addListener (this);
-        }
-        {
-            addAndMakeVisible (explanation);
-            explanation.setFont (juce::Font (14.00f, juce::Font::plain));
-            explanation.setJustificationType (juce::Justification::bottomRight);
-            explanation.setEditable (false, false, false);
-            explanation.setColour (juce::TextEditor::textColourId, juce::Colours::black);
-            explanation.setColour (juce::TextEditor::backgroundColourId, juce::Colour (0x00000000));
-        }
-        {
-            addAndMakeVisible (zoomSlider);
-            zoomSlider.setRange (0, 1, 0);
+#if 0
+            followTransportButton.onClick = [this] { thumbnail->setFollowsTransport (true); };  
             zoomSlider.onValueChange = [this] { thumbnail->setZoomFactor (zoomSlider.getValue()); };
-            zoomSlider.setSkewFactor (2);
-        }
-        {
-            thumbnail = std::make_unique < DemoThumbnailComp > (player.formatManager, player.transportSource, zoomSlider);
-            addAndMakeVisible (thumbnail.get());
-            thumbnail->addChangeListener (this);
-        }
-        { 
-            addAndMakeVisible (startStopButton);
-            startStopButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff79ed7f));
-            startStopButton.setColour (juce::TextButton::textColourOffId, juce::Colours::black);
+
             startStopButton.onClick = [&player] { 
                 if (player.transport_state.step == Transport_Playing)
                     player.post_command( { .type = Audio_Command_Stop });
                 else 
                     player.post_command( { .type = Audio_Command_Play });
             };
-        }
-
-
-        setOpaque (true);
-    }
-
-    ~Main_Panel() override
-    {
-        fileTreeComp.removeListener (this);
-
-        thumbnail->removeChangeListener (this);
-    }
-
-    void paint (juce::Graphics& g) override
-    {
-        g.fillAll (getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour::windowBackground));
-    }
-
-    void resized() override
-    {
-        auto r = getLocalBounds().reduced (4);
-
-        auto controls = r.removeFromBottom (90);
-
-        auto controlRightBounds = controls.removeFromRight (controls.getWidth() / 3);
-
-        explanation.setBounds (controlRightBounds);
-
-        auto zoom = controls.removeFromTop (25);
-        zoomLabel .setBounds (zoom.removeFromLeft (50));
-        zoomSlider.setBounds (zoom);
-
-        followTransportButton.setBounds (controls.removeFromTop (25));
-        startStopButton      .setBounds (controls);
-
-        r.removeFromBottom (6);
-
-        thumbnail->setBounds (r.removeFromBottom (140));
-        r.removeFromBottom (6);
-
-        fileTreeComp.setBounds (r);
+            thumbnail = std::make_unique < DemoThumbnailComp > (player.formatManager, player.transportSource, zoomSlider);
+#endif   
     }
 
 private:
     FilePlayer &player;
-    
-    juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
-    juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
-    juce::FileTreeComponent fileTreeComp {directoryList};
-    juce::Label explanation { {}, "Select an audio file in the treeview above, and this page will display its waveform, and let you play it.." };
-
     std::unique_ptr<DemoThumbnailComp> thumbnail;
-    juce::Label zoomLabel                     { {}, "zoom:" };
-    juce::Slider zoomSlider                   { juce::Slider::LinearHorizontal, juce::Slider::NoTextBox };
-    juce::ToggleButton followTransportButton  { "Follow Transport" };
-    juce::TextButton startStopButton          { "Play/Stop" };
 
-    //==============================================================================
     void showAudioResource (juce::File resource)
     {
         auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = resource });
         if (ret.value_b)
         {
-            zoomSlider.setValue (0, juce::dontSendNotification);
+            //zoomSlider.setValue (0, juce::dontSendNotification);
             thumbnail->setFile (resource);
         }
     }
-
-    void updateFollowTransportState()
-    {
-        thumbnail->setFollowsTransport (followTransportButton.getToggleState());
-    }
-    
-    void selectionChanged() override
-    {
-        showAudioResource (fileTreeComp.getSelectedFile());
-    }
-
-    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
-    void fileDoubleClicked (const juce::File&) override                       {}
-    void browserRootChanged (const juce::File&) override                      {}
-
-    void changeListenerCallback (juce::ChangeBroadcaster* source) override
-    {
-        //file drag and drop
-        if (source == thumbnail.get())
-            showAudioResource (thumbnail->getLastDroppedFile());
-    }
-
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Panel)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Demo_Panel)
 };
 
 
@@ -984,6 +875,10 @@ public :
     }
 };
 
+
+
+
+//------------------------------------------------------------------------
 class MainMenu_Panel : public juce::Component
 {
 public :
