@@ -1,10 +1,8 @@
 Priority 1 :
-Settings panel
+save file list & settings
 File explorer
 files : active, desactivate
-save file list & settings
 ajouter preview et bounds au file selector panel
-save current directory ?
 
 
 Priority 2 :
@@ -19,6 +17,7 @@ Hierarchical FSM ?
 transition to et from, surtout pour le timer
 
 
+//save current directory ?
 design a save system 
 escape spaces when broadcasting name
 

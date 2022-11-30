@@ -125,12 +125,11 @@ private:
 };
 
 struct FilePlayer {
-    FilePlayer()
-    : dsp_callback(&transportSource)
+    FilePlayer(juce::AudioFormatManager &formatManager)
+    : dsp_callback(&transportSource),
+      formatManager(formatManager)
     {
         // audio setup
-        formatManager.registerBasicFormats();
-
         readAheadThread.startThread (3);
 
         audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
@@ -225,10 +224,10 @@ struct FilePlayer {
         dsp_callback.push_new_dsp_state(new_dsp_state);
     }
 
+    juce::AudioFormatManager &formatManager;
     Transport_State transport_state;
     
     juce::AudioDeviceManager audioDeviceManager;
-    juce::AudioFormatManager formatManager;
     juce::TimeSliceThread readAheadThread  { "audio file preview" };
     
     //juce::URL currentAudioFile;
@@ -913,8 +912,50 @@ class Main_Component : public juce::Component
 {
     public :
     
-    Main_Component()
+    Main_Component(juce::AudioFormatManager &formatManager) : player(formatManager)
     {
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            jassert(app_data.exists() && app_data.isDirectory());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("audio_file_list.txt");
+            if (!file_RENAME.existsAsFile())
+            {
+                file_RENAME.create();
+                return;
+            }
+            auto stream = file_RENAME.createInputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/audio_file_list.txt");
+                return;
+            }
+            while (! stream->isExhausted()) // [3]
+            {
+                auto line = stream->readNextLine();
+                auto audio_file_path = juce::File(line);
+                if (!audio_file_path.existsAsFile())
+                {
+                    DBG(line << " does not exist");
+                    continue;
+                }
+                auto * reader = formatManager.createReaderFor(audio_file_path);
+                if (!reader)
+                {
+                    DBG("invalid audio file " << line);
+                    continue;
+                }
+                
+                Audio_File new_audio_file = {
+                    .file = audio_file_path,
+                    .title = audio_file_path.getFileNameWithoutExtension(),
+                    .loop_bounds = { 0, reader->lengthInSamples }
+                };
+                files.emplace_back(std::move(new_audio_file));
+                delete reader;
+            }
+        }();
+
 #if 0
         panel = std::make_unique < Main_Panel > (
             player
@@ -932,6 +973,27 @@ class Main_Component : public juce::Component
         };
 #endif
         setSize (500, 300);
+    }
+
+    ~Main_Component()
+    {
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("audio_file_list.txt");
+            auto stream = file_RENAME.createOutputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/audio_file_list.txt");
+                return;
+            }
+            stream->setPosition(0);
+            stream->truncate();
+            for (const Audio_File &audio_file : files)
+            {
+                *stream << audio_file.file.getFullPathName() << juce::newLine;
+            }
+        }();
     }
 
     void toFileSelector()
@@ -985,10 +1047,6 @@ class Main_Component : public juce::Component
         panel = std::move(game_ui);
         addAndMakeVisible(*panel);
         resized();
-    }
-
-    ~Main_Component()
-    {
     }
 
     void resized() override 

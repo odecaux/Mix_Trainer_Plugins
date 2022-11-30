@@ -21,7 +21,9 @@ public:
 
     void initialise (const juce::String&) override
     {
-        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", new Main_Component, *this);
+        formatManager.registerBasicFormats();
+        auto *main_component = new Main_Component(formatManager);
+        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", main_component, *this);
     }
 
     void shutdown() override                         { mainWindow = nullptr; }
@@ -59,6 +61,7 @@ private:
     };
 
     std::unique_ptr<MainWindow> mainWindow;
+    juce::AudioFormatManager formatManager;
 };
 
 //==============================================================================
