@@ -977,6 +977,56 @@ public :
     }
 };
 
+class MainMenu_Panel : public juce::Component
+{
+public :
+    MainMenu_Panel(std::function<void()> &&toGame,
+             std::function<void()> &&toFileList,
+             std::function<void()> &&toStats)
+    {
+        game_button.setSize(100, 40);
+        game_button.setButtonText("Game");
+        game_button.onClick = [click = std::move(toGame)] {
+            click();
+        };
+        addAndMakeVisible(game_button);
+        
+        file_list_button.setSize(100, 40);
+        file_list_button.setButtonText("Audio Files");
+        file_list_button.setEnabled(true);
+        file_list_button.onClick = [click = std::move(toFileList)] {
+            click();
+        };
+        addAndMakeVisible(file_list_button);
+        
+        stats_button.setSize(100, 40);
+        stats_button.setButtonText("Statistics");
+        stats_button.setEnabled(false);
+        stats_button.onClick = [click = std::move(toStats)] {
+            click();
+        };
+        addAndMakeVisible(stats_button);
+    }
+    
+    void paint(juce::Graphics &g) override
+    {
+        juce::ignoreUnused(g);
+    }
+
+    void resized() override
+    {
+        auto bounds = getLocalBounds();
+        game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -50));
+        file_list_button.setCentrePosition(bounds.getCentre());
+        stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 50));
+    }
+
+private :
+    juce::TextButton game_button;
+    juce::TextButton file_list_button;
+    juce::TextButton stats_button;
+};
+
 class Main_Component : public juce::Component
 {
     public :
@@ -1025,12 +1075,11 @@ class Main_Component : public juce::Component
             }
         }();
 
-#if 0
-        panel = std::make_unique < Main_Panel > (
-            player
+        panel = std::make_unique < MainMenu_Panel > (
+            [this] { toSettings(); },
+            [this] { toFileSelector(); },
+            [this] {}
         );
-#endif 
-        toFileSelector();
 
 #if 0
         addAndMakeVisible (sidePanel);
@@ -1041,6 +1090,7 @@ class Main_Component : public juce::Component
             sidePanel.showOrHide(true);
         };
 #endif
+        addAndMakeVisible(*panel);
         setSize (500, 300);
     }
 
