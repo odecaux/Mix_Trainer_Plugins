@@ -142,4 +142,4 @@ struct GameUI_Bottom : public juce::Component
 };
 
 void game_ui_header_update(GameUI_Header *header, juce::String header_text, int new_score);
-void game_ui_bottom_update(GameUI_Bottom *bottom, juce::String button_text, Mix mix, Event_Type event);
+void game_ui_bottom_update(GameUI_Bottom *bottom, bool show_button, juce::String button_text, Mix mix, Event_Type event);

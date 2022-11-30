@@ -294,12 +294,12 @@ struct FrequencyGame_UI : public juce::Component
 
     void resized() override 
     {
-        auto bounds = getLocalBounds();
+        auto bounds = getLocalBounds().reduced(4);
         auto bottom_height = 50;
 
         auto header_bounds = bounds.removeFromTop(game_ui_header_height);
         auto bottom_bounds = bounds.removeFromBottom(bottom_height);
-        auto game_bounds = bounds;
+        auto game_bounds = bounds.withTrimmedTop(4).withTrimmedBottom(4);
 
         header.setBounds(header_bounds);
         frequency_widget.setBounds(game_bounds);
@@ -316,7 +316,7 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui)
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     frequency_widget_update(&ui.frequency_widget, new_ui);
-    game_ui_bottom_update(&ui.bottom, new_ui.button_text, new_ui.mix, new_ui.button_event);
+    game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
 

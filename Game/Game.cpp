@@ -132,7 +132,7 @@ void game_ui_header_update(GameUI_Header *header, juce::String header_text, int 
     }
 }
 
-void game_ui_bottom_update(GameUI_Bottom *bottom, juce::String button_text, Mix mix, Event_Type event)
+void game_ui_bottom_update(GameUI_Bottom *bottom, bool show_button, juce::String button_text, Mix mix, Event_Type event)
 {   
     if (mix == Mix_Hidden)
     {
@@ -160,6 +160,7 @@ void game_ui_bottom_update(GameUI_Bottom *bottom, juce::String button_text, Mix 
         }
     }
 
+    bottom->next_button.setVisible(show_button);
     bottom->next_button.setButtonText(button_text);
 
     bottom->next_button.onClick = [bottom, event] {
