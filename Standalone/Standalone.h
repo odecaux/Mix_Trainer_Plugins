@@ -496,27 +496,32 @@ public:
     void itemDropped (const SourceDetails& dragSourceDetails) override
     {
         jassert(dragSourceDetails.sourceComponent == dropSource);
-        juce::File file = ((juce::FileTreeComponent*)dropSource)->getSelectedFile();
-        //can't have the same file twice
-        if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
+        juce::FileTreeComponent *tree = (juce::FileTreeComponent*)dropSource;
+        auto dropped_file_count = tree->getNumSelectedFiles();
+        for (auto i = 0; i < dropped_file_count; i++)
         {
-            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+            juce::File file = tree->getSelectedFile(i);
+            //can't have the same file twice
+            if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
             {
-                /*
+                if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+                {
+                    /*
                 for (const auto &key : reader->metadataValues.getAllKeys())
                 {
                     DBG(key);
                 }
                 */
-                //DBG(file.getFullPathName());
-                Audio_File new_audio_file = {
-                    .file = file,
-                    .title = file.getFileNameWithoutExtension(),
-                    .loop_bounds = { 0, reader->lengthInSamples }
-                };
-                files.emplace_back(std::move(new_audio_file));
-                fileListComp.updateContent();
-                delete reader;
+                    //DBG(file.getFullPathName());
+                    Audio_File new_audio_file = {
+                        .file = file,
+                        .title = file.getFileNameWithoutExtension(),
+                        .loop_bounds = { 0, reader->lengthInSamples }
+                    };
+                    files.emplace_back(std::move(new_audio_file));
+                    fileListComp.updateContent();
+                    delete reader;
+                }
             }
         }
     }
@@ -590,6 +595,7 @@ public:
             fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
             fileTreeComp.setDragAndDropDescription("drag");
             fileTreeComp.addListener (this);
+            fileTreeComp.setMultiSelectEnabled(true);
         }
 
         {
