@@ -733,11 +733,13 @@ struct Settings_Panel : public juce::Component
         }
 
         {
-            eq_gain.setValue(settings.eq_gain);
             eq_gain.setRange( { -15.0, 15.0 }, 3.0);
+            eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
-                settings.eq_gain = (float) eq_gain.getValue();
+                settings.eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
             };
+            float gain_db = juce::Decibels::gainToDecibels(settings.eq_gain);
+            eq_gain.setValue(gain_db);
             addAndMakeVisible(eq_gain);
 
             eq_gain_label.attachToComponent(&eq_gain, true);
@@ -935,6 +937,13 @@ class Main_Component : public juce::Component
     
     Main_Component(juce::AudioFormatManager &formatManager) : player(formatManager)
     {
+        settings = {
+            .eq_gain = 4.0f,
+            .eq_quality = 0.7f,
+            .initial_correct_answer_window = 0.15f,
+            .next_question_timeout_ms = 1000
+        };
+
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
@@ -1013,7 +1022,7 @@ class Main_Component : public juce::Component
 
     void toMainMenu()
     {
-        jassert(state == nullptr);
+        state.reset();
         panel = std::make_unique < MainMenu_Panel > (
             [this] { toSettings(); },
             [this] { toFileSelector(); },
@@ -1033,13 +1042,6 @@ class Main_Component : public juce::Component
 
     void toSettings()
     {
-        jassert(state == nullptr);
-        settings = {
-            .eq_gain = 4.0f,
-            .eq_quality = 0.7f,
-            .initial_correct_answer_window = 0.15f,
-            .next_question_timeout_ms = 1000
-        };
         jassert(state == nullptr);
         panel = std::make_unique < Settings_Panel > (settings, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
