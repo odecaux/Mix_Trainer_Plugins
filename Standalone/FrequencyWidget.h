@@ -43,77 +43,83 @@ struct FrequencyWidget : public juce::Component
         auto drawLineAt = [&] (float marginTop, float marginBottom, float x) {
             auto a = juce::Point<float>(x, (float)r.getY() + marginTop);
             auto b = juce::Point<float>(x, (float)r.getBottom() - marginBottom);
-            g.drawLine( { a, b } );
+            g.drawLine( { a, b });
         };
 
         //outline
         g.setColour(juce::Colour(85, 85, 85));
         g.fillRoundedRectangle(r.toFloat(), 8.0f);
         
-        auto mouse_position = getMouseXYRelative();
-        auto mouse_ratio = ratioInRect(mouse_position, r);
-        float cursor_ratio = is_cursor_locked ? 
-            hzToRatio(locked_cursor_frequency) :
-            mouse_ratio;
-        int cursor_frequency = is_cursor_locked ? 
-            locked_cursor_frequency : 
-            positionToFrequency(mouse_position, r);
-        juce::Line<int> cursor_line;
-
-
+        //frequency guide lines
         g.setColour(juce::Colour(170, 170, 170));
         for (float line_freq : { 100.0f, 200.0f, 400.0f, 800.0f, 1600.0f, 3200.0f, 6400.0f, 12800.0f })
         {
             auto x = frequencyToX(line_freq, r);
             drawLineAt(10.0f, 45.0f, x);
             juce::Point<float> textCentre = { x, 0.0f }; //TODO yolo
-            auto textBounds = juce::Rectangle<float>{ 30.0f, 40.0f }.withCentre(textCentre).withY((float)r.getBottom() - 45.0f);
+            auto textBounds = juce::Rectangle<float> { 30.0f, 40.0f }.withCentre(textCentre).withY((float)r.getBottom() - 45.0f);
             g.drawText(juce::String(line_freq), textBounds, juce::Justification::centred, false);
         }
-        if(cursor_frequency != -1.0f)
-        {
-            float window_right = std::min(1.0f, cursor_ratio + correct_answer_window);
-            float window_left = std::max(0.0f, cursor_ratio - correct_answer_window);
-            auto window_right_x = r.getX() + r.getWidth() * window_right;
-            auto window_left_x = r.getX() + r.getWidth() * window_left;
-
-            auto a = juce::Point<float>(window_left_x, (float)r.getY());
-            auto b = juce::Point<float>(window_right_x, (float)r.getBottom());
-            auto window_rect = juce::Rectangle<float> { a, b };
-            if (display_window)
-            {
-                g.setColour(juce::Colours::yellow);
-                g.setOpacity(0.5f);
-                g.fillRect(window_rect);
-            }
-            g.setOpacity(1.0f);
-            g.setColour(juce::Colours::black);
-            auto cursor_x = frequencyToX(cursor_frequency, r);
-            drawLineAt(0.0f, 0.0f, cursor_x);
-
-            juce::Rectangle text_bounds = { 200, 200 };
-            text_bounds.setCentre(window_rect.getCentre().toInt());
-            g.setColour(juce::Colour(255, 240, 217));
-            g.drawText(juce::String(cursor_frequency), text_bounds, juce::Justification::centred, false);
-        }
         
-        //target
-        if(display_target)
+        if(is_active_at_all)
         {
-            g.setColour(juce::Colours::black);
-            auto x = frequencyToX(target_frequency, r);
-            drawLineAt(0.0f, 0.0f, x);
+            auto mouse_position = getMouseXYRelative();
+            auto mouse_ratio = ratioInRect(mouse_position, r);
+            float cursor_ratio = is_cursor_locked ?
+                hzToRatio(locked_cursor_frequency) :
+                mouse_ratio;
+            int cursor_frequency = is_cursor_locked ?
+                locked_cursor_frequency :
+                positionToFrequency(mouse_position, r);
+            juce::Line<int> cursor_line;
+    
+            //cursor
+            if (cursor_frequency != -1.0f)
+            {
+                float window_right = std::min(1.0f, cursor_ratio + correct_answer_window);
+                float window_left = std::max(0.0f, cursor_ratio - correct_answer_window);
+                auto window_right_x = r.getX() + r.getWidth() * window_right;
+                auto window_left_x = r.getX() + r.getWidth() * window_left;
+    
+                auto a = juce::Point<float>(window_left_x, (float)r.getY());
+                auto b = juce::Point<float>(window_right_x, (float)r.getBottom());
+                auto window_rect = juce::Rectangle<float> { a, b };
+                if (display_window)
+                {
+                    g.setColour(juce::Colours::yellow);
+                    g.setOpacity(0.5f);
+                    g.fillRect(window_rect);
+                }
+                g.setOpacity(1.0f);
+                g.setColour(juce::Colours::black);
+                auto cursor_x = frequencyToX(cursor_frequency, r);
+                drawLineAt(0.0f, 0.0f, cursor_x);
+    
+                juce::Rectangle text_bounds = { 200, 200 };
+                text_bounds.setCentre(window_rect.getCentre().toInt());
+                g.setColour(juce::Colour(255, 240, 217));
+                g.drawText(juce::String(cursor_frequency), text_bounds, juce::Justification::centred, false);
+            }
+            
+            //target
+            if (display_target)
+            {
+                g.setColour(juce::Colours::black);
+                auto x = frequencyToX(target_frequency, r);
+                drawLineAt(0.0f, 0.0f, x);
+            }
+    #if 0
+            //cursor text
+            if (cursor_frequency != -1.0f)
+            {
+                juce::Rectangle rect = { 200, 200 };
+                rect.setCentre(mouse_position);
+                g.setColour(juce::Colour(255, 240, 217));
+                g.drawText(juce::String(cursor_frequency), rect, juce::Justification::centred, false);
+            }
+    #endif
+    
         }
-        //hover
-#if 0
-        if(cursor_frequency != -1.0f)
-        {
-            juce::Rectangle rect = { 200, 200 };
-            rect.setCentre(mouse_position);
-            g.setColour(juce::Colour(255, 240, 217));
-            g.drawText(juce::String(cursor_frequency), rect, juce::Justification::centred, false);
-        }
-#endif
         g.setColour(juce::Colours::black);
         g.drawRoundedRectangle(r.toFloat(), 8.0f, 2.0f);
     }
@@ -122,7 +128,7 @@ struct FrequencyWidget : public juce::Component
 private:
     void mouseMove (const juce::MouseEvent&) override
     {
-        if(is_cursor_locked)
+        if(is_cursor_locked || !is_active_at_all)
             return;
         //static_assert(false); //mouse_move
         repaint();
@@ -131,7 +137,7 @@ private:
     
     void mouseDrag (const juce::MouseEvent&) override
     {
-        if(is_cursor_locked)
+        if(is_cursor_locked || !is_active_at_all)
             return;
         //static_assert(false); //mouse_move ?
         repaint();
@@ -139,13 +145,14 @@ private:
 
     void mouseDown(const juce::MouseEvent&) override
     {
-        if(is_cursor_locked)
+        if(is_cursor_locked || !is_active_at_all)
             return;
         auto clicked_freq = positionToFrequency(getMouseXYRelative(), getLocalBounds());
         onClick(clicked_freq);
     }
-public:
 
+public:
+    bool is_active_at_all;
     bool display_target;
     int target_frequency;
     bool is_cursor_locked;
@@ -161,6 +168,8 @@ struct Effect_DSP {
 
 struct Effect_UI {
     //GameStep step; 
+
+    bool is_active_at_all;
     
     bool display_target;
     int target_frequency;
@@ -552,6 +561,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         {
             case GameStep_Begin :
             {
+                effect_ui.is_active_at_all = false;
+
                 effect_ui.display_target = false;
                 effect_ui.is_cursor_locked = false;
                 effect_ui.display_window = false;
@@ -567,6 +578,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             } break;
             case GameStep_Editing :
             {
+                effect_ui.is_active_at_all = true;
+
                 effect_ui.display_target = false;
                 effect_ui.is_cursor_locked = false;
                 effect_ui.display_window = true;
@@ -577,6 +590,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             } break;
             case GameStep_ShowingTruth :
             {
+                effect_ui.is_active_at_all = true;
+
                 effect_ui.display_target = true;
                 effect_ui.target_frequency = state->target_frequency;
                 effect_ui.is_cursor_locked = true;
@@ -622,6 +637,7 @@ void frequency_game_add_player_observer(FrequencyGame_State *state, player_obser
 
 void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui)
 {
+    widget->is_active_at_all = new_ui.is_active_at_all;
     widget->display_target = new_ui.display_target;
     widget->target_frequency = new_ui.target_frequency;
     widget->is_cursor_locked = new_ui.is_cursor_locked;
