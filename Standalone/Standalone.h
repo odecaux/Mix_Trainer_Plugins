@@ -615,10 +615,18 @@ public:
     
     FileSelector_Panel(FilePlayer &player, 
                        std::vector<Audio_File> &files,
-                       std::function < void() > onClickNext) 
+                       std::function<void()> onClickBack) 
     : fileList(player, files, &explorer), 
       player(player)
     {
+        {
+            header.onBackClicked = [click = std::move(onClickBack)] {
+                click();
+            };
+            game_ui_header_update(&header, "Audio Files", -1);
+            addAndMakeVisible(header);
+        }
+
         {
             collapseExplorer.setToggleState(false, juce::dontSendNotification);
             collapseExplorer.onStateChange = [&] {
@@ -645,15 +653,6 @@ public:
         {
             addAndMakeVisible(fileList);
         }
-
-        {
-            nextButton.onClick = [&files = files, onClickNext = std::move(onClickNext)] {
-                if(files.empty())
-                    return;
-                onClickNext();
-            };
-            addAndMakeVisible(nextButton);
-        }
     }
 
     ~FileSelector_Panel()
@@ -664,12 +663,15 @@ public:
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
-        auto top_bounds = r.removeFromTop(40);
-        auto bottom_bounds = r.removeFromBottom(50);
-        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
-        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
+        
+        auto header_bounds = r.removeFromTop(game_ui_header_height);
+        header.setBounds(header_bounds);
 
-        auto collapse_bounds = juce::Rectangle<int>( 80, 30 ).withLeft(top_bounds.getX()).withBottom(top_bounds.getBottom());
+        auto sub_header_bounds = r.removeFromTop(40);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
+        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
+
+        auto collapse_bounds = sub_header_bounds.removeFromLeft(100);
         collapseExplorer.setBounds(collapse_bounds);
 
         bool explorer_is_on = collapseExplorer.getToggleState();
@@ -682,8 +684,6 @@ public:
         {
             fileList.setBounds (r);
         }
-        auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
-        nextButton.setBounds(button_bounds);
     }
 private:
     GameUI_Header header;
@@ -693,7 +693,6 @@ private:
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent explorer { directoryList };
-    juce::TextButton nextButton { "Next" };
 
     FilePlayer &player;
     
@@ -784,6 +783,7 @@ struct Settings_Panel : public juce::Component
     void resized()
     {
         auto r = getLocalBounds().reduced (4);
+
         auto header_bounds = r.removeFromTop(game_ui_header_height);
         header.setBounds(header_bounds);
 
@@ -1131,7 +1131,7 @@ class Main_Component : public juce::Component
     void toFileSelector()
     {
         jassert(state == nullptr);
-        panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toSettings(); } );
+        panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toMainMenu(); } );
         addAndMakeVisible(*panel);
         resized();
     }
