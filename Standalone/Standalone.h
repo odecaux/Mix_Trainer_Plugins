@@ -462,9 +462,19 @@ public:
 
     virtual ~AudioFileList() {}
 
-    void resized()
+    void resized() override
     {
         fileListComp.setBounds(getLocalBounds());
+    }
+
+    void paintOverChildren(juce::Graphics& g) override
+    {
+        if (files.empty())
+        {
+            auto r = getLocalBounds();
+            g.setColour(juce::Colours::white);
+            g.drawText("Drag and drop audio files here", r.toFloat(), juce::Justification::centred);
+        }
     }
 
     int getNumRows() override 
