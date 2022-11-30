@@ -601,7 +601,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.display_window = true;
                 effect_ui.correct_answer_window = state->correct_answer_window;
 
-                effect_ui.header_text = "Find the boosted frequency";
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = false;
             } break;
             case GameStep_ShowingTruth :
@@ -616,7 +616,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.display_window = true;
                 effect_ui.correct_answer_window = state->correct_answer_window;
 
-                effect_ui.header_text = "Results";
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Next";
                 effect_ui.button_event = Event_Click_Next;
