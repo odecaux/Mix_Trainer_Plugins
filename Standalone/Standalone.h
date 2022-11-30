@@ -686,6 +686,7 @@ public:
         nextButton.setBounds(button_bounds);
     }
 private:
+    GameUI_Header header;
     AudioFileList fileList;
     
     juce::ToggleButton collapseExplorer { "Show file explorer" };
@@ -714,9 +715,18 @@ private:
 struct Settings_Panel : public juce::Component
 {
     Settings_Panel(FrequencyGame_Settings &settings,
+                   std::function<void()> onClickBack,
                    std::function<void()> onClickNext) : 
         settings(settings)
     {
+        {
+            header.onBackClicked = [click = std::move(onClickBack)] {
+                click();
+            };
+            game_ui_header_update(&header, "Settings", -1);
+            addAndMakeVisible(header);
+        }
+
         {
             eq_gain.setValue(settings.eq_gain);
             eq_gain.setRange( { -15.0, 15.0 }, 3.0);
@@ -774,6 +784,9 @@ struct Settings_Panel : public juce::Component
     void resized()
     {
         auto r = getLocalBounds().reduced (4);
+        auto header_bounds = r.removeFromTop(game_ui_header_height);
+        header.setBounds(header_bounds);
+
         auto bottom_bounds = r.removeFromBottom(50);
         //auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
         //auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
@@ -790,6 +803,7 @@ struct Settings_Panel : public juce::Component
 
     FrequencyGame_Settings &settings;
     
+    GameUI_Header header;
     juce::Slider eq_gain {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
     juce::Label eq_gain_label { {}, "Gain"};
     juce::Slider eq_quality {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
@@ -1068,12 +1082,7 @@ class Main_Component : public juce::Component
             }
         }();
 
-        panel = std::make_unique < MainMenu_Panel > (
-            [this] { toSettings(); },
-            [this] { toFileSelector(); },
-            [this] {}
-        );
-
+        toMainMenu();
 #if 0
         addAndMakeVisible (sidePanel);
         sidePanel.setContent(&empty, false);
@@ -1083,7 +1092,6 @@ class Main_Component : public juce::Component
             sidePanel.showOrHide(true);
         };
 #endif
-        addAndMakeVisible(*panel);
         setSize (500, 300);
     }
 
@@ -1108,6 +1116,18 @@ class Main_Component : public juce::Component
         }();
     }
 
+    void toMainMenu()
+    {
+        jassert(state == nullptr);
+        panel = std::make_unique < MainMenu_Panel > (
+            [this] { toSettings(); },
+            [this] { toFileSelector(); },
+            [this] {}
+        );
+        addAndMakeVisible(*panel);
+        resized();
+    }
+
     void toFileSelector()
     {
         jassert(state == nullptr);
@@ -1118,6 +1138,7 @@ class Main_Component : public juce::Component
 
     void toSettings()
     {
+        jassert(state == nullptr);
         settings = {
             .eq_gain = 4.0f,
             .eq_quality = 0.7f,
@@ -1125,7 +1146,7 @@ class Main_Component : public juce::Component
             .next_question_timeout_ms = 1000
         };
         jassert(state == nullptr);
-        panel = std::make_unique < Settings_Panel > (settings, [&] { toGame(); } );
+        panel = std::make_unique < Settings_Panel > (settings, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
         resized();
     }

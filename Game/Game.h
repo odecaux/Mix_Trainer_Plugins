@@ -106,6 +106,7 @@ enum Transition {
     Transition_None,
 };
 
+constexpr int game_ui_header_height = 20;
 
 struct GameUI_Header : public juce::Component
 {
@@ -120,6 +121,7 @@ struct GameUI_Header : public juce::Component
             
     std::function<void()> onBackClicked;
 };
+
 
 struct GameUI_Bottom : public juce::Component
 {

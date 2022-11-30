@@ -121,7 +121,15 @@ void GameUI_Bottom::resized()
 void game_ui_header_update(GameUI_Header *header, juce::String header_text, int new_score)
 {
     header->header_label.setText(header_text, juce::dontSendNotification);
-    header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+    if (new_score == -1)
+    {
+        header->score_label.setVisible(false);
+    }
+    else
+    {
+        header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
+        header->score_label.setVisible(true);
+    }
 }
 
 void game_ui_bottom_update(GameUI_Bottom *bottom, juce::String button_text, Mix mix, Event_Type event)

@@ -296,12 +296,11 @@ struct FrequencyGame_UI : public juce::Component
     {
         auto bounds = getLocalBounds();
         auto bottom_height = 50;
-        auto header_height = 20;
 
-        auto header_bounds = bounds.withHeight(header_height);
-        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(header_height);
-        auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
-        
+        auto header_bounds = bounds.removeFromTop(game_ui_header_height);
+        auto bottom_bounds = bounds.removeFromBottom(bottom_height);
+        auto game_bounds = bounds;
+
         header.setBounds(header_bounds);
         frequency_widget.setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
