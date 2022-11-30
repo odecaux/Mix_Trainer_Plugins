@@ -6,7 +6,8 @@ enum GameStep {
     GameStep_Listening,
     GameStep_Editing,
     GameStep_ShowingTruth,
-    GameStep_ShowingAnswer
+    GameStep_ShowingAnswer,
+    GameStep_EndResults
 };
 
 static FaderStep gameStepToFaderStep(GameStep game_step)

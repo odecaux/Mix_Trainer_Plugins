@@ -234,6 +234,7 @@ struct FrequencyGame_State
 {
     GameStep step;
     int score;
+    int lives;
     int target_frequency;
     float correct_answer_window;
     int current_file_idx;
@@ -243,6 +244,7 @@ struct FrequencyGame_State
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
     std::vector<player_observer_t> observers_player;
+    std::function < void() > quit;
 };
 
 struct FrequencyGame_UI;
@@ -319,8 +321,6 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui)
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-
-
 void frequency_game_post_event(FrequencyGame_State *state, Event event)
 {
     Effects effects = frequency_game_update(state, event);
@@ -350,16 +350,19 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
     if (effects.quit)
     {
-        //state->app->quitGame();
+        state->quit();
     }
 }
 
-std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, std::vector<Audio_File> files)
+std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, 
+                                                               std::vector<Audio_File> files,
+                                                               std::function<void()> onQuit)
 {
     jassert(!files.empty());
     auto state = FrequencyGame_State {
         .files = std::move(files),
-        .settings = settings
+        .settings = settings,
+        .quit = std::move(onQuit)
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
 }
@@ -401,8 +404,15 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 state->score++;
                 state->correct_answer_window *= 0.95f;
             }
-
-            transition = Transition_To_Answer;
+            else
+            {
+                state->lives--;
+            }
+            
+            if(state->lives > 0)
+                transition = Transition_To_Answer;
+            else
+                transition = Transition_To_End_Result;
         } break;
         case Event_Toggle_Input_Target :
         {
@@ -446,8 +456,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Click_Quit :
         {
-            jassertfalse;
-            //unimplemented
+            effects.quit = true;
         } break;
         case Event_Create_UI :
         {
@@ -479,6 +488,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case Transition_To_Begin : {
             step = GameStep_Begin;
             state->score = 0;
+            state->lives = 5;
             state->correct_answer_window = state->settings.initial_correct_answer_window;
             state->current_file_idx = -1;
             update_audio = true;
@@ -524,6 +534,14 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             update_ui = true;
         }break;
         case Transition_To_End_Result : {
+            step = GameStep_EndResults;
+            effects.player = Effect_Player {
+                .commands = { 
+                    { .type = Audio_Command_Stop },
+                }
+            };
+            update_audio = true;
+            update_ui = true;
         }break;
     }
 
@@ -549,6 +567,9 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             {
                 jassertfalse;
             } break;
+            case GameStep_EndResults :
+            {
+            } break;
         }
         effects.dsp = Effect_DSP { dsp };
     }
@@ -561,10 +582,6 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             case GameStep_Begin :
             {
                 effect_ui.is_active_at_all = false;
-
-                effect_ui.display_target = false;
-                effect_ui.is_cursor_locked = false;
-                effect_ui.display_window = false;
 
                 effect_ui.header_text = "Ready ?";
                 effect_ui.display_button = true;
@@ -607,6 +624,15 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             case GameStep_ShowingAnswer : 
             {
                 jassertfalse;
+            } break;
+            case GameStep_EndResults :
+            {
+                effect_ui.is_active_at_all = false;
+
+                effect_ui.header_text = "Results";
+                effect_ui.display_button = true;
+                effect_ui.button_text = "Quit";
+                effect_ui.button_event = Event_Click_Quit;
             } break;
         }
 

@@ -1048,7 +1048,7 @@ class Main_Component : public juce::Component
     
     void toGame()
     {        
-        state = frequency_game_state_init(settings, files);
+        state = frequency_game_state_init(settings, files, [this] { toMainMenu(); });
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
