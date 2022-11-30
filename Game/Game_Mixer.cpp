@@ -19,7 +19,7 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
         fader->update(new_ui.fader_step, pos);
     }
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    game_ui_bottom_update(&ui.bottom, new_ui.button_text, new_ui.mix, new_ui.button_event);
+    game_ui_bottom_update(&ui.bottom, true, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
 void mixer_game_post_event(MixerGame_State *state, Event event)

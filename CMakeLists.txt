@@ -65,8 +65,6 @@ target_sources(MixTrainer_Host
 target_compile_definitions(MixTrainer_Host
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0)
-        
-target_compile_options(MixTrainer_Host PRIVATE /wd4505)
 
 target_link_libraries(MixTrainer_Host PUBLIC juce_plugin_modules)
 
