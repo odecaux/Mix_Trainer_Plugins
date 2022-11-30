@@ -444,7 +444,8 @@ private:
 class AudioFileList : 
     public juce::Component,
     public juce::ListBoxModel,
-    public juce::DragAndDropTarget
+    public juce::DragAndDropTarget,
+    public juce::FileDragAndDropTarget
 {
 public:
     AudioFileList(FilePlayer &player, 
@@ -458,6 +459,8 @@ public:
         fileListComp.setOutlineThickness (2);
         addAndMakeVisible(fileListComp);
     }
+
+    virtual ~AudioFileList() {}
 
     void resized()
     {
@@ -486,14 +489,49 @@ public:
         }
     }
 
-    bool isInterestedInDragSource (const SourceDetails& dragSourceDetails) override 
+    bool isInterestedInFileDrag (const juce::StringArray& files) override { return true; };
+
+    bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
     {
         jassert(dragSourceDetails.sourceComponent == dropSource);
         return true;
     }
 
+    void insertFile(juce::File file)
+    {
+        //can't have the same file twice
+        if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
+        {
+            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+            {
+                /*
+                for (const auto &key : reader->metadataValues.getAllKeys())
+                {
+                DBG(key);
+                }
+                */
+                //DBG(file.getFullPathName());
+                Audio_File new_audio_file = {
+                    .file = file,
+                    .title = file.getFileNameWithoutExtension(),
+                    .loop_bounds = { 0, reader->lengthInSamples }
+                };
+                files.emplace_back(std::move(new_audio_file));
+                fileListComp.updateContent();
+                delete reader;
+            }
+        }
+    }
     
-    void itemDropped (const SourceDetails& dragSourceDetails) override
+    void filesDropped (const juce::StringArray& dropped_files, int, int) override
+    {
+        for (const auto &file : dropped_files)
+        {
+            insertFile(juce::File(file));
+        }
+    }
+    
+    void itemDropped (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override
     {
         jassert(dragSourceDetails.sourceComponent == dropSource);
         juce::FileTreeComponent *tree = (juce::FileTreeComponent*)dropSource;
@@ -501,28 +539,7 @@ public:
         for (auto i = 0; i < dropped_file_count; i++)
         {
             juce::File file = tree->getSelectedFile(i);
-            //can't have the same file twice
-            if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
-            {
-                if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
-                {
-                    /*
-                for (const auto &key : reader->metadataValues.getAllKeys())
-                {
-                    DBG(key);
-                }
-                */
-                    //DBG(file.getFullPathName());
-                    Audio_File new_audio_file = {
-                        .file = file,
-                        .title = file.getFileNameWithoutExtension(),
-                        .loop_bounds = { 0, reader->lengthInSamples }
-                    };
-                    files.emplace_back(std::move(new_audio_file));
-                    fileListComp.updateContent();
-                    delete reader;
-                }
-            }
+            insertFile(file);
         }
     }
 
