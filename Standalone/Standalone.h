@@ -131,7 +131,7 @@ struct FilePlayer {
       formatManager(formatManager)
     {
         // audio setup
-        readAheadThread.startThread (3);
+        readAheadThread.startThread ();
 
         audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
         
@@ -503,7 +503,7 @@ public:
     void insertFile(juce::File file)
     {
         //can't have the same file twice
-        if (auto result = std::ranges::find(files, file, [] (const Audio_File &in) { return in.file; }); result == files.end())
+        if (auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; }); result == files.end())
         {
             if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
             {
@@ -639,7 +639,7 @@ public:
             addAndMakeVisible(collapseExplorer);
         }
         {
-            fileExplorerThread.startThread (3);
+            fileExplorerThread.startThread ();
 
             directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
             directoryList.setIgnoresHiddenFiles(true);

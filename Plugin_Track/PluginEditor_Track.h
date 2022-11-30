@@ -10,7 +10,7 @@
 
 float denormalize_frequency(float value)
 {
-    float a = std::powf(value, 2.0f);
+    float a = powf(value, 2.0f);
     float b = a * (20000.0f - 20.0f);
     return b + 20.0f;
 }
