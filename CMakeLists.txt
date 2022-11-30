@@ -65,8 +65,6 @@ target_sources(MixTrainer_Host
 target_compile_definitions(MixTrainer_Host
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0)
-        
-target_compile_options(MixTrainer_Host PRIVATE /wd4505)
 
 target_link_libraries(MixTrainer_Host PUBLIC juce_plugin_modules)
 
@@ -83,7 +81,7 @@ juce_add_plugin(MixTrainer_Track
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Octa
     PLUGIN_CODE MTT0
-    FORMATS AU VST3
+    FORMATS AU AUv3 VST3
     PRODUCT_NAME "MixTrainer Track")
 
 target_sources(MixTrainer_Track
