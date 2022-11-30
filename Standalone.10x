@@ -74,6 +74,9 @@
 			<File>
 				<Path>Standalone/FrequencyWidget.h</Path>
 			</File>
+			<File>
+				<Path>Standalone/pch.h</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>

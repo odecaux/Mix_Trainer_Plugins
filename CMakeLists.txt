@@ -8,6 +8,35 @@ project(MixTrainer VERSION 0.0.1)
 
 find_package(JUCE CONFIG REQUIRED)
 
+add_library(juce_plugin_modules STATIC)
+
+target_link_libraries(juce_plugin_modules
+    PRIVATE
+        juce::juce_gui_extra
+        juce::juce_audio_utils
+        juce::juce_dsp
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+
+target_compile_definitions(juce_plugin_modules
+    PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+    INTERFACE
+        $<TARGET_PROPERTY:juce_plugin_modules,COMPILE_DEFINITIONS>)
+
+target_include_directories(juce_plugin_modules
+    INTERFACE
+        $<TARGET_PROPERTY:juce_plugin_modules,INCLUDE_DIRECTORIES>)
+
+set_target_properties(juce_plugin_modules PROPERTIES
+    POSITION_INDEPENDENT_CODE TRUE
+    VISIBILITY_INLINES_HIDDEN TRUE
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden)
+
 juce_add_plugin(MixTrainer_Host
     VERSION 0.0.1
     # ICON_BIG ...
@@ -35,19 +64,11 @@ target_sources(MixTrainer_Host
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
         
 target_compile_options(MixTrainer_Host PRIVATE /wd4505)
 
-target_link_libraries(MixTrainer_Host
-    PRIVATE
-        juce::juce_audio_utils
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags)
+target_link_libraries(MixTrainer_Host PUBLIC juce_plugin_modules)
 
 juce_add_plugin(MixTrainer_Track
     VERSION 0.0.1
@@ -71,46 +92,24 @@ target_sources(MixTrainer_Track
 
 target_compile_definitions(MixTrainer_Track
     PUBLIC
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
-target_link_libraries(MixTrainer_Track
-    PRIVATE
-        juce::juce_audio_utils
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags)
+target_link_libraries(MixTrainer_Track PUBLIC juce_plugin_modules)
 
 juce_add_gui_app(Standalone
-    # VERSION ...                       # Set this if the app version is different to the project version
-    # ICON_BIG ...                      # ICON_* arguments specify a path to an image file to use as an icon
-    # ICON_SMALL ...
-    # DOCUMENT_EXTENSIONS ...           # Specify file extensions that should be associated with this app
-    # COMPANY_NAME ...                  # Specify the name of the app's author
-    PRODUCT_NAME "Gui App Example")     # The name of the final executable, which can differ from the target name
+    PRODUCT_NAME "Mix Trainer")
 
 target_sources(Standalone
     PRIVATE
         Standalone/Standalone.cpp
         Game/Game.cpp)
 
+target_precompile_headers(Standalone
+    PRIVATE Standalone/pch.h)
+
 target_compile_definitions(Standalone
     PRIVATE
-        JUCE_WEB_BROWSER=0
-        JUCE_USE_CURL=0
         JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:Standalone,JUCE_PRODUCT_NAME>"
         JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:Standalone,JUCE_VERSION>")
 
-
-target_link_libraries(Standalone
-    PRIVATE
-        # GuiAppData            # If we'd created a binary data target, we'd link to it here
-        juce::juce_gui_extra
-        juce::juce_audio_utils
-        juce::juce_dsp
-    PUBLIC
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_lto_flags
-        juce::juce_recommended_warning_flags)
+target_link_libraries(Standalone PUBLIC juce_plugin_modules)
