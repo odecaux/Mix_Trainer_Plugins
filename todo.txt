@@ -1,9 +1,7 @@
 Priority 1 :
-save file list & settings
 File explorer
 files : active, desactivate
 ajouter preview et bounds au file selector panel
-
 
 Priority 2 :
 
@@ -20,17 +18,3 @@ transition to et from, surtout pour le timer
 //save current directory ?
 design a save system 
 escape spaces when broadcasting name
-
-
-
-
-
-
-
-
-
-
-
-Enlever le sidebar/burger
-Main menu : files et exercice
-exercice : select active files -> begin -> exercice loop
