@@ -598,21 +598,30 @@ public:
     FileSelector_Panel(FilePlayer &player, 
                        std::vector<Audio_File> &files,
                        std::function < void() > onClickNext) 
-    : fileList(player, files, &fileTreeComp), 
+    : fileList(player, files, &explorer), 
       player(player)
     {
         {
+            collapseExplorer.setToggleState(false, juce::dontSendNotification);
+            collapseExplorer.onStateChange = [&] {
+                auto is_on = collapseExplorer.getToggleState();
+                explorer.setVisible(is_on);
+                resized();
+            };
+            addAndMakeVisible(collapseExplorer);
+        }
+        {
             fileExplorerThread.startThread (3);
-            addAndMakeVisible (fileTreeComp);
 
             directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
             directoryList.setIgnoresHiddenFiles(true);
 
-            fileTreeComp.setTitle ("Files");
-            fileTreeComp.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
-            fileTreeComp.setDragAndDropDescription("drag");
-            fileTreeComp.addListener (this);
-            fileTreeComp.setMultiSelectEnabled(true);
+            explorer.setTitle ("Files");
+            explorer.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
+            explorer.setDragAndDropDescription("drag");
+            explorer.addListener (this);
+            explorer.setMultiSelectEnabled(true);
+            addChildComponent(explorer);
         }
 
         {
@@ -631,35 +640,47 @@ public:
 
     ~FileSelector_Panel()
     {
-        fileTreeComp.removeListener (this);
+        explorer.removeListener (this);
     }
 
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
+        auto top_bounds = r.removeFromTop(40);
         auto bottom_bounds = r.removeFromBottom(50);
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
         auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
 
-        fileTreeComp.setBounds (left_bounds);
-        fileList.setBounds (right_bounds);
-        
+        auto collapse_bounds = juce::Rectangle<int>( 80, 30 ).withLeft(top_bounds.getX()).withBottom(top_bounds.getBottom());
+        collapseExplorer.setBounds(collapse_bounds);
+
+        bool explorer_is_on = collapseExplorer.getToggleState();
+        if (explorer_is_on)
+        {
+            explorer.setBounds (left_bounds);
+            fileList.setBounds (right_bounds);
+        }
+        else
+        {
+            fileList.setBounds (r);
+        }
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
 private:
     AudioFileList fileList;
     
+    juce::ToggleButton collapseExplorer { "Show file explorer" };
     juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
-    juce::FileTreeComponent fileTreeComp { directoryList };
+    juce::FileTreeComponent explorer { directoryList };
     juce::TextButton nextButton { "Next" };
 
     FilePlayer &player;
     
     void selectionChanged() override
     {
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = fileTreeComp.getSelectedFile() });
+        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = explorer.getSelectedFile() });
         if (ret.value_b)
             player.post_command({ .type = Audio_Command_Play });
     }
@@ -1081,8 +1102,9 @@ class Main_Component : public juce::Component
             auto burgerBounds = headerBounds.withWidth(50);
             burger.setBounds(burgerBounds);
         }
+        //auto panelBounds = r.withTrimmedTop(50);
 #endif
-        auto panelBounds = r.withTrimmedTop(50);
+        auto panelBounds = r;
         panel->setBounds(panelBounds);
     }
 
