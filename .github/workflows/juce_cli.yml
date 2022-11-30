@@ -58,7 +58,7 @@ jobs:
     - name: Setup Environment Variables
       shell: bash
       run: |
-        VERSION=0.0.1
+        VERSION=$(cat VERSION)
         echo "ARTIFACTS_PATH=${{ env.BUILD_DIR }}/${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
         echo "VST3_PATH=${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}/VST3/${{ env.PROJECT_NAME }}.vst3" >> $GITHUB_ENV
         echo "AU_PATH=${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}/AU/${{ env.PROJECT_NAME }}.component" >> $GITHUB_ENV
@@ -75,8 +75,8 @@ jobs:
         cd JUCE
         cmake -B cmake-build-install -DCMAKE_INSTALL_PREFIX=install
         cmake --build cmake-build-install --target install
+        echo "JUCE_INSTALL_DIR=$(pwd)/install" >> $GITHUB_ENV
         cd ..
-        echo "JUCE_INSTALL_DIR=$/JUCE/install" >> $GITHUB_ENV
 
     - name: Configure
       shell: bash
