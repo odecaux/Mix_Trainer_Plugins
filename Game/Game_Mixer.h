@@ -63,8 +63,6 @@ struct MixerGame_State {
     int timeout_ms;
     std::vector < double > db_slider_values;
     //io
-    
-    mixer_game_update_t update_fn;
     Application *app;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
@@ -245,8 +243,3 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
 
 
 //TODO mutex ? pour les timeout
-
-
-
-#include "Game_Mixer_Tries.h"
-#include "Game_Mixer_Timer.h"

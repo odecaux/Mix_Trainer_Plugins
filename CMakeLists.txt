@@ -58,8 +58,6 @@ target_sources(MixTrainer_Host
         Plugin_Host/Processor_Host.cpp
         Game/Game.cpp
         Game/Game_Mixer.cpp
-        Game/Game_Mixer_Tries.cpp
-        Game/Game_Mixer_Timer.cpp
         Application/Application.cpp)
 
 target_compile_definitions(MixTrainer_Host
