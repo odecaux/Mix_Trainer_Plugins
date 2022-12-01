@@ -5,7 +5,8 @@ enum GameStep {
     GameStep_Begin,
     GameStep_Question,
     GameStep_Result,
-    GameStep_EndResults
+    GameStep_EndResults,
+    GameStep_None
 };
 
 enum Mix {
@@ -65,14 +66,6 @@ struct Event{
     void *value_ptr;
     std::string value_str;
     juce::String value_js;
-};
-
-enum Transition {
-    Transition_To_Begin,
-    Transition_To_Exercice,
-    Transition_To_Answer,
-    Transition_To_End_Result,
-    Transition_None,
 };
 
 constexpr int game_ui_header_height = 20;

@@ -12,7 +12,6 @@ Priority 3 :
 
 epoch pour le timer ?
 Hierarchical FSM ?
-transition to et from, surtout pour le timer
 
 design a save system 
 escape spaces when broadcasting name

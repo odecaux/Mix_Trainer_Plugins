@@ -20,7 +20,14 @@ struct Effect_Rename {
     std::string new_name;
 };
 
+enum Effect_Timer_Type
+{
+    Effect_Timer_Task,
+    Effect_Timer_Cancel
+};
+
 struct Effect_Timer {
+    Effect_Timer_Type type;
     int timeout_ms;
     std::function<void()> callback;
 };

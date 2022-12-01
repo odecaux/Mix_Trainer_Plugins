@@ -371,7 +371,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;
-    Transition transition = Transition_None;
+    GameStep in_transition = GameStep_None;
+    GameStep out_transition = GameStep_None;
     bool update_audio = false;
     bool update_ui = false;
 
@@ -387,7 +388,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     {
         case Event_Init :
         {
-            transition = Transition_To_Begin;
+            in_transition = GameStep_Begin;
         } break;
         case Event_Click_Frequency :
         {
@@ -407,9 +408,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             }
             
             if(state->lives > 0)
-                transition = Transition_To_Answer;
+                in_transition = GameStep_Result;
             else
-                transition = Transition_To_End_Result;
+                in_transition = GameStep_EndResults;
+            out_transition = GameStep_Question;
         } break;
         case Event_Toggle_Input_Target :
         {
@@ -438,17 +440,20 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case Event_Timeout :
         {
             jassert(old_step == GameStep_Result);
-            transition = Transition_To_Exercice;
+            out_transition = GameStep_Result;
+            in_transition = GameStep_Question;
         } break;
         case Event_Click_Begin :
         {
             jassert(old_step == GameStep_Begin);
-            transition = Transition_To_Exercice;
+            out_transition = GameStep_Begin;
+            in_transition = GameStep_Question;
         } break;
         case Event_Click_Next :
         {
             jassert(old_step == GameStep_Result);
-            transition = Transition_To_Exercice;
+            out_transition = GameStep_Result;
+            in_transition = GameStep_Question;
         } break;
         case Event_Click_Back :
         {
@@ -479,13 +484,36 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             jassertfalse;
         } break;
     }
-
     
-    switch (transition)
+    switch (out_transition)
     {
-        case Transition_None : {
+        case GameStep_None :
+        {
+        } break;
+        case GameStep_Begin :
+        {
+        } break;
+        case GameStep_Question :
+        {
+        } break;
+        case GameStep_Result :
+        {
+            effects.timer = Effect_Timer {
+                .type = Effect_Timer_Cancel
+            };
+        } break;
+        case GameStep_EndResults :
+        {
+            jassertfalse;
+        } break;
+    }
+    
+    switch (in_transition)
+    {
+        case GameStep_None : 
+        {
         }break;
-        case Transition_To_Begin : {
+        case GameStep_Begin : {
             step = GameStep_Begin;
             state->score = 0;
             state->lives = 5;
@@ -494,7 +522,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             update_audio = true;
             update_ui = true;
         }break;
-        case Transition_To_Exercice : {
+        case GameStep_Question : {
             step = GameStep_Question;
             state->target_frequency = ratioToHz(juce::Random::getSystemRandom().nextFloat());
 #if 0
@@ -513,14 +541,11 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 }
             };
             
-            effects.timer = Effect_Timer {
-                .type = Effect_Timer_Cancel
-            };
-            
             update_audio = true;
             update_ui = true;
         }break;
-        case Transition_To_Answer : {
+        case GameStep_Result : 
+        {
             step = GameStep_Result;
             
             effects.timer = Effect_Timer {
@@ -533,7 +558,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             update_audio = true;
             update_ui = true;
         }break;
-        case Transition_To_End_Result : {
+        case GameStep_EndResults : 
+        {
             step = GameStep_EndResults;
             effects.player = Effect_Player {
                 .commands = { 
