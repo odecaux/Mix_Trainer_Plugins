@@ -10,7 +10,7 @@ struct Effect_UI {
     juce::String header_text;
     int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    int remaining_listens;
+    //int remaining_listens;
     juce::String button_text;
     Mix mix;
     Event_Type button_event;
@@ -44,6 +44,10 @@ enum MixerGame_Variant
     MixerGame_Timer
 };
 
+struct MixerGame_State;
+
+typedef Effects (*mixer_game_update_t)(MixerGame_State *, Event);
+
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     //state
@@ -56,9 +60,12 @@ struct MixerGame_State {
     MixerGame_Variant variant;
     int listens;
     int remaining_listens;
+    bool can_still_listen;
     int timeout_ms;
     std::vector < double > db_slider_values;
     //io
+    
+    mixer_game_update_t update_fn;
     Application *app;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;

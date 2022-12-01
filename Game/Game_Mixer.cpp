@@ -24,7 +24,7 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
 
 void mixer_game_post_event(MixerGame_State *state, Event event)
 {
-    Effects effects = mixer_game_update(state, event);
+    Effects effects = state->update_fn(state, event);
     if (effects.dsp)
     {
         for(auto &observer : state->observers_audio)
@@ -47,6 +47,7 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
     }
     if (effects.quit)
     {
+        state->timer.stopTimer();
         state->app->quitGame();
     }
 }
@@ -65,6 +66,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         .quit = false, 
         .timer = std::nullopt 
     };
+    
+    bool done_listening = false;
 
     switch (event.type)
     {
@@ -184,6 +187,16 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
         } break;
     }
+    
+    if (done_listening)
+    {
+        jassert(step == GameStep_Question);
+        jassert(state->mix == Mix_Target);
+        state->mix = Mix_User;
+        state->can_still_listen = false;
+        update_audio = true;
+        update_ui = true;
+    }
 
     switch (transition)
     {
@@ -204,6 +217,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         case Transition_To_Exercice : {
             step = GameStep_Question;
             state->mix = Mix_Target;
+            state->can_still_listen = true;
             for (auto& [_, channel] : state->channel_infos)
             {
                 state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % state->db_slider_values.size();//;
@@ -254,7 +268,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
 
         
         effects.ui = Effect_UI {
-            .fader_step = gameStepToFaderStep(state->step, state->mix),
+            .fader_step = gameStepToFaderStep(step, state->mix),
             .score = state->score,
             .slider_pos_to_display = std::move(slider_pos_to_display),
             .mix = state->mix
@@ -312,12 +326,28 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
     if(variant != MixerGame_Timer)
         jassert(timeout_ms == -1);
 
+    mixer_game_update_t update_fn = nullptr;
+    
+    switch (variant)
+    {
+        case MixerGame_Normal : {
+            update_fn = &mixer_game_update;
+        } break;
+        case MixerGame_Timer : {
+            update_fn = &mixer_game_timer_update;
+        } break;
+        case MixerGame_Tries : {
+            update_fn = &mixer_game_tries_update;
+        } break;
+    }
+
     MixerGame_State state = {
         .channel_infos = channel_infos,
         .variant = variant,
         .listens = listens,
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
+        .update_fn = update_fn,
         .app = app
     };
     return std::make_unique < MixerGame_State > (std::move(state));
