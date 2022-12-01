@@ -11,26 +11,60 @@ juce::String step_to_str(GameStep step)
         {
             return "Begin";
         } break;
-        case GameStep_Listening :
+        case GameStep_Question :
         {
-            return "Listening";
+            return "Question";
         } break;
-        case GameStep_Editing :
+        case GameStep_Result :
         {
-            return "Editing";
+            return "Result";
         } break;
-        case GameStep_ShowingTruth :
+        case GameStep_EndResults :
         {
-            return "ShowingTruth";
-        } break;
-        case GameStep_ShowingAnswer :
-        {
-            return "ShowingAnswer";
+            return "End Results";
         } break;
         default : 
         {
             jassertfalse;
             return "";
+        };
+    }
+}
+
+FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
+{
+    switch (game_step)
+    {
+        case GameStep_Begin :
+        {
+            jassert(mix == Mix_Hidden);
+            return FaderStep_Editing;
+        } break;
+        case GameStep_Question :
+        {
+            if (mix == Mix_User)
+            {
+                return FaderStep_Editing;
+            }
+            else if (mix == Mix_Target)
+            {
+                return FaderStep_Hiding;
+            }
+            else
+            {
+                jassertfalse;
+                return {};
+            }
+        } break;
+        case GameStep_Result :
+        {
+            jassert(mix != Mix_Hidden);
+            return FaderStep_Showing;
+        } break;
+        default:
+        {
+            jassertfalse;
+            return {};
         };
     }
 }

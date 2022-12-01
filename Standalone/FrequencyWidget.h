@@ -383,9 +383,6 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         .timer = std::nullopt 
     };
 
-    jassert(old_step != GameStep_Listening);
-    jassert(old_step != GameStep_ShowingAnswer);
-
     switch (event.type) 
     {
         case Event_Init :
@@ -394,7 +391,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Click_Frequency :
         {
-            jassert(old_step == GameStep_Editing);
+            jassert(old_step == GameStep_Question);
             auto clicked_freq = event.value_i;
             auto clicked_ratio = hzToRatio(clicked_freq);
             auto target_ratio = hzToRatio(state->target_frequency);
@@ -416,8 +413,9 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Toggle_Input_Target :
         {
+#if 0
             jassert(old_step != GameStep_Begin);
-            if(event.value_b && step == GameStep_Editing)
+            if(event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
             }
@@ -434,10 +432,12 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             }
             update_audio = true;
             update_ui = true;
+#endif
+            jassertfalse;
         } break;
         case Event_Timeout :
         {
-            jassert(old_step == GameStep_ShowingTruth);
+            jassert(old_step == GameStep_Result);
             transition = Transition_To_Exercice;
         } break;
         case Event_Click_Begin :
@@ -447,7 +447,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Click_Next :
         {
-            jassert(old_step == GameStep_ShowingTruth);
+            jassert(old_step == GameStep_Result);
             transition = Transition_To_Exercice;
         } break;
         case Event_Click_Back :
@@ -495,7 +495,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             update_ui = true;
         }break;
         case Transition_To_Exercice : {
-            step = GameStep_Editing;
+            step = GameStep_Question;
             state->target_frequency = ratioToHz(juce::Random::getSystemRandom().nextFloat());
 #if 0
             effects.timer = Effect_Timer {
@@ -521,7 +521,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             update_ui = true;
         }break;
         case Transition_To_Answer : {
-            step = GameStep_ShowingTruth;
+            step = GameStep_Result;
             
             effects.timer = Effect_Timer {
                 .type = Effect_Timer_Task,
@@ -554,18 +554,13 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             case GameStep_Begin :
             {
             } break;
-            case GameStep_Editing :
-            case GameStep_ShowingTruth :
+            case GameStep_Question :
+            case GameStep_Result :
             {
                 dsp.bands[0].type = Filter_Peak;
                 dsp.bands[0].frequency = state->target_frequency;
                 dsp.bands[0].gain = state->settings.eq_gain;
                 dsp.bands[0].quality = state->settings.eq_quality;
-            } break;
-            case GameStep_Listening :
-            case GameStep_ShowingAnswer :
-            {
-                jassertfalse;
             } break;
             case GameStep_EndResults :
             {
@@ -588,11 +583,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.button_text = "Begin";
                 effect_ui.button_event = Event_Click_Begin;
             } break;
-            case GameStep_Listening :
-            {
-                jassertfalse;
-            } break;
-            case GameStep_Editing :
+            case GameStep_Question :
             {
                 effect_ui.is_active_at_all = true;
 
@@ -604,7 +595,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = false;
             } break;
-            case GameStep_ShowingTruth :
+            case GameStep_Result :
             {
                 effect_ui.is_active_at_all = true;
 
@@ -620,10 +611,6 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Next";
                 effect_ui.button_event = Event_Click_Next;
-            } break;
-            case GameStep_ShowingAnswer : 
-            {
-                jassertfalse;
             } break;
             case GameStep_EndResults :
             {
