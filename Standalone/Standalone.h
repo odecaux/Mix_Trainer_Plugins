@@ -714,11 +714,165 @@ private:
 };
 
 
+//------------------------------------------------------------------------
+class Settings_List : 
+    public juce::Component,
+    public juce::ListBoxModel
+{
+public:
+    Settings_List()
+    {
+        list_comp.setMultipleSelectionEnabled(true);
+        list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+        list_comp.setOutlineThickness (2);
+        addAndMakeVisible(list_comp);
+    }
+
+    virtual ~Settings_List() {}
+
+    void resized() override
+    {
+        list_comp.setBounds(getLocalBounds());
+    }
+
+    void paintOverChildren(juce::Graphics& g) override
+    {
+        if (false/*files.empty()*/)
+        {
+            auto r = getLocalBounds();
+            g.setColour(juce::Colours::white);
+            g.drawText("Drag and drop audio files here", r.toFloat(), juce::Justification::centred);
+        }
+    }
+
+    int getNumRows() override { return 1;  /*(int)files.size();*/ }
+
+    void paintListBoxItem (int rowNumber,
+                           juce::Graphics& g,
+                           int width, int height,
+                           bool rowIsSelected) override
+    {
+        if (rowNumber < 1 /*files.size()*/)
+        {
+            g.setColour(juce::Colours::white);
+            auto bounds = juce::Rectangle { 0, 0, width, height };
+            g.drawText("Default"/*files[rowNumber].title*/, bounds.reduced(2), juce::Justification::centredLeft);
+            if (rowIsSelected)
+            {
+                g.drawRect(bounds);
+            }
+        }
+    }
+
+#if 0
+    void insertFile(juce::File file)
+    {
+        //can't have the same file twice
+        if (auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; }); result == files.end())
+        {
+            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+            {
+                /*
+                for (const auto &key : reader->metadataValues.getAllKeys())
+                {
+                DBG(key);
+                }
+                */
+                //DBG(file.getFullPathName());
+                Audio_File new_audio_file = {
+                    .file = file,
+                    .title = file.getFileNameWithoutExtension(),
+                    .loop_bounds = { 0, reader->lengthInSamples }
+                };
+                files.emplace_back(std::move(new_audio_file));
+                list_comp.updateContent();
+                delete reader;
+            }
+        }
+    }
+#endif
+
+    
+    void listBoxItemClicked (int, const juce::MouseEvent&) override 
+    {
+        //set active
+    }
+
+    void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override {}
+    
+    void deleteKeyPressed (int lastRowSelected) override
+    {
+        auto num_selected = list_comp.getNumSelectedRows();
+        if ( num_selected > 1)
+        {
+            auto selected_rows = list_comp.getSelectedRows();
+            list_comp.deselectAllRows();
+            for (int i = getNumRows(); --i >= 0;)
+            {   
+                if(selected_rows.contains(i))
+                    ; //files.erase(files.begin() + i);
+            }
+            list_comp.updateContent();
+        }
+        else if (num_selected == 1)
+        {
+
+            //files.erase(files.begin() + lastRowSelected);
+            list_comp.updateContent();
+        }
+    }
+
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.escapeKey)
+        {
+            list_comp.deselectAllRows();
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+private:
+    juce::ListBox list_comp = { {}, this};
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_List)
+};
 
 
 //------------------------------------------------------------------------
 struct Settings_Panel : public juce::Component
 {
+    using param_temp_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
+    
+    class Scroller : public juce::Component
+    {
+    public:
+        Scroller(param_temp_t &param) : param(param)
+        {
+            for (auto &[slider, label, range, interval] : this->param)
+            {
+                addAndMakeVisible(slider);
+                addAndMakeVisible(label);
+            }
+        }
+        void resized() override
+        {
+            auto r = getLocalBounds();
+            auto height = getHeight();
+            auto param_height = height / param.size();
+            for (auto &[label, slider, range, interval] : param)
+            { 
+                r.removeFromTop(param_height / 2);
+                label.setBounds(r.removeFromTop(param_height / 2));
+            }
+        }
+    private:
+        param_temp_t &param;
+    };
+
     Settings_Panel(FrequencyGame_Settings &settings,
                    std::function<void()> onClickBack,
                    std::function<void()> onClickNext) : 
@@ -731,55 +885,54 @@ struct Settings_Panel : public juce::Component
             game_ui_header_update(&header, "Settings", -1);
             addAndMakeVisible(header);
         }
-
+        
+        addAndMakeVisible(settings_list_comp);
+        
         {
-            eq_gain.setRange( { -15.0, 15.0 }, 3.0);
             eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
                 settings.eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
             };
             float gain_db = juce::Decibels::gainToDecibels(settings.eq_gain);
             eq_gain.setValue(gain_db);
-            addAndMakeVisible(eq_gain);
-
-            eq_gain_label.attachToComponent(&eq_gain, true);
-            addAndMakeVisible(eq_gain_label);
         }
         {
             eq_quality.setValue(settings.eq_quality);
-            eq_quality.setRange( { 0.5, 4 }, 0.1);
             eq_quality.onValueChange = [&] {
                 settings.eq_quality = (float) eq_quality.getValue();
             };
-            addAndMakeVisible(eq_quality);
-            
-            eq_quality_label.attachToComponent(&eq_quality, true);
-            addAndMakeVisible(eq_quality_label);
         }
         {
             initial_correct_answer_window.setValue(settings.initial_correct_answer_window);
-            initial_correct_answer_window.setRange( { 0.01, 0.4 }, 0.01);
             initial_correct_answer_window.onValueChange = [&] {
                 settings.initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
             };
-            addAndMakeVisible(initial_correct_answer_window);
-            
-            initial_correct_answer_window_label.attachToComponent(&initial_correct_answer_window, true);
-            addAndMakeVisible(initial_correct_answer_window_label);
         }
         {
             next_question_timeout_ms.setValue((double)settings.next_question_timeout_ms);
-            next_question_timeout_ms.setRange( { 1000, 4000 }, 500);
             next_question_timeout_ms.setTextValueSuffix (" ms");
             next_question_timeout_ms.onValueChange = [&] {
                 settings.next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
             };
             next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
-            addAndMakeVisible(next_question_timeout_ms);
-
-            next_question_timeout_ms_label.attachToComponent(&next_question_timeout_ms, true);
-            addAndMakeVisible(next_question_timeout_ms_label);
         }
+
+
+        for (auto &[slider, label, range, interval] : param)
+        {
+            slider.setScrollWheelEnabled(false);
+            slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+            slider.setRange(range, interval);
+            label.setBorderSize( juce::BorderSize<int>{ 0 });
+            label.attachToComponent(&slider, false);
+            label.setJustificationType(juce::Justification::left);
+        }
+        
+        scroller.setSize(0, param.size() * 60);
+        viewport.setScrollBarsShown(true, false);
+        viewport.setViewedComponent(&scroller, false);
+        addAndMakeVisible(viewport);
+
         {
             nextButton.onClick = [onClickNext = std::move(onClickNext)] {
                 onClickNext();
@@ -796,32 +949,41 @@ struct Settings_Panel : public juce::Component
         header.setBounds(header_bounds);
 
         auto bottom_bounds = r.removeFromBottom(50);
-        //auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f });
-        //auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f });
-        auto right_bounds = r.withTrimmedLeft(100);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
+        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
 
-        eq_gain.setBounds(right_bounds.removeFromTop(50));
-        eq_quality.setBounds(right_bounds.removeFromTop(50));
-        initial_correct_answer_window.setBounds(right_bounds.removeFromTop(50));
-        next_question_timeout_ms.setBounds(right_bounds.removeFromTop(50));
-        
+        settings_list_comp.setBounds(left_bounds);
+        scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
+        viewport.setBounds(right_bounds);
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
+    
+    param_temp_t param = { 
+        { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0}, 
+        { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 }, 
+        { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }, 
+        { next_question_timeout_ms , next_question_timeout_ms_label, { 1000, 4000 }, 500 } 
+    };
 
     FrequencyGame_Settings &settings;
+    Settings_List settings_list_comp;
     
     GameUI_Header header;
-    juce::Slider eq_gain {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Slider eq_gain;
     juce::Label eq_gain_label { {}, "Gain"};
-    juce::Slider eq_quality {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Slider eq_quality;
     juce::Label eq_quality_label { {}, "Q" };
-    juce::Slider initial_correct_answer_window {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Slider initial_correct_answer_window;
     juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
-    juce::Slider next_question_timeout_ms {juce::Slider::LinearHorizontal, juce::Slider::TextBoxLeft};
+    juce::Slider next_question_timeout_ms;
     juce::Label next_question_timeout_ms_label { {}, "Post answer timeout"};
-    juce::TextButton nextButton { "Next" };
 
+    juce::Viewport viewport;
+    Scroller scroller { param };
+   
+    juce::TextButton nextButton { "Next" };
+   
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_Panel)
 };

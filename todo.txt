@@ -1,10 +1,13 @@
 Priority 1 :
-File explorer
-files : active, desactivate
 ajouter preview et bounds au file selector panel
+EndResult ui
+state change/transition observer
+settings list
 
 Priority 2 :
 
+files : active, desactivate
+File explorer
 
 
 
