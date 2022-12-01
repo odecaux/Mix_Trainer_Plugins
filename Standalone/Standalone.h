@@ -719,6 +719,8 @@ class Settings_List :
     public juce::Component,
     public juce::ListBoxModel
 {
+    
+
 public:
     Settings_List(std::vector<FrequencyGame_Settings> &settings,
                   std::function<void(int)> onClick) : 
@@ -755,16 +757,31 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber < settings.size())
+        if (rowIsSelected)
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(settings[rowNumber].title, bounds.reduced(2), juce::Justification::centredLeft);
-            if (rowIsSelected)
-            {
-                g.drawRect(bounds);
-            }
+            g.drawRect(bounds);
         }
+    }
+
+    juce::Component *refreshComponentForRow (int rowNumber, 
+                                             bool isRowSelected, 
+                                             Component *existingComponentToUpdate) override
+    {
+        //jassert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
+        if (rowNumber >= settings.size())
+        {
+            if (existingComponentToUpdate != nullptr)
+                delete existingComponentToUpdate;
+            return nullptr;
+        }
+        EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ? 
+            dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) : 
+            new EditableTextCustomComponent(*this);
+        label->setText(settings[rowNumber].title, juce::dontSendNotification);
+        label->setRow (rowNumber);
+        return label;
     }
 
 #if 0
@@ -798,35 +815,38 @@ public:
     
     void listBoxItemClicked (int idx, const juce::MouseEvent&) override 
     {
-        onClick(idx);
     }
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override {}
     
     void deleteKeyPressed (int lastRowSelected) override
     {
-        auto num_selected = list_comp.getNumSelectedRows();
-        auto selected_rows = list_comp.getSelectedRows();
-        list_comp.deselectAllRows();
-        for (int i = getNumRows(); --i >= 0;)
-        {   
-            if(selected_rows.contains(i))
-                settings.erase(settings.begin() + i);
-        }
+        if(getNumRows() == 1)
+            return;
+        auto selected_row = list_comp.getSelectedRow();
+        settings.erase(settings.begin() + selected_row);
+        auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
+        list_comp.selectRow(row_to_select);
         list_comp.updateContent();
     }
 
     bool keyPressed (const juce::KeyPress &key) override
     {
-        if (key == key.escapeKey)
-        {
-            list_comp.deselectAllRows();
-            return true;
-        }
-        else
-        {
+        if (key != key.escapeKey)
             return false;
-        }
+        list_comp.deselectAllRows();
+        return true;
+    }
+
+    void selectedRowsChanged (int lastRowSelected) override
+    {   
+        if(lastRowSelected != -1)
+            onClick(lastRowSelected);
+    }
+
+    void selectRow(int new_row)
+    {
+        list_comp.selectRow(new_row);
     }
 
 private:
@@ -834,6 +854,51 @@ private:
     juce::ListBox list_comp = { {}, this};
     std::function < void(int) > onClick;
     
+    
+       class EditableTextCustomComponent  : public juce::Label
+       {
+       public:
+           EditableTextCustomComponent (Settings_List& list)  : owner (list)
+           {
+               // double click to edit the label text; single click handled below
+               setEditable (false, true, false);
+           }
+
+           void mouseDown (const juce::MouseEvent& event) override
+           {
+               // single click on the label should simply select the row
+               owner.list_comp.selectRowsBasedOnModifierKeys (row, event.mods, false);
+
+               juce::Label::mouseDown (event);
+           }
+
+           void textWasEdited() override
+           {
+               owner.settings[row].title = getText();
+           }
+
+           // Our demo code will call this when we may need to update our contents
+           void setRow (const int newRow)
+           {
+               row = newRow;
+               setText (owner.settings[newRow].title, juce::dontSendNotification);
+           }
+
+           void paint (juce::Graphics& g) override
+           {
+               auto& lf = getLookAndFeel();
+               if (! dynamic_cast<juce::LookAndFeel_V4*> (&lf))
+                   lf.setColour (textColourId, juce::Colours::black);
+
+               juce::Label::paint (g);
+           }
+
+       private:
+           Settings_List& owner;
+           int row;
+           juce::Colour textColour;
+       };
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_List)
 };
 
@@ -924,7 +989,8 @@ struct Settings_Panel : public juce::Component
             addAndMakeVisible(nextButton);
         }
 
-        selectConfig(current_settings_idx);
+        settings_list_comp.selectRow(current_settings_idx);
+        //selectConfig(current_settings_idx);
     }
 
     void resized()
@@ -1266,7 +1332,6 @@ class Main_Component : public juce::Component
                 root_config_node.addChild(config_node, -1, nullptr);
             }
             auto xml_string = root_config_node.toXmlString();
-            DBG(xml_string);
             *stream << xml_string;
         }();
     }
