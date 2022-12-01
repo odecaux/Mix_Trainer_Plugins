@@ -63,7 +63,7 @@ void Application::toGame()
     jassert(editor);
     jassert(!game_state);
     
-    game_state = mixer_game_init(channels, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
     mixer_game_add_audio_observer(
         game_state.get(), 
         [this] (auto &&effect) { 

@@ -37,6 +37,13 @@ struct Effects {
 using audio_observer_t = std::function<void(Effect_DSP)>;
 using ui_observer_t = std::function<void(Effect_UI &)>;
 
+enum MixerGame_Variant
+{
+    MixerGame_Normal,
+    MixerGame_Tries,
+    MixerGame_Timer
+};
+
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     //state
@@ -46,6 +53,7 @@ struct MixerGame_State {
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
     //parametres
+    MixerGame_Variant variant;
     int listens;
     int remaining_listens;
     int timeout_ms;
@@ -223,6 +231,9 @@ struct MixerGameUI : public juce::Component
 
 std::unique_ptr<MixerGame_State> mixer_game_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
+    MixerGame_Variant variant,
+    int listens,
+    int timeout_ms,
     std::vector<double> db_slider_values,
     Application *app);
 

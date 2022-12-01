@@ -301,11 +301,22 @@ void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t &&ob
 
 std::unique_ptr<MixerGame_State> mixer_game_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
+    MixerGame_Variant variant,
+    int listens,
+    int timeout_ms,
     std::vector<double> db_slider_values,
     Application *app)
 {
+    if(variant != MixerGame_Tries)
+        jassert(listens == -1);
+    if(variant != MixerGame_Timer)
+        jassert(timeout_ms == -1);
+
     MixerGame_State state = {
         .channel_infos = channel_infos,
+        .variant = variant,
+        .listens = listens,
+        .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
         .app = app
     };
