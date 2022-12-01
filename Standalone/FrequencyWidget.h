@@ -190,16 +190,10 @@ struct Effect_Player {
     std::vector<Audio_Command> commands;
 };
 
-enum Effect_Timer_Type
-{
-    Effect_Timer_Task,
-    Effect_Timer_Cancel
-};
-
 struct Effect_Timer {
-    Effect_Timer_Type type;
     int timeout_ms;
-    std::function<void()> callback;
+    int gen_idx;
+    std::function<void(int)> callback;
 };
 
 struct Effects {
@@ -241,6 +235,9 @@ struct FrequencyGame_State
     int current_file_idx;
     std::vector<Audio_File> files;
     FrequencyGame_Settings settings;
+
+    int gen_idx_active;
+    int gen_idx_counter;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
@@ -338,11 +335,9 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     if (effects.timer)
     {
         state->timer.stopTimer();
-        if (effects.timer->type == Effect_Timer_Task)
-        {
-            state->timer.callback = std::move(effects.timer->callback);
-            state->timer.startTimer(effects.timer->timeout_ms);
-        }
+        state->timer.callback = std::move(effects.timer->callback);
+        state->timer.gen_idx = effects.timer->gen_idx;
+        state->timer.startTimer(effects.timer->timeout_ms);
     }
     if (effects.player)
     {
@@ -363,6 +358,8 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Set
     auto state = FrequencyGame_State {
         .files = std::move(files),
         .settings = settings,
+        .gen_idx_active = -1,
+        .gen_idx_counter = 0,
         .quit = std::move(onQuit)
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
@@ -440,9 +437,12 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Timeout :
         {
-            jassert(old_step == GameStep_Result);
-            out_transition = GameStep_Result;
-            in_transition = GameStep_Question;
+            if (event.timer_gen_idx == state->gen_idx_active)
+            {
+                jassert(old_step == GameStep_Result);
+                out_transition = GameStep_Result;
+                in_transition = GameStep_Question;
+            }
         } break;
         case Event_Click_Begin :
         {
@@ -499,9 +499,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case GameStep_Result :
         {
-            effects.timer = Effect_Timer {
-                .type = Effect_Timer_Cancel
-            };
+            state->gen_idx_active = -1;
         } break;
         case GameStep_EndResults :
         {
@@ -526,14 +524,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case GameStep_Question : {
             step = GameStep_Question;
             state->target_frequency = ratioToHz(juce::Random::getSystemRandom().nextFloat());
-#if 0
-            effects.timer = Effect_Timer {
-                .timeout_ms = state->timeout_ms ,
-                .callback = [state] {
-                    frequency_game_post_event(state, Event { .type = Event_Timeout });
-                }
-            };
-#endif
+    
             state->current_file_idx = juce::Random::getSystemRandom().nextInt(state->files.size());
             effects.player = Effect_Player {
                 .commands = { 
@@ -548,12 +539,13 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case GameStep_Result : 
         {
             step = GameStep_Result;
-            
+            state->gen_idx_active = state->gen_idx_counter++;
+
             effects.timer = Effect_Timer {
-                .type = Effect_Timer_Task,
                 .timeout_ms = state->settings.next_question_timeout_ms,
-                .callback = [state] {
-                    frequency_game_post_event(state, Event { .type = Event_Timeout });
+                .gen_idx = state->gen_idx_active,
+                .callback = [state] (int gen_idx) {
+                    frequency_game_post_event(state, Event { .type = Event_Timeout, .timer_gen_idx = gen_idx });
                 }
             };
             update_audio = true;

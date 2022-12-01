@@ -13,9 +13,10 @@ struct Timer: public juce::Timer
 {
     void timerCallback() override {
         stopTimer();
-        callback();
+        callback(gen_idx);
     }
-    std::function<void()> callback;
+    std::function<void(int)> callback;
+    int gen_idx;
 };
 
 enum DSP_Filter_Type

@@ -20,16 +20,10 @@ struct Effect_Rename {
     std::string new_name;
 };
 
-enum Effect_Timer_Type
-{
-    Effect_Timer_Task,
-    Effect_Timer_Cancel
-};
-
 struct Effect_Timer {
-    Effect_Timer_Type type;
     int timeout_ms;
-    std::function<void()> callback;
+    int gen_idx;
+    std::function<void(int)> callback;
 };
 
 struct Effects {
@@ -70,6 +64,8 @@ struct MixerGame_State {
     int timeout_ms;
     std::vector < double > db_slider_values;
     //io
+    int gen_idx_active;
+    int gen_idx_counter;
     Application *app;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;

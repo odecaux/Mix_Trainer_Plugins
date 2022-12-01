@@ -14,7 +14,6 @@ Priority 3 :
 
 rename settings to config
 state change/transition observer
-epoch pour le timer ?
 Hierarchical FSM ?
 
 design a save system 

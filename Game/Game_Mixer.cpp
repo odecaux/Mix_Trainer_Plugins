@@ -38,11 +38,9 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
     if (effects.timer)
     {
         state->timer.stopTimer();
-        if (effects.timer->type == Effect_Timer_Task)
-        {
-            state->timer.callback = std::move(effects.timer->callback);
-            state->timer.startTimer(effects.timer->timeout_ms);
-        }
+        state->timer.gen_idx = effects.timer->gen_idx;
+        state->timer.callback = std::move(effects.timer->callback);
+        state->timer.startTimer(effects.timer->timeout_ms);
     }
     if (effects.rename)
     {
@@ -156,7 +154,11 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         } break;
         case Event_Timeout : 
         {
-            done_listening = true;
+            if (event.timer_gen_idx == state->gen_idx_active)
+            {
+                jassert(step == GameStep_Question);
+                done_listening = true;
+            }
         } break;
         case Event_Click_Done_Listening : 
         {
@@ -245,9 +247,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         jassert(state->mix == Mix_Target);
         state->mix = Mix_User;
         
-        effects.timer = Effect_Timer {
-            .type = Effect_Timer_Cancel
-        };
+        state->gen_idx_active = -1;
 
         state->can_still_listen = false;
         update_audio = true;
@@ -310,11 +310,13 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 case MixerGame_Normal : {
                 } break;
                 case MixerGame_Timer : {
+                    state->gen_idx_active = state->gen_idx_counter++;
+
                     effects.timer = Effect_Timer {
-                        .type = Effect_Timer_Task,
-                        .timeout_ms = state->timeout_ms ,
-                        .callback = [state] {
-                            mixer_game_post_event(state, Event { .type = Event_Timeout });
+                        .timeout_ms = state->timeout_ms,
+                        .gen_idx = state->gen_idx_active,
+                        .callback = [state] (int gen_idx) {
+                            mixer_game_post_event(state, Event { .type = Event_Timeout, .timer_gen_idx = gen_idx });
                         }
                     };
                 } break;
@@ -487,6 +489,8 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
         .listens = listens,
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
+        .gen_idx_active = -1,
+        .gen_idx_counter = 0,
         .app = app
     };
     return std::make_unique < MixerGame_State > (std::move(state));

@@ -57,6 +57,7 @@ enum Event_Type{
 struct Event{
     Event_Type type;
     int id;
+    int timer_gen_idx;
     bool value_b;
     int value_i;
     float value_f;
