@@ -720,7 +720,10 @@ class Settings_List :
     public juce::ListBoxModel
 {
 public:
-    Settings_List(std::vector<FrequencyGame_Settings> &settings) : settings(settings)
+    Settings_List(std::vector<FrequencyGame_Settings> &settings,
+                  std::function<void(int)> onClick) : 
+        settings(settings),
+        onClick(std::move(onClick))
     {
         list_comp.setMultipleSelectionEnabled(false);
         list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
@@ -793,9 +796,9 @@ public:
 #endif
 
     
-    void listBoxItemClicked (int, const juce::MouseEvent&) override 
+    void listBoxItemClicked (int idx, const juce::MouseEvent&) override 
     {
-        //set active
+        onClick(idx);
     }
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override {}
@@ -829,6 +832,7 @@ public:
 private:
     std::vector<FrequencyGame_Settings> &settings;
     juce::ListBox list_comp = { {}, this};
+    std::function < void(int) > onClick;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_List)
 };
@@ -871,7 +875,6 @@ struct Settings_Panel : public juce::Component
                    std::function < void() > onClickNext) :
         settings(settings), current_settings_idx(current_settings_idx)
     {
-        auto &current_settings = settings[current_settings_idx];
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
                 click();
@@ -882,34 +885,22 @@ struct Settings_Panel : public juce::Component
         
         addAndMakeVisible(settings_list_comp);
         
-        {
-            eq_gain.setTextValueSuffix (" dB");
-            eq_gain.onValueChange = [&] {
-                current_settings.eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
-            };
-            float gain_db = juce::Decibels::gainToDecibels(current_settings.eq_gain);
-            eq_gain.setValue(gain_db);
-        }
-        {
-            eq_quality.setValue(current_settings.eq_quality);
-            eq_quality.onValueChange = [&] {
-                current_settings.eq_quality = (float) eq_quality.getValue();
-            };
-        }
-        {
-            initial_correct_answer_window.setValue(current_settings.initial_correct_answer_window);
-            initial_correct_answer_window.onValueChange = [&] {
-                current_settings.initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
-            };
-        }
-        {
-            next_question_timeout_ms.setValue((double)current_settings.next_question_timeout_ms);
-            next_question_timeout_ms.setTextValueSuffix (" ms");
-            next_question_timeout_ms.onValueChange = [&] {
-                current_settings.next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
-            };
-            next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
-        }
+        eq_gain.setTextValueSuffix (" dB");
+        eq_gain.onValueChange = [&] {
+            settings[current_settings_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+        };
+        eq_quality.onValueChange = [&] {
+            settings[current_settings_idx].eq_quality = (float) eq_quality.getValue();
+        };
+        initial_correct_answer_window.onValueChange = [&] {
+            settings[current_settings_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+        };
+        next_question_timeout_ms.setTextValueSuffix (" ms");
+        next_question_timeout_ms.onValueChange = [&] {
+            settings[current_settings_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
+        };
+        next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
 
 
         for (auto &[slider, label, range, interval] : param)
@@ -952,6 +943,18 @@ struct Settings_Panel : public juce::Component
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
+
+    void selectConfig(int new_config_idx)
+    {
+        jassert(new_config_idx < settings.size());
+        current_settings_idx = new_config_idx;
+        auto &current_settings = settings[current_settings_idx];
+        float gain_db = juce::Decibels::gainToDecibels(current_settings.eq_gain);
+        eq_gain.setValue(gain_db);
+        eq_quality.setValue(current_settings.eq_quality);
+        initial_correct_answer_window.setValue(current_settings.initial_correct_answer_window);
+        next_question_timeout_ms.setValue((double)current_settings.next_question_timeout_ms);
+    }
     
     param_temp_t param = { 
         { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0}, 
@@ -962,7 +965,7 @@ struct Settings_Panel : public juce::Component
 
     std::vector<FrequencyGame_Settings> &settings;
     int &current_settings_idx;
-    Settings_List settings_list_comp = { settings };
+    Settings_List settings_list_comp = { settings, [&] (int idx) { selectConfig(idx); } };
     
     GameUI_Header header;
     juce::Slider eq_gain;
