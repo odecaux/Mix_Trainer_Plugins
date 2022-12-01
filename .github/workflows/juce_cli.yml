@@ -181,3 +181,46 @@ jobs:
           */*.exe
           */*.zip
           */*.dmg
+      run: |
+        sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxinerama-dev libxext-dev libfreetype6-dev libwebkit2gtk-4.0-dev libglu1-mesa-dev xvfb fluxbox ninja-build
+        sudo /usr/bin/Xvfb $DISPLAY &
+    - name: Install macOS Deps
+      if: ${{ matrix.name == 'macOS' }}
+      run: brew install ninja osxutils
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Download JUCE
+      run : git clone https://github.com/juce-framework/JUCE
+
+    - name: Setup Environment Variables
+      shell: bash
+      run: |
+        VERSION=$(cat VERSION)
+        echo "ARTIFACTS_PATH=${{ env.BUILD_DIR }}/${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}" >> $GITHUB_ENV
+        echo "VST3_PATH=${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}/VST3/${{ env.PROJECT_NAME }}.vst3" >> $GITHUB_ENV
+        echo "AU_PATH=${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}/AU/${{ env.PROJECT_NAME }}.component" >> $GITHUB_ENV
+        echo "AUV3_PATH=${{ env.PROJECT_NAME }}_artefacts/${{ env.BUILD_TYPE }}/AUv3/${{ env.PROJECT_NAME }}.appex" >> $GITHUB_ENV
+        echo "PRODUCT_NAME=${{ env.PROJECT_NAME }}-$VERSION-${{ matrix.name }}" >> $GITHUB_ENV
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: v2-${{ matrix.os }}-${{ matrix.type }}
+        
+    - name: Build JUCE
+      shell: bash
+      run: |
+        cd JUCE
+        cmake -B cmake-build-install -DCMAKE_INSTALL_PREFIX=install
+        cmake --build cmake-build-install --target install
+        echo "JUCE_INSTALL_DIR=$(pwd)/install" >> $GITHUB_ENV
+        cd ..
+
+    - name: Configure
+      shell: bash
+      run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_PREFIX_PATH=${{ env.JUCE_INSTALL_DIR}} -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" .
+
+    - name: Build
+      shell: bash
+      run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} --parallel 4
