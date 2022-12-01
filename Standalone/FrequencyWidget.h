@@ -216,6 +216,7 @@ using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct FrequencyGame_Settings
 {
+    juce::String title;
     float eq_gain;
     float eq_quality;
     float initial_correct_answer_window;

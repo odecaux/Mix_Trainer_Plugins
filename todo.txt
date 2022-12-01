@@ -2,7 +2,7 @@ Priority 1 :
 ajouter preview et bounds au file selector panel
 EndResult ui
 state change/transition observer
-settings list
+rename settings to config
 
 Priority 2 :
 

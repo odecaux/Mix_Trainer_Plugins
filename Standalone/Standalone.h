@@ -720,9 +720,9 @@ class Settings_List :
     public juce::ListBoxModel
 {
 public:
-    Settings_List()
+    Settings_List(std::vector<FrequencyGame_Settings> &settings) : settings(settings)
     {
-        list_comp.setMultipleSelectionEnabled(true);
+        list_comp.setMultipleSelectionEnabled(false);
         list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
         list_comp.setOutlineThickness (2);
         addAndMakeVisible(list_comp);
@@ -737,26 +737,26 @@ public:
 
     void paintOverChildren(juce::Graphics& g) override
     {
-        if (false/*files.empty()*/)
+        if (settings.empty())
         {
             auto r = getLocalBounds();
             g.setColour(juce::Colours::white);
-            g.drawText("Drag and drop audio files here", r.toFloat(), juce::Justification::centred);
+            g.drawText("Create game config", r.toFloat(), juce::Justification::centred);
         }
     }
 
-    int getNumRows() override { return 1;  /*(int)files.size();*/ }
+    int getNumRows() override { return (int)settings.size(); }
 
     void paintListBoxItem (int rowNumber,
                            juce::Graphics& g,
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber < 1 /*files.size()*/)
+        if (rowNumber < settings.size())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText("Default"/*files[rowNumber].title*/, bounds.reduced(2), juce::Justification::centredLeft);
+            g.drawText(settings[rowNumber].title, bounds.reduced(2), juce::Justification::centredLeft);
             if (rowIsSelected)
             {
                 g.drawRect(bounds);
@@ -803,23 +803,14 @@ public:
     void deleteKeyPressed (int lastRowSelected) override
     {
         auto num_selected = list_comp.getNumSelectedRows();
-        if ( num_selected > 1)
-        {
-            auto selected_rows = list_comp.getSelectedRows();
-            list_comp.deselectAllRows();
-            for (int i = getNumRows(); --i >= 0;)
-            {   
-                if(selected_rows.contains(i))
-                    ; //files.erase(files.begin() + i);
-            }
-            list_comp.updateContent();
+        auto selected_rows = list_comp.getSelectedRows();
+        list_comp.deselectAllRows();
+        for (int i = getNumRows(); --i >= 0;)
+        {   
+            if(selected_rows.contains(i))
+                settings.erase(settings.begin() + i);
         }
-        else if (num_selected == 1)
-        {
-
-            //files.erase(files.begin() + lastRowSelected);
-            list_comp.updateContent();
-        }
+        list_comp.updateContent();
     }
 
     bool keyPressed (const juce::KeyPress &key) override
@@ -836,6 +827,7 @@ public:
     }
 
 private:
+    std::vector<FrequencyGame_Settings> &settings;
     juce::ListBox list_comp = { {}, this};
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_List)
@@ -862,7 +854,7 @@ struct Settings_Panel : public juce::Component
         {
             auto r = getLocalBounds();
             auto height = getHeight();
-            auto param_height = height / param.size();
+            auto param_height = height / (int)param.size();
             for (auto &[label, slider, range, interval] : param)
             { 
                 r.removeFromTop(param_height / 2);
@@ -873,11 +865,13 @@ struct Settings_Panel : public juce::Component
         param_temp_t &param;
     };
 
-    Settings_Panel(FrequencyGame_Settings &settings,
-                   std::function<void()> onClickBack,
-                   std::function<void()> onClickNext) : 
-        settings(settings)
+    Settings_Panel(std::vector<FrequencyGame_Settings> &settings,
+                   int &current_settings_idx,
+                   std::function < void() > onClickBack,
+                   std::function < void() > onClickNext) :
+        settings(settings), current_settings_idx(current_settings_idx)
     {
+        auto &current_settings = settings[current_settings_idx];
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
                 click();
@@ -891,28 +885,28 @@ struct Settings_Panel : public juce::Component
         {
             eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
-                settings.eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+                current_settings.eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
             };
-            float gain_db = juce::Decibels::gainToDecibels(settings.eq_gain);
+            float gain_db = juce::Decibels::gainToDecibels(current_settings.eq_gain);
             eq_gain.setValue(gain_db);
         }
         {
-            eq_quality.setValue(settings.eq_quality);
+            eq_quality.setValue(current_settings.eq_quality);
             eq_quality.onValueChange = [&] {
-                settings.eq_quality = (float) eq_quality.getValue();
+                current_settings.eq_quality = (float) eq_quality.getValue();
             };
         }
         {
-            initial_correct_answer_window.setValue(settings.initial_correct_answer_window);
+            initial_correct_answer_window.setValue(current_settings.initial_correct_answer_window);
             initial_correct_answer_window.onValueChange = [&] {
-                settings.initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+                current_settings.initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
             };
         }
         {
-            next_question_timeout_ms.setValue((double)settings.next_question_timeout_ms);
+            next_question_timeout_ms.setValue((double)current_settings.next_question_timeout_ms);
             next_question_timeout_ms.setTextValueSuffix (" ms");
             next_question_timeout_ms.onValueChange = [&] {
-                settings.next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
+                current_settings.next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
             };
             next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
         }
@@ -966,8 +960,9 @@ struct Settings_Panel : public juce::Component
         { next_question_timeout_ms , next_question_timeout_ms_label, { 1000, 4000 }, 500 } 
     };
 
-    FrequencyGame_Settings &settings;
-    Settings_List settings_list_comp;
+    std::vector<FrequencyGame_Settings> &settings;
+    int &current_settings_idx;
+    Settings_List settings_list_comp = { settings };
     
     GameUI_Header header;
     juce::Slider eq_gain;
@@ -1097,15 +1092,10 @@ class Main_Component : public juce::Component
 {
     public :
     
-    Main_Component(juce::AudioFormatManager &formatManager) : player(formatManager)
+    Main_Component(juce::AudioFormatManager &formatManager)
+    :   player(formatManager)
     {
-        settings = {
-            .eq_gain = 4.0f,
-            .eq_quality = 0.7f,
-            .initial_correct_answer_window = 0.15f,
-            .next_question_timeout_ms = 1000
-        };
-
+        
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
@@ -1205,14 +1195,14 @@ class Main_Component : public juce::Component
     void toSettings()
     {
         jassert(state == nullptr);
-        panel = std::make_unique < Settings_Panel > (settings, [&] { toMainMenu(); }, [&] { toGame(); });
+        panel = std::make_unique < Settings_Panel > (settings, current_settings_idx, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
         resized();
     }
     
     void toGame()
-    {        
-        state = frequency_game_state_init(settings, files, [this] { toMainMenu(); });
+    {
+        state = frequency_game_state_init(settings[current_settings_idx], files, [this] { toMainMenu(); });
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
@@ -1263,7 +1253,22 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    FrequencyGame_Settings settings;
+    std::vector<FrequencyGame_Settings> settings = { {
+        .title = "Default",
+        .eq_gain = 4.0f,
+        .eq_quality = 0.7f,
+        .initial_correct_answer_window = 0.15f,
+        .next_question_timeout_ms = 1000
+    },
+    {
+        .title = "Default_2",
+        .eq_gain = 4.0f,
+        .eq_quality = 0.7f,
+        .initial_correct_answer_window = 0.15f,
+        .next_question_timeout_ms = 1000
+    },
+    };
+    int current_settings_idx = 0;
     
 #if 0
     juce::TextButton burger { "menu" };
