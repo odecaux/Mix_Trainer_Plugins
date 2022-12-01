@@ -900,7 +900,6 @@ struct Settings_Panel : public juce::Component
             settings[current_settings_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
         };
         next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
-        
 
 
         for (auto &[slider, label, range, interval] : param)
@@ -924,6 +923,8 @@ struct Settings_Panel : public juce::Component
             };
             addAndMakeVisible(nextButton);
         }
+
+        selectConfig(current_settings_idx);
     }
 
     void resized()
@@ -1091,6 +1092,14 @@ private :
     juce::TextButton stats_button;
 };
 
+static const juce::Identifier id_config_root = "configs";
+static const juce::Identifier id_config = "config";
+static const juce::Identifier id_title = "title";
+static const juce::Identifier id_gain = "gain";
+static const juce::Identifier id_q = "q";
+static const juce::Identifier id_window = "window";
+static const juce::Identifier id_timeout = "timeout";
+
 class Main_Component : public juce::Component
 {
     public :
@@ -1098,7 +1107,7 @@ class Main_Component : public juce::Component
     Main_Component(juce::AudioFormatManager &formatManager)
     :   player(formatManager)
     {
-        
+        //load audio file list
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
@@ -1141,6 +1150,62 @@ class Main_Component : public juce::Component
             }
         }();
 
+        //load settings list
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            jassert(app_data.exists() && app_data.isDirectory());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.json");
+            if (!file_RENAME.existsAsFile())
+            {
+                file_RENAME.create();
+                return;
+            }
+            auto stream = file_RENAME.createInputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/configs.json");
+                return;
+            }
+            juce::String config_string = stream->readString();
+            juce::ValueTree root_config_node = juce::ValueTree::fromXml(config_string);
+            if(root_config_node.getType() != id_config_root)
+                return;
+            for (int i = 0; i < root_config_node.getNumChildren(); i++)
+            {
+                juce::ValueTree config_node = root_config_node.getChild(i);
+                if(config_node.getType() != id_config)
+                    continue;
+                FrequencyGame_Settings config = {
+                    .title = config_node.getProperty(id_title, ""),
+                    .eq_gain = config_node.getProperty(id_gain, -1.0f),
+                    .eq_quality = config_node.getProperty(id_q, -1.0f),
+                    .initial_correct_answer_window = config_node.getProperty(id_window, -1.0f),
+                    .next_question_timeout_ms = config_node.getProperty(id_timeout, -1),
+                };
+                settings.push_back(config);
+            }
+        }();
+
+        if (settings.empty())
+        {
+            settings = { {
+                .title = "Default",
+                .eq_gain = 4.0f,
+                .eq_quality = 0.7f,
+                .initial_correct_answer_window = 0.15f,
+                .next_question_timeout_ms = 1000
+            },
+            {
+                .title = "Default_2",
+                .eq_gain = 4.0f,
+                .eq_quality = 0.7f,
+                .initial_correct_answer_window = 0.15f,
+                .next_question_timeout_ms = 1000
+            },
+            };
+        }
+
         toMainMenu();
 #if 0
         addAndMakeVisible (sidePanel);
@@ -1156,6 +1221,7 @@ class Main_Component : public juce::Component
 
     ~Main_Component()
     {
+        //save audio file list
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
@@ -1172,6 +1238,36 @@ class Main_Component : public juce::Component
             {
                 *stream << audio_file.file.getFullPathName() << juce::newLine;
             }
+        }();
+
+        //save config list
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.json");
+            auto stream = file_RENAME.createOutputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/configs.json");
+                return;
+            }
+            stream->setPosition(0);
+            stream->truncate();
+            juce::ValueTree root_config_node { id_config_root };
+            for (const FrequencyGame_Settings& config : settings)
+            {
+                juce::ValueTree config_node = { id_config, {
+                    { id_title,  config.title },
+                    { id_gain, config.eq_gain },
+                    { id_q, config.eq_quality },
+                    { id_window, config.initial_correct_answer_window },
+                    { id_timeout, config.next_question_timeout_ms }
+                }};
+                root_config_node.addChild(config_node, -1, nullptr);
+            }
+            auto xml_string = root_config_node.toXmlString();
+            DBG(xml_string);
+            *stream << xml_string;
         }();
     }
 
@@ -1256,21 +1352,7 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    std::vector<FrequencyGame_Settings> settings = { {
-        .title = "Default",
-        .eq_gain = 4.0f,
-        .eq_quality = 0.7f,
-        .initial_correct_answer_window = 0.15f,
-        .next_question_timeout_ms = 1000
-    },
-    {
-        .title = "Default_2",
-        .eq_gain = 4.0f,
-        .eq_quality = 0.7f,
-        .initial_correct_answer_window = 0.15f,
-        .next_question_timeout_ms = 1000
-    },
-    };
+    std::vector<FrequencyGame_Settings> settings = {};
     int current_settings_idx = 0;
     
 #if 0
