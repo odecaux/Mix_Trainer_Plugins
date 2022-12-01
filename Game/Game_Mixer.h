@@ -10,7 +10,6 @@ struct Effect_UI {
     juce::String header_text;
     int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    int remaining_listens;
     juce::String button_text;
     Mix mix;
     Event_Type button_event;
@@ -37,19 +36,35 @@ struct Effects {
 using audio_observer_t = std::function<void(Effect_DSP)>;
 using ui_observer_t = std::function<void(Effect_UI &)>;
 
+enum MixerGame_Variant
+{
+    MixerGame_Normal,
+    MixerGame_Tries,
+    MixerGame_Timer
+};
+
+struct MixerGame_State;
+
+typedef Effects (*mixer_game_update_t)(MixerGame_State *, Event);
+
 struct MixerGame_State {
     std::unordered_map<int, ChannelInfos> &channel_infos;
     //state
     GameStep step;
+    Mix mix;
     int score;
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
     //parametres
+    MixerGame_Variant variant;
     int listens;
     int remaining_listens;
+    bool can_still_listen;
     int timeout_ms;
     std::vector < double > db_slider_values;
     //io
+    
+    mixer_game_update_t update_fn;
     Application *app;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
@@ -59,16 +74,8 @@ struct MixerGame_State {
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
 void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui);
-
-static void mixer_game_add_ui_observer(MixerGame_State *state, ui_observer_t &&observer)
-{
-    state->observers_ui.push_back(std::move(observer));
-}
-
-static void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t &&observer)
-{
-    state->observers_audio.push_back(std::move(observer));
-}
+void mixer_game_add_ui_observer(MixerGame_State *state, ui_observer_t && observer);
+void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t && observer);
 
 struct MixerGameUI : public juce::Component
 {
@@ -228,18 +235,13 @@ struct MixerGameUI : public juce::Component
     MixerGame_State *state;
 };
 
-static std::unique_ptr<MixerGame_State> mixer_game_init(
+std::unique_ptr<MixerGame_State> mixer_game_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
+    MixerGame_Variant variant,
+    int listens,
+    int timeout_ms,
     std::vector<double> db_slider_values,
-    Application *app)
-{
-    MixerGame_State state = {
-        .channel_infos = channel_infos,
-        .db_slider_values = db_slider_values,
-        .app = app
-    };
-    return std::make_unique < MixerGame_State > (std::move(state));
-}
+    Application *app);
 
 
 //TODO mutex ? pour les timeout

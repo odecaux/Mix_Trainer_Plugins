@@ -81,7 +81,7 @@ juce_add_plugin(MixTrainer_Track
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Octa
     PLUGIN_CODE MTT0
-    FORMATS AU VST3
+    FORMATS AU AUv3 VST3
     PRODUCT_NAME "MixTrainer Track")
 
 target_sources(MixTrainer_Track

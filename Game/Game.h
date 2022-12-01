@@ -3,50 +3,18 @@
 
 enum GameStep {
     GameStep_Begin,
-    GameStep_Listening,
-    GameStep_Editing,
-    GameStep_ShowingTruth,
-    GameStep_ShowingAnswer,
+    GameStep_Question,
+    GameStep_Result,
     GameStep_EndResults
 };
-
-static FaderStep gameStepToFaderStep(GameStep game_step)
-{
-    switch (game_step)
-    {
-        case GameStep_Begin :
-        {
-            return FaderStep_Editing;
-        } break;
-        case GameStep_Listening :
-        {
-            return FaderStep_Hiding;
-        } break;
-        case GameStep_Editing :
-        {
-            return FaderStep_Editing;
-        } break; 
-        case GameStep_ShowingTruth :
-        {
-            return FaderStep_Showing;
-        } break;
-        case GameStep_ShowingAnswer :
-        {
-            return FaderStep_Showing;
-        } break;
-        default:
-        {
-            jassertfalse;
-            return {};
-        };
-    }
-}
 
 enum Mix {
     Mix_User,
     Mix_Target,
     Mix_Hidden
 };
+
+FaderStep gameStepToFaderStep(GameStep game_step, Mix mix);
 
 juce::String step_to_str(GameStep step);
 

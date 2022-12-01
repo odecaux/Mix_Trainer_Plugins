@@ -12,7 +12,7 @@ public:
     void initialiseEditorUI(EditorHost *new_editor);
     void onEditorDelete();
     void toMainMenu();
-    void toGame();
+    void toGame(MixerGame_Variant variant);
     void toStats();
     void toSettings();
 

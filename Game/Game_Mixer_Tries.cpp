@@ -8,8 +8,7 @@
 
 Effects mixer_game_tries_update(MixerGame_State *state, Event event)
 {
-    GameStep old_step = state->step;
-    GameStep step = old_step;
+    GameStep step = state->step;
     Transition transition = Transition_None;
     bool update_audio = false;
     bool update_ui = false;
@@ -21,6 +20,8 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         .quit = false, 
         .timer = std::nullopt 
     };
+    
+    bool done_listening = false;
 
     switch (event.type)
     {
@@ -38,35 +39,71 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
             update_audio = true;
         } break;
         case Event_Toggle_Input_Target : {
-            jassert(old_step != GameStep_Begin);
-            if(event.value_b && step == GameStep_Editing)
+            if (step == GameStep_Question)
             {
-                jassert(state->remaining_listens >= 0);
-                step = GameStep_Listening;
+                jassert(state->variant != MixerGame_Timer);
+                jassert(state->can_still_listen);
+                if (state->mix == Mix_User)
+                {
+                    jassert(event.value_b);
+                    state->mix = Mix_Target;
+                }
+                else if (state->mix == Mix_Target)
+                {
+                    jassert(!event.value_b); 
+                    switch (state->variant)
+                    {
+                        case MixerGame_Normal : {
+                            state->mix = Mix_User;
+                        } break;
+                        case MixerGame_Timer : {
+                            jassertfalse;
+                        } break;
+                        case MixerGame_Tries : {
+                            state->remaining_listens--;
+                            if(state->remaining_listens == 0)
+                                done_listening = true;
+                            else 
+                                state->mix = Mix_User;
+                        } break;
+                    }
+                }
+                else jassertfalse;
             }
-            else if(event.value_b && step == GameStep_ShowingAnswer)
+            else if (step == GameStep_Result)
             {
-                step = GameStep_ShowingTruth;
+                if (state->mix == Mix_User)
+                {
+                    jassert(event.value_b);
+                    state->mix = Mix_Target;
+                }
+                else if (state->mix == Mix_Target)
+                {
+                    jassert(!event.value_b);
+                    state->mix = Mix_User;
+                }
+                else jassertfalse;
             }
-            else if(!event.value_b && step == GameStep_Listening)
-            {
-                jassert(state->remaining_listens > 0);
-                state->remaining_listens--;
-                step = GameStep_Editing;
-            }
-            else if(!event.value_b && step == GameStep_ShowingTruth){
-                step = GameStep_ShowingAnswer;
-            }
+            else jassertfalse;
             update_audio = true;
             update_ui = true;
         } break;
         case Event_Click_Begin : {
             jassert(step == GameStep_Begin);
+            jassert(state->mix == Mix_Hidden);
             jassert(state->target_slider_pos.size() == 0);
             transition = Transition_To_Exercice;
         } break;
+        case Event_Timeout : {
+            done_listening = true;
+        } break;
+        case Event_Click_Done_Listening : {
+            jassert(state->timer.isTimerRunning());
+            state->timer.stopTimer();
+            done_listening = true;
+        } break;
         case Event_Click_Answer : {
-            jassert(step == GameStep_Listening || step == GameStep_Editing);
+            jassert(step == GameStep_Question);
 
             int points_awarded = 0;
             for (auto& [id, edited] : state->edited_slider_pos)
@@ -129,6 +166,16 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         {
         } break;
     }
+    
+    if (done_listening)
+    {
+        jassert(step == GameStep_Question);
+        jassert(state->mix == Mix_Target);
+        state->mix = Mix_User;
+        state->can_still_listen = false;
+        update_audio = true;
+        update_ui = true;
+    }
 
     switch (transition)
     {
@@ -137,6 +184,7 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
         case Transition_To_Begin : {
             step = GameStep_Begin;
             state->score = 0;
+            state->mix = Mix_Hidden;
             std::transform(state->channel_infos.begin(), state->channel_infos.end(), 
                            std::inserter(state->edited_slider_pos, state->edited_slider_pos.end()), 
                            [&](const auto &a) -> std::pair<int, int> {
@@ -146,7 +194,9 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
             update_ui = true;
         }break;
         case Transition_To_Exercice : {
-            step = GameStep_Listening;
+            step = GameStep_Question;
+            state->mix = Mix_Target;
+            state->can_still_listen = true;
             for (auto& [_, channel] : state->channel_infos)
             {
                 state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % state->db_slider_values.size();//;
@@ -154,13 +204,30 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
             }
             jassert(state->target_slider_pos.size() == state->channel_infos.size());
             jassert(state->edited_slider_pos.size() == state->channel_infos.size());
+            
+            switch (state->variant)
+            {
+                case MixerGame_Normal : {
+                } break;
+                case MixerGame_Timer : {
+                    effects.timer = Effect_Timer {
+                        .timeout_ms = state->timeout_ms ,
+                        .callback = [state] {
+                            mixer_game_post_event(state, Event { .type = Event_Timeout });
+                        }
+                    };
+                } break;
+                case MixerGame_Tries : {
+                    state->remaining_listens = state->listens;
+                } break;
+            }
 
-            state->remaining_listens = state->listens;
             update_audio = true;
             update_ui = true;
         }break;
         case Transition_To_Answer : {
-            step = GameStep_ShowingTruth;
+            step = GameStep_Result;
+            state->mix = Mix_Target;
             update_audio = true;
             update_ui = true;
         }break;
@@ -169,7 +236,7 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
     }
     
     std::unordered_map<int, int>* edit_or_target;
-    if(step == GameStep_Begin || step == GameStep_Editing || step == GameStep_ShowingAnswer)
+    if(step == GameStep_Begin || state->mix == Mix_User)
         edit_or_target = &state->edited_slider_pos;
     else
         edit_or_target = &state->target_slider_pos;
@@ -190,75 +257,54 @@ Effects mixer_game_tries_update(MixerGame_State *state, Event event)
     {
         std::optional < std::unordered_map<int, int> > slider_pos_to_display;
         
-        if(step == GameStep_Listening)
+        if(step == GameStep_Question && state->mix == Mix_Target)
             slider_pos_to_display = std::nullopt; 
         else
             slider_pos_to_display = *edit_or_target;
 
-        juce::String header_text;
-        juce::String button_text;
-        Event_Type button_event;
+        Mix mix;
+        if(step == GameStep_Question && state->remaining_listens == 0)
+            mix = Mix_Hidden;
+        else 
+            mix = state->mix;
+
+        effects.ui = Effect_UI {
+            .fader_step = gameStepToFaderStep(step, state->mix),
+            .score = state->score,
+            .slider_pos_to_display = std::move(slider_pos_to_display),
+            .mix = mix
+        };
+
         switch(step)
         {
             case GameStep_Begin : 
             {
-                header_text = "Have a listen";
-                button_text = "Begin";
-                button_event = Event_Click_Begin;
+                effects.ui->header_text = "Have a listen";
+                effects.ui->button_text = "Begin";
+                effects.ui->button_event = Event_Click_Begin;
             } break;
-            case GameStep_Listening :
-            case GameStep_Editing :
+            case GameStep_Question :
             {
-                if (state->remaining_listens >= 0)
-                    header_text = juce::String("remaining listens : ") + juce::String(state->remaining_listens);
-                else
-                    header_text = "Reproduce the target mix";
-                button_text = "Validate";
-                button_event = Event_Click_Answer;
+                if(state->mix == Mix_Target)
+                {
+                    jassert(state->can_still_listen);
+                    effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state->remaining_listens);
+                }
+                else if (state->mix == Mix_User)
+                {
+                    effects.ui->header_text = "Reproduce the target mix";
+                }
+                else jassertfalse;
+                effects.ui->button_text = "Validate";
+                effects.ui->button_event = Event_Click_Answer;
             }break;
-            case GameStep_ShowingTruth :
-            case GameStep_ShowingAnswer : 
+            case GameStep_Result : 
             {
-                header_text = "Results";
-                button_text = "Next";
-                button_event = Event_Click_Next;
+                effects.ui->header_text = "Results";
+                effects.ui->button_text = "Next";
+                effects.ui->button_event = Event_Click_Next;
             }break;
         }
-        
-        bool show_toggles = state->remaining_listens > 0;
-        Mix mix;
-        switch(step)
-        {
-            case GameStep_Begin : {
-                mix = Mix_Hidden;
-            } break;
-            case GameStep_Editing : {
-                mix = show_toggles ? Mix_User : Mix_Hidden;
-            } break;
-            case GameStep_Listening :
-            {
-                mix = show_toggles ? Mix_Target : Mix_Hidden;
-            } break;
-            case GameStep_ShowingAnswer : 
-            {
-                mix = Mix_User;
-            } break;
-            case GameStep_ShowingTruth :
-            {
-                mix = Mix_Target;
-            }break;
-        };
-
-        effects.ui = Effect_UI {
-            .fader_step = gameStepToFaderStep(state->step),
-            .header_text = std::move(header_text),
-            .score = state->score,
-            .slider_pos_to_display = std::move(slider_pos_to_display),
-            .remaining_listens = state->remaining_listens,
-            .button_text = std::move(button_text),
-            .mix = mix,
-            .button_event = button_event
-        };
     }
 
     state->step = step;

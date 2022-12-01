@@ -28,7 +28,9 @@ void Application::toMainMenu()
         
     auto main_menu =
         std::make_unique < MainMenu > (
-            [this] { toGame(); },
+            [this] { toGame(MixerGame_Normal); },
+            [this] { toGame(MixerGame_Timer); },
+            [this] { toGame(MixerGame_Tries); },
             [this] { toStats(); },
             [this] { toSettings(); }
         );
@@ -56,14 +58,25 @@ void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps,
     }
 }
 
-void Application::toGame()
+void Application::toGame(MixerGame_Variant variant)
 {
     jassert(type == PanelType::MainMenu);
     type = PanelType::Game;
     jassert(editor);
     jassert(!game_state);
     
-    game_state = mixer_game_init(channels, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+    switch (variant)
+    {
+        case MixerGame_Normal : {
+            game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+        } break;
+        case MixerGame_Timer : {
+            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 8000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+        } break;
+        case MixerGame_Tries : {
+            game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+        } break;
+    }
     mixer_game_add_audio_observer(
         game_state.get(), 
         [this] (auto &&effect) { 
@@ -149,9 +162,12 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
     {
         case PanelType::MainMenu : {
             panel = std::make_unique < MainMenu > (
-                [this] { toGame(); },
+                [this] { toGame(MixerGame_Normal); },
+                [this] { toGame(MixerGame_Timer); },
+                [this] { toGame(MixerGame_Tries); },
                 [this] { toStats(); },
-                [this] { toSettings(); });
+                [this] { toSettings(); }
+            );
         } break;
         case PanelType::Settings : {
             panel = std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);

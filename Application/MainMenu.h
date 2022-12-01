@@ -2,16 +2,32 @@
 class MainMenu : public juce::Component
 {
 public :
-    MainMenu(std::function<void()> &&toGameButtonClick,
+    MainMenu(std::function<void()> &&toNormalGameButtonClick,
+             std::function<void()> &&toTimerGameButtonClick,
+             std::function<void()> &&toTriesGameButtonClick,
              std::function<void()> &&toStatsButtonClick,
              std::function<void()> &&toSettingsButtonClick)
     {
-        game_button.setSize(100, 40);
-        game_button.setButtonText("Game");
-        game_button.onClick = [click = std::move(toGameButtonClick)] {
+        game_normal_button.setSize(100, 40);
+        game_normal_button.setButtonText("Normal");
+        game_normal_button.onClick = [click = std::move(toNormalGameButtonClick)] {
             click();
         };
-        addAndMakeVisible(game_button);
+        addAndMakeVisible(game_normal_button);
+        
+        game_timer_button.setSize(100, 40);
+        game_timer_button.setButtonText("Timer");
+        game_timer_button.onClick = [click = std::move(toTimerGameButtonClick)] {
+            click();
+        };
+        addAndMakeVisible(game_timer_button);
+        
+        game_tries_button.setSize(100, 40);
+        game_tries_button.setButtonText("Tries");
+        game_tries_button.onClick = [click = std::move(toTriesGameButtonClick)] {
+            click();
+        };
+        addAndMakeVisible(game_tries_button);
         
         stats_button.setSize(100, 40);
         stats_button.setButtonText("Statistics");
@@ -38,13 +54,17 @@ public :
     void resized() override
     {
         auto bounds = getLocalBounds();
-        game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -50));
-        stats_button.setCentrePosition(bounds.getCentre());
-        settings_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 50));
+        game_normal_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -100));
+        game_timer_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -50));
+        game_tries_button.setCentrePosition(bounds.getCentre());
+        stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 50));
+        settings_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 100));
     }
 
 private :
-    juce::TextButton game_button;
+    juce::TextButton game_normal_button;
+    juce::TextButton game_timer_button;
+    juce::TextButton game_tries_button;
     juce::TextButton stats_button;
     juce::TextButton settings_button;
 };
