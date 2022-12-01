@@ -41,7 +41,34 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
         case Event_Toggle_Input_Target : {
             if (step == GameStep_Question)
             {
-                jassertfalse;
+                jassert(state->variant != MixerGame_Timer);
+                jassert(state->can_still_listen);
+                if (state->mix == Mix_User)
+                {
+                    jassert(event.value_b);
+                    state->mix = Mix_Target;
+                }
+                else if (state->mix == Mix_Target)
+                {
+                    jassert(!event.value_b); 
+                    switch (state->variant)
+                    {
+                        case MixerGame_Normal : {
+                            state->mix = Mix_User;
+                        } break;
+                        case MixerGame_Timer : {
+                            jassertfalse;
+                        } break;
+                        case MixerGame_Tries : {
+                            state->remaining_listens--;
+                            if (state->remaining_listens == 0)
+                                done_listening = true;
+                            else
+                                state->mix = Mix_User;
+                        } break;
+                    }
+                }
+                else jassertfalse;
             }
             else if (step == GameStep_Result)
             {
@@ -61,13 +88,14 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             update_audio = true;
             update_ui = true;
         } break;
-        case Event_Timeout : {
-            done_listening = true;
-        } break;
         case Event_Click_Begin : {
             jassert(step == GameStep_Begin);
+            jassert(state->mix == Mix_Hidden);
             jassert(state->target_slider_pos.size() == 0);
             transition = Transition_To_Exercice;
+        } break;
+        case Event_Timeout : {
+            done_listening = true;
         } break;
         case Event_Click_Done_Listening : {
             jassert(state->timer.isTimerRunning());
@@ -177,12 +205,23 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
             jassert(state->target_slider_pos.size() == state->channel_infos.size());
             jassert(state->edited_slider_pos.size() == state->channel_infos.size());
             
-            effects.timer = Effect_Timer {
-                .timeout_ms = state->timeout_ms ,
-                .callback = [state] {
-                    mixer_game_post_event(state, Event { .type = Event_Timeout });
-                }
-            };
+            switch (state->variant)
+            {
+                case MixerGame_Normal : {
+                } break;
+                case MixerGame_Timer : {
+                    effects.timer = Effect_Timer {
+                        .timeout_ms = state->timeout_ms ,
+                        .callback = [state] {
+                            mixer_game_post_event(state, Event { .type = Event_Timeout });
+                        }
+                    };
+                } break;
+                case MixerGame_Tries : {
+                    state->remaining_listens = state->listens;
+                } break;
+            }
+
             update_audio = true;
             update_ui = true;
         }break;

@@ -10,7 +10,6 @@ struct Effect_UI {
     juce::String header_text;
     int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    //int remaining_listens;
     juce::String button_text;
     Mix mix;
     Event_Type button_event;
