@@ -105,6 +105,7 @@ Effects mixer_game_timer_update(MixerGame_State *state, Event event)
         case Event_Click_Answer : {
             jassert(step == GameStep_Question);
 
+
             int points_awarded = 0;
             for (auto& [id, edited] : state->edited_slider_pos)
             {
