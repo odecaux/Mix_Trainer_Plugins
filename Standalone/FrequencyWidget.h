@@ -162,6 +162,13 @@ public:
     std::function < void(int) > onClick;
 };
 
+struct FrequencyGame_Results
+{
+    int score;
+    float analytics;
+    //temps moyen ? distance moyenne ? stats ?
+};
+
 struct Effect_DSP {
     Channel_DSP_State dsp_state;
 };
@@ -200,13 +207,10 @@ struct Effects {
     std::optional < Effect_DSP > dsp;
     std::optional < Effect_Player > player;
     std::optional < Effect_UI > ui;
+    std::optional < FrequencyGame_Results > results;
     bool quit;
     std::optional < Effect_Timer > timer;
 };
-
-using audio_observer_t = std::function<void(Effect_DSP &)>;
-using player_observer_t = std::function<void(Effect_Player &)>;
-using ui_observer_t = std::function<void(Effect_UI &)>;
 
 struct FrequencyGame_Settings
 {
@@ -225,6 +229,11 @@ struct Audio_File
     juce::Range<juce::int64> loop_bounds;
 };
 
+using audio_observer_t = std::function<void(Effect_DSP &)>;
+using player_observer_t = std::function<void(Effect_Player &)>;
+using ui_observer_t = std::function<void(Effect_UI &)>;
+using results_observer_t = std::function<void(FrequencyGame_Results &)>;
+
 struct FrequencyGame_State
 {
     GameStep step;
@@ -235,6 +244,7 @@ struct FrequencyGame_State
     int current_file_idx;
     std::vector<Audio_File> files;
     FrequencyGame_Settings settings;
+    FrequencyGame_Results results;
 
     int gen_idx_active;
     int gen_idx_counter;
@@ -243,6 +253,7 @@ struct FrequencyGame_State
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
     std::vector<player_observer_t> observers_player;
+    std::vector<results_observer_t> observers_results;
     std::function < void() > quit;
 };
 
@@ -348,6 +359,11 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     {
         for(auto &observer : state->observers_player)
             observer(*effects.player);
+    }
+    if (effects.results)
+    {
+        for(auto &observer : state->observers_results)
+            observer(*effects.results);
     }
     if (effects.quit)
     {
@@ -566,6 +582,11 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                     { .type = Audio_Command_Stop },
                 }
             };
+            state->results = {
+                .score = state->score,
+                .analytics = juce::Random::getSystemRandom().nextFloat()
+            };
+            effects.results = state->results;
             update_audio = true;
             update_ui = true;
         }break;
@@ -671,6 +692,11 @@ void frequency_game_add_audio_observer(FrequencyGame_State *state, audio_observe
 void frequency_game_add_player_observer(FrequencyGame_State *state, player_observer_t &&observer)
 {
     state->observers_player.push_back(std::move(observer));
+}
+
+void frequency_game_add_results_observer(FrequencyGame_State *state, results_observer_t &&observer)
+{
+    state->observers_results.push_back(std::move(observer));
 }
 
 void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui)

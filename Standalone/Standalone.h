@@ -1416,6 +1416,11 @@ class Main_Component : public juce::Component
                 for(const auto& command : effect.commands)
                     player.post_command(command);
         });
+        frequency_game_add_results_observer(
+            state.get(),
+            [this] (auto &&effect) {
+                DBG(effect.score);
+        });
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
 
         auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
