@@ -655,9 +655,13 @@ public:
         {
             addAndMakeVisible(fileList);
         }
+
+        {
+            addAndMakeVisible(thumbnail);
+        }
     }
 
-    ~FileSelector_Panel()
+    ~FileSelector_Panel() override
     {
         explorer.removeListener (this);
     }
@@ -665,9 +669,11 @@ public:
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
-        
         auto header_bounds = r.removeFromTop(game_ui_header_height);
+        auto bottom_bounds = r.removeFromBottom(80).reduced(8);
+        
         header.setBounds(header_bounds);
+        thumbnail.setBounds(bottom_bounds);
 
         auto sub_header_bounds = r.removeFromTop(40);
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
@@ -688,6 +694,7 @@ public:
         }
     }
 private:
+    FilePlayer &player;
     GameUI_Header header;
     AudioFileList fileList;
     
@@ -696,7 +703,7 @@ private:
     juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
     juce::FileTreeComponent explorer { directoryList };
 
-    FilePlayer &player;
+    DemoThumbnailComp thumbnail { player.formatManager, player.transportSource };
     
     void selectionChanged() override
     {
