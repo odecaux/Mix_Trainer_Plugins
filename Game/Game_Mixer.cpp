@@ -201,7 +201,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         case Event_Channel_Create : 
         {
             auto [edited, edited_result] = state->edited_slider_pos.emplace(event.id, true);
+            juce::ignoreUnused(edited);
             assert(edited_result);
+            juce::ignoreUnused(edited);
             auto [target, target_result] = state->target_slider_pos.emplace(event.id, true);
             assert(target_result);
             update_ui = true;

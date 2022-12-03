@@ -37,7 +37,7 @@ void Application::toMainMenu()
     editor->changePanel(std::move(main_menu));
 }
 
-void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps, 
+static void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps, 
                     const std::unordered_map<int, ChannelInfos> &channels)
 {
     assert(dsps.size() == channels.size());
