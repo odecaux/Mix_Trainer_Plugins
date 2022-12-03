@@ -200,9 +200,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         } break;
         case Event_Channel_Create : 
         {
-            auto [edited, edited_result] = state->edited_slider_pos.emplace(event.id, true);
+            auto [_, edited_result] = state->edited_slider_pos.emplace(event.id, true);
             assert(edited_result);
-            auto [target, target_result] = state->target_slider_pos.emplace(event.id, true);
+            auto [_, target_result] = state->target_slider_pos.emplace(event.id, true);
             assert(target_result);
             update_ui = true;
             update_audio = true;

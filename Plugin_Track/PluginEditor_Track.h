@@ -8,7 +8,7 @@
   ==============================================================================
 */
 
-float denormalize_frequency(float value)
+static float denormalize_frequency(float value)
 {
     float a = powf(value, 2.0f);
     float b = a * (20000.0f - 20.0f);
@@ -16,7 +16,7 @@ float denormalize_frequency(float value)
 }
 
 
-float normalize_frequency(float frequency)
+static float normalize_frequency(float frequency)
 {
     return std::sqrt((frequency - 20.0f) / (20000.0f - 20.0f));
 }

@@ -64,7 +64,7 @@ target_sources(MixTrainer_Host
 if(MSVC)
   target_compile_options(MixTrainer_Host PRIVATE /W4 /WX)
 else()
-  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-shadow-field-in-constructor)
 endif()
 
 target_precompile_headers(MixTrainer_Host
