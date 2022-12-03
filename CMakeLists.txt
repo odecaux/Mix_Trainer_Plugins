@@ -58,7 +58,17 @@ target_sources(MixTrainer_Host
         Plugin_Host/Processor_Host.cpp
         Game/Game.cpp
         Game/Game_Mixer.cpp
-        Application/Application.cpp)
+        Application/Application.cpp
+        shared/shared.cpp)
+        
+if(MSVC)
+  target_compile_options(MixTrainer_Host PRIVATE /W4 /WX)
+else()
+  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+target_precompile_headers(MixTrainer_Host
+    PRIVATE shared/pch.h)
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC
@@ -84,7 +94,17 @@ juce_add_plugin(MixTrainer_Track
 
 target_sources(MixTrainer_Track
     PRIVATE
-        Plugin_Track/Processor_Track.cpp)
+        Plugin_Track/Processor_Track.cpp
+        shared/shared.cpp)
+        
+if(MSVC)
+  target_compile_options(MixTrainer_Track PRIVATE /W4 /WX)
+else()
+  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
+
+target_precompile_headers(MixTrainer_Track
+    PRIVATE shared/pch.h)
 
 target_compile_definitions(MixTrainer_Track
     PUBLIC
@@ -98,10 +118,17 @@ juce_add_gui_app(Standalone
 target_sources(Standalone
     PRIVATE
         Standalone/Standalone.cpp
-        Game/Game.cpp)
+        Game/Game.cpp
+        shared/shared.cpp)
+
+if(MSVC)
+  target_compile_options(Standalone PRIVATE /W4 /WX)
+else()
+  target_compile_options(Standalone PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
 
 target_precompile_headers(Standalone
-    PRIVATE Standalone/pch.h)
+    PRIVATE shared/pch.h)
 
 target_compile_definitions(Standalone
     PRIVATE

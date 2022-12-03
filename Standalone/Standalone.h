@@ -1,6 +1,6 @@
 
 #pragma once
-#include "pch.h"
+#include "../shared/pch.h"
 #include "../shared/shared.h"
 #include "../Game/Game.h"
 #include "FrequencyWidget.h"
