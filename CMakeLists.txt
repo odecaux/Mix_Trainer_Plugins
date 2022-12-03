@@ -50,8 +50,8 @@ juce_add_plugin(MixTrainer_Host
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Octa
     PLUGIN_CODE MTH0
-    FORMATS AU VST3
-    PRODUCT_NAME "MixTrainer Host")
+    FORMATS AU AUv3 VST3
+    PRODUCT_NAME "MixTrainer_Host")
 
 target_sources(MixTrainer_Host
     PRIVATE
@@ -96,7 +96,7 @@ juce_add_plugin(MixTrainer_Track
     PLUGIN_MANUFACTURER_CODE Octa
     PLUGIN_CODE MTT0
     FORMATS AU AUv3 VST3
-    PRODUCT_NAME "MixTrainer Track")
+    PRODUCT_NAME "MixTrainer_Track")
 
 target_sources(MixTrainer_Track
     PRIVATE
@@ -124,30 +124,30 @@ target_link_libraries(MixTrainer_Track
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
 
-juce_add_gui_app(Standalone
-    PRODUCT_NAME "Mix Trainer")
+juce_add_gui_app(MixTrainer_Standalone
+    PRODUCT_NAME "MixTrainer_Standalone")
 
-target_sources(Standalone
+target_sources(MixTrainer_Standalone
     PRIVATE
         Standalone/Standalone.cpp
         Game/Game.cpp
         shared/shared.cpp)
 
 if(MSVC)
-  target_compile_options(Standalone PRIVATE /W4 /WX)
+  target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX)
 else()
-  target_compile_options(Standalone PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-target_precompile_headers(Standalone
+target_precompile_headers(MixTrainer_Standalone
     PRIVATE shared/pch.h)
 
-target_compile_definitions(Standalone
+target_compile_definitions(MixTrainer_Standalone
     PRIVATE
-        JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:Standalone,JUCE_PRODUCT_NAME>"
-        JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:Standalone,JUCE_VERSION>")
+        JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:MixTrainer_Standalone,JUCE_PRODUCT_NAME>"
+        JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:MixTrainer_Standalone,JUCE_VERSION>")
 
-target_link_libraries(Standalone 
+target_link_libraries(MixTrainer_Standalone 
     PUBLIC 
         juce_plugin_modules
     PRIVATE
