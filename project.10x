@@ -139,6 +139,9 @@
 			<File>
 				<Path>todo.txt</Path>
 			</File>
+            <File>
+                <Path>.github/workflows/juce_cli.yml</Path>
+            </File>
 		</Children>
 	</Workspace>
 </N10X>
