@@ -38,7 +38,7 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
     {
         case GameStep_Begin :
         {
-            jassert(mix == Mix_Hidden);
+            assert(mix == Mix_Hidden);
             return FaderStep_Editing;
         } break;
         case GameStep_Question :
@@ -59,7 +59,7 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
         } break;
         case GameStep_Result :
         {
-            jassert(mix != Mix_Hidden);
+            assert(mix != Mix_Hidden);
             return FaderStep_Showing;
         } break;
         case GameStep_EndResults :

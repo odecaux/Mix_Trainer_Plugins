@@ -180,7 +180,7 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
 
-    jassert(tokens.size() >= 2);
+    assert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
     
     if (tokens[0] == "create") 

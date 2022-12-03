@@ -22,9 +22,9 @@ void Application::toMainMenu()
 {
     broadcastDSP(bypassedAllChannelsDSP(channels));
 
-    jassert(type != PanelType::MainMenu);
+    assert(type != PanelType::MainMenu);
     type = PanelType::MainMenu;
-    jassert(editor);
+    assert(editor);
         
     auto main_menu =
         std::make_unique < MainMenu > (
@@ -40,11 +40,11 @@ void Application::toMainMenu()
 void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps, 
                     const std::unordered_map<int, ChannelInfos> &channels)
 {
-    jassert(dsps.size() == channels.size());
+    assert(dsps.size() == channels.size());
     for (const auto& [id, channel] : channels)
     {
-        jassert(id == channel.id);
-        jassert(dsps.contains(id));
+        assert(id == channel.id);
+        assert(dsps.contains(id));
         const auto &dsp = dsps.at(id);
         double db = juce::Decibels::gainToDecibels(dsp.gain);
         juce::String db_str = juce::Decibels::toString(db);
@@ -60,10 +60,10 @@ void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps,
 
 void Application::toGame(MixerGame_Variant variant)
 {
-    jassert(type == PanelType::MainMenu);
+    assert(type == PanelType::MainMenu);
     type = PanelType::Game;
-    jassert(editor);
-    jassert(!game_state);
+    assert(editor);
+    assert(!game_state);
     
     switch (variant)
     {
@@ -112,9 +112,9 @@ void Application::toGame(MixerGame_Variant variant)
 void Application::toStats()
 {
     broadcastDSP(bypassedAllChannelsDSP(channels));
-    jassert(type == PanelType::MainMenu);
+    assert(type == PanelType::MainMenu);
     type = PanelType::Stats;
-    jassert(editor);
+    assert(editor);
     
     std::unique_ptr < juce::Component > settings_menu =
         std::make_unique < StatsMenu > ([this] { toMainMenu(); }, stats);
@@ -124,9 +124,9 @@ void Application::toStats()
 void Application::toSettings()
 {
     broadcastDSP(bypassedAllChannelsDSP(channels));
-    jassert(type == PanelType::MainMenu);
+    assert(type == PanelType::MainMenu);
     type = PanelType::Settings;
-    jassert(editor);
+    assert(editor);
     
     std::unique_ptr < juce::Component > settings_menu =
         std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);
@@ -142,11 +142,11 @@ void Application::quitGame()
 
 void Application::onEditorDelete()
 {
-    jassert(editor != nullptr);
+    assert(editor != nullptr);
     editor = nullptr;
     if (type == PanelType::Game)
     {
-        jassert(game_state);
+        assert(game_state);
         mixer_game_post_event(game_state.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
@@ -155,7 +155,7 @@ void Application::onEditorDelete()
 
 void Application::initialiseEditorUI(EditorHost *new_editor)
 {
-    jassert(editor == nullptr);
+    assert(editor == nullptr);
     editor = new_editor;
     std::unique_ptr < juce::Component > panel;
     switch (type)
@@ -177,7 +177,7 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case PanelType::Game :
         {
-            jassert(game_state); 
+            assert(game_state); 
             auto game_ui_temp = std::make_unique<MixerGameUI>(
                 channels,
                 game_state->db_slider_values,
@@ -200,13 +200,13 @@ void Application::createChannel(int id)
 {
     {
         auto assertChannel = channels.find(id);
-        jassert(assertChannel == channels.end());
+        assert(assertChannel == channels.end());
     }
     
     channels[id] = ChannelInfos { .id = id };
 
     if (game_state) {
-        jassert(type == PanelType::Game);
+        assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Create,
             .id = id
@@ -218,10 +218,10 @@ void Application::createChannel(int id)
 void Application::deleteChannel(int id)
 {
     auto channel = channels.find(id);
-    jassert(channel != channels.end());
+    assert(channel != channels.end());
 
     if (game_state) {
-        jassert(type == PanelType::Game);
+        assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Delete,
             .id = id
@@ -236,7 +236,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
     channels[id].name = new_name;
     
     if (game_state) {
-        jassert(type == PanelType::Game);
+        assert(type == PanelType::Game);
     }
     host.broadcastRenameTrack(id, new_name);
 }
@@ -247,7 +247,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
     channel.name = new_name;
         
     if (game_state) {
-        jassert(type == PanelType::Game);
+        assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Rename_From_Track,
             .id = id,
@@ -264,7 +264,7 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
     channel.max_freq = new_max;
 
     if (game_state) {
-        jassert(type == PanelType::Game);
+        assert(type == PanelType::Game);
         Event event = {
             .type = Event_Change_Frequency_Range,
             .id = id,

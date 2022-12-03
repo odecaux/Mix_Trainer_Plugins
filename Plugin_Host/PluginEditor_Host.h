@@ -24,7 +24,7 @@ public:
     }
     ~EditorHost() override
     {
-        jassert(current_panel);
+        assert(current_panel);
         removeChildComponent(current_panel.get());
         onEditorClose();
     }
@@ -36,10 +36,14 @@ public:
     
     void resized() override
     {
-        if(current_panel) //NOTE feels like a hack, anyway it should only happen in the initialization
+        if (current_panel) //NOTE feels like a hack, anyway it should only happen in the initialization
+        {
             current_panel->setBounds(getLocalBounds());
+        }
         else
-            jassert(!initialized);
+        {
+            assert(!initialized);
+        }
     }
     
     void changePanel(std::unique_ptr<juce::Component> new_panel)

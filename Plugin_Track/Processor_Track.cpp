@@ -182,7 +182,7 @@ void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 {
     if(sizeInBytes > 0)
     {
-        jassert(sizeInBytes == 12);
+        assert(sizeInBytes == 12);
         minFrequency = ((const float*)data)[0];
         maxFrequency = ((const float*)data)[1];
     }
@@ -203,7 +203,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
 {
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
-    jassert(tokens.size() >= 2);
+    assert(tokens.size() >= 2);
     int message_id = tokens[1].getIntValue();
     if(message_id != id)
         return;
@@ -214,7 +214,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
         blob.loadFromHexString(tokens[2]);
         size_t blob_size = blob.getSize();
         size_t dsp_state_size = sizeof(Channel_DSP_State);
-        jassert(blob_size == dsp_state_size);
+        assert(blob_size == dsp_state_size);
         Channel_DSP_State state = *(Channel_DSP_State*)blob.getData();
         gain = state.gain;
     }

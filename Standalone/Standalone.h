@@ -63,7 +63,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override
     {
-        jassert(bufferToFill.buffer != nullptr);
+        assert(bufferToFill.buffer != nullptr);
         input_source->getNextAudioBlock (bufferToFill);
 
         juce::ScopedNoDenormals noDenormals;
@@ -110,7 +110,7 @@ private:
     {
         for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
             auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
-            jassert(new_coefficients);
+            assert(new_coefficients);
             // minimise lock scope, get<0>() needs to be a  compile time constant
             {
                 juce::ScopedLock processLock (lock);
@@ -496,7 +496,7 @@ public:
 
     bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
     {
-        jassert(dragSourceDetails.sourceComponent == dropSource);
+        assert(dragSourceDetails.sourceComponent == dropSource);
         return true;
     }
 
@@ -536,7 +536,7 @@ public:
     
     void itemDropped (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override
     {
-        jassert(dragSourceDetails.sourceComponent == dropSource);
+        assert(dragSourceDetails.sourceComponent == dropSource);
         juce::FileTreeComponent *tree = (juce::FileTreeComponent*)dropSource;
         auto dropped_file_count = tree->getNumSelectedFiles();
         for (auto i = 0; i < dropped_file_count; i++)
@@ -551,10 +551,10 @@ public:
 
     void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
     {
-        jassert(row < files.size());
+        assert(row < files.size());
         const auto &file = files[row].file;
         auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
-        jassert(ret.value_b); //file still exists on drive ?
+        assert(ret.value_b); //file still exists on drive ?
         player.post_command( { .type = Audio_Command_Play });
     }
     
@@ -769,7 +769,7 @@ public:
                                              bool, 
                                              Component *existingComponentToUpdate) override
     {
-        //jassert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
+        //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
         if (rowNumber >= settings.size())
         {
             if (existingComponentToUpdate != nullptr)
@@ -1013,7 +1013,7 @@ struct Settings_Panel : public juce::Component
 
     void selectConfig(int new_config_idx)
     {
-        jassert(new_config_idx < settings.size());
+        assert(new_config_idx < settings.size());
         current_settings_idx = new_config_idx;
         auto &current_settings = settings[current_settings_idx];
         float gain_db = juce::Decibels::gainToDecibels(current_settings.eq_gain);
@@ -1177,7 +1177,7 @@ class Main_Component : public juce::Component
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
-            jassert(app_data.exists() && app_data.isDirectory());
+            assert(app_data.exists() && app_data.isDirectory());
             auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("audio_file_list.txt");
             if (!file_RENAME.existsAsFile())
             {
@@ -1220,7 +1220,7 @@ class Main_Component : public juce::Component
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
-            jassert(app_data.exists() && app_data.isDirectory());
+            assert(app_data.exists() && app_data.isDirectory());
             auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.json");
             if (!file_RENAME.existsAsFile())
             {
@@ -1350,7 +1350,7 @@ class Main_Component : public juce::Component
 
     void toFileSelector()
     {
-        jassert(state == nullptr);
+        assert(state == nullptr);
         panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toMainMenu(); } );
         addAndMakeVisible(*panel);
         resized();
@@ -1358,7 +1358,7 @@ class Main_Component : public juce::Component
 
     void toSettings()
     {
-        jassert(state == nullptr);
+        assert(state == nullptr);
         panel = std::make_unique < Settings_Panel > (settings, current_settings_idx, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
         resized();

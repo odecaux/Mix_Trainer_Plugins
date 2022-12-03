@@ -11,7 +11,7 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
 {
     if (new_ui.slider_pos_to_display)
     {
-        jassert(new_ui.slider_pos_to_display->size() == ui.faders.size());
+        assert(new_ui.slider_pos_to_display->size() == ui.faders.size());
     }
     for(auto& [id, fader] : ui.faders)
     {
@@ -98,16 +98,16 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             if (step == GameStep_Question)
             {
-                jassert(state->variant != MixerGame_Timer);
-                jassert(state->can_still_listen);
+                assert(state->variant != MixerGame_Timer);
+                assert(state->can_still_listen);
                 if (state->mix == Mix_User)
                 {
-                    jassert(event.value_b);
+                    assert(event.value_b);
                     state->mix = Mix_Target;
                 }
                 else if (state->mix == Mix_Target)
                 {
-                    jassert(!event.value_b);
+                    assert(!event.value_b);
                     switch (state->variant)
                     {
                         case MixerGame_Normal : 
@@ -134,12 +134,12 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             {
                 if (state->mix == Mix_User)
                 {
-                    jassert(event.value_b);
+                    assert(event.value_b);
                     state->mix = Mix_Target;
                 }
                 else if (state->mix == Mix_Target)
                 {
-                    jassert(!event.value_b);
+                    assert(!event.value_b);
                     state->mix = Mix_User;
                 }
                 else jassertfalse;
@@ -150,9 +150,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         } break;
         case Event_Click_Begin : 
         {
-            jassert(step == GameStep_Begin);
-            jassert(state->mix == Mix_Hidden);
-            jassert(state->target_slider_pos.size() == 0);
+            assert(step == GameStep_Begin);
+            assert(state->mix == Mix_Hidden);
+            assert(state->target_slider_pos.size() == 0);
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
@@ -160,18 +160,18 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             if (event.timer_gen_idx == state->gen_idx_active)
             {
-                jassert(step == GameStep_Question);
+                assert(step == GameStep_Question);
                 done_listening = true;
             }
         } break;
         case Event_Click_Done_Listening : 
         {
-            jassert(state->timer.isTimerRunning());
+            assert(state->timer.isTimerRunning());
             done_listening = true;
         } break;
         case Event_Click_Answer : 
         {
-            jassert(step == GameStep_Question);
+            assert(step == GameStep_Question);
 
             int points_awarded = 0;
             for (auto& [id, edited] : state->edited_slider_pos)
@@ -201,9 +201,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         case Event_Channel_Create : 
         {
             auto [edited, edited_result] = state->edited_slider_pos.emplace(event.id, true);
-            jassert(edited_result);
+            assert(edited_result);
             auto [target, target_result] = state->target_slider_pos.emplace(event.id, true);
-            jassert(target_result);
+            assert(target_result);
             update_ui = true;
             update_audio = true;
         } break;
@@ -211,13 +211,13 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             {
                 const auto channel_to_remove = state->edited_slider_pos.find(event.id);
-                jassert(channel_to_remove != state->edited_slider_pos.end());
+                assert(channel_to_remove != state->edited_slider_pos.end());
                 state->edited_slider_pos.erase(channel_to_remove);
             }
         
             {
                 const auto channel_to_remove = state->target_slider_pos.find(event.id);
-                jassert(channel_to_remove != state->target_slider_pos.end());
+                assert(channel_to_remove != state->target_slider_pos.end());
                 state->target_slider_pos.erase(channel_to_remove);
             }
             
@@ -247,8 +247,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
     
     if (done_listening)
     {
-        jassert(step == GameStep_Question);
-        jassert(state->mix == Mix_Target);
+        assert(step == GameStep_Question);
+        assert(state->mix == Mix_Target);
         state->mix = Mix_User;
         
         state->gen_idx_active = -1;
@@ -306,8 +306,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % state->db_slider_values.size();//;
                 state->edited_slider_pos[channel.id] = (int)state->db_slider_values.size() - 2;//true;
             }
-            jassert(state->target_slider_pos.size() == state->channel_infos.size());
-            jassert(state->edited_slider_pos.size() == state->channel_infos.size());
+            assert(state->target_slider_pos.size() == state->channel_infos.size());
+            assert(state->edited_slider_pos.size() == state->channel_infos.size());
             
             switch (state->variant)
             {
@@ -437,7 +437,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                     case MixerGame_Tries : {
                         if (state->mix == Mix_Target)
                         {
-                            jassert(state->can_still_listen);
+                            assert(state->can_still_listen);
                             effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state->remaining_listens);
                         }
                         else if (state->mix == Mix_User)
@@ -488,9 +488,9 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
     Application *app)
 {
     if(variant != MixerGame_Tries)
-        jassert(listens == -1);
+        assert(listens == -1);
     if(variant != MixerGame_Timer)
-        jassert(timeout_ms == -1);
+        assert(timeout_ms == -1);
 
     MixerGame_State state = {
         .channel_infos = channel_infos,

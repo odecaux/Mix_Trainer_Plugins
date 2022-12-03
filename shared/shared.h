@@ -6,6 +6,8 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#undef NDEBUG
+#include <assert.h>
 
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
@@ -108,7 +110,7 @@ public:
         };
         label.onEditorShow = [&] {
             auto *editor = label.getCurrentTextEditor();
-            jassert(editor != nullptr);
+            assert(editor != nullptr);
             editor->setJustification(juce::Justification::centred);
         };
         addAndMakeVisible(label);
@@ -119,7 +121,7 @@ public:
         fader.setScrollWheelEnabled(true);
         
         fader.onValueChange = [this, onMove = std::move(onFaderMove)] {
-            jassert(this->step == FaderStep_Editing);
+            assert(this->step == FaderStep_Editing);
             onMove((int)fader.getValue());
         };
         addAndMakeVisible(fader);
@@ -160,7 +162,7 @@ public:
             } break;
             case FaderStep_Hiding :
             {
-                jassert(new_pos == -1);
+                assert(new_pos == -1);
                 //TODO ?
                 //fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(false);

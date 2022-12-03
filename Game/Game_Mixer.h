@@ -178,7 +178,7 @@ struct MixerGameUI : public juce::Component
     {
         {
             auto assertChannel = faders.find(id);
-            jassert(assertChannel == faders.end());
+            assert(assertChannel == faders.end());
         }
 
         auto onFaderMoved = [state = this->state, id] (int new_pos){
@@ -205,7 +205,7 @@ struct MixerGameUI : public juce::Component
             std::move(onFaderMoved),
             std::move(onEdited)
         ));
-        jassert(result);
+        assert(result);
         auto &new_fader = it->second;
 
         fader_row.addAndMakeVisible(new_fader.get());
@@ -216,7 +216,7 @@ struct MixerGameUI : public juce::Component
     void removeChannel(int id)
     {
         const auto channel_to_remove = faders.find(id);
-        jassert(channel_to_remove != faders.end());
+        assert(channel_to_remove != faders.end());
         fader_row.removeChildComponent(channel_to_remove->second.get());
         faders.erase(channel_to_remove);
         fader_row.adjustWidth();

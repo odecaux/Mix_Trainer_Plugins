@@ -359,7 +359,7 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Set
                                                                std::vector<Audio_File> files,
                                                                std::function<void()> onQuit)
 {
-    jassert(!files.empty());
+    assert(!files.empty());
     auto state = FrequencyGame_State {
         .files = std::move(files),
         .settings = settings,
@@ -395,7 +395,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Click_Frequency :
         {
-            jassert(old_step == GameStep_Question);
+            assert(old_step == GameStep_Question);
             auto clicked_freq = event.value_i;
             auto clicked_ratio = hzToRatio(clicked_freq);
             auto target_ratio = hzToRatio(state->target_frequency);
@@ -419,7 +419,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case Event_Toggle_Input_Target :
         {
 #if 0
-            jassert(old_step != GameStep_Begin);
+            assert(old_step != GameStep_Begin);
             if(event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
@@ -444,20 +444,20 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         {
             if (event.timer_gen_idx == state->gen_idx_active)
             {
-                jassert(old_step == GameStep_Result);
+                assert(old_step == GameStep_Result);
                 out_transition = GameStep_Result;
                 in_transition = GameStep_Question;
             }
         } break;
         case Event_Click_Begin :
         {
-            jassert(old_step == GameStep_Begin);
+            assert(old_step == GameStep_Begin);
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
         case Event_Click_Next :
         {
-            jassert(old_step == GameStep_Result);
+            assert(old_step == GameStep_Result);
             out_transition = GameStep_Result;
             in_transition = GameStep_Question;
         } break;
@@ -626,7 +626,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.display_target = true;
                 effect_ui.target_frequency = state->target_frequency;
                 effect_ui.is_cursor_locked = true;
-                jassert(event.type == Event_Click_Frequency);
+                assert(event.type == Event_Click_Frequency);
                 effect_ui.locked_cursor_frequency = event.value_i;
                 effect_ui.display_window = true;
                 effect_ui.correct_answer_window = state->correct_answer_window;

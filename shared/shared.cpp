@@ -6,7 +6,7 @@ Channel_DSP_State ChannelDSP_on()
     Channel_DSP_State state = {
         .gain = 1.0,
     };
-    jassert(state.bands[0].type == Filter_None);
+    assert(state.bands[0].type == Filter_None);
     state.bands[0].type = Filter_Low_Pass;
     state.bands[0].frequency = 500.0f;
     state.bands[0].quality = 0.7f;
@@ -18,7 +18,7 @@ Channel_DSP_State ChannelDSP_off()
     Channel_DSP_State state = {
         .gain = 0.0,
     };
-    jassert(state.bands[0].type == Filter_None);
+    assert(state.bands[0].type == Filter_None);
     return state;
 }
 
@@ -28,7 +28,7 @@ Channel_DSP_State ChannelDSP_gain(double gain)
     Channel_DSP_State state = {
         .gain = gain,
     };
-    jassert(state.bands[0].type == Filter_None);
+    assert(state.bands[0].type == Filter_None);
     return state;
 }
 
