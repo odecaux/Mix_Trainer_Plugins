@@ -59,7 +59,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
     {
     }
     
-    virtual ~Channel_DSP_Callback() {}
+    virtual ~Channel_DSP_Callback() override = default;
 
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override
     {
@@ -127,8 +127,8 @@ private:
 //------------------------------------------------------------------------
 struct FilePlayer {
     FilePlayer(juce::AudioFormatManager &formatManager)
-    : dsp_callback(&transportSource),
-      formatManager(formatManager)
+    :   formatManager(formatManager),
+        dsp_callback(&transportSource)
     {
         // audio setup
         readAheadThread.startThread ();
@@ -456,7 +456,7 @@ public:
         addAndMakeVisible(fileListComp);
     }
 
-    virtual ~AudioFileList() {}
+    virtual ~AudioFileList() override = default;
 
     void resized() override
     {
@@ -492,7 +492,7 @@ public:
         }
     }
 
-    bool isInterestedInFileDrag (const juce::StringArray&) override { return true; };
+    bool isInterestedInFileDrag (const juce::StringArray&) override { return true; }
 
     bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
     {
@@ -733,7 +733,7 @@ public:
         addAndMakeVisible(list_comp);
     }
 
-    virtual ~Settings_List() {}
+    virtual ~Settings_List() override = default;
 
     void resized() override
     {
