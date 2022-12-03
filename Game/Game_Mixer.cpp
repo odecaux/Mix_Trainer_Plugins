@@ -24,7 +24,11 @@ void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
 
 void mixer_game_post_event(MixerGame_State *state, Event event)
 {
-    Effects effects = mixer_game_update(state, event);
+    Effects effects;
+    {
+        std::lock_guard lock { *state->update_fn_mutex };
+        effects = mixer_game_update(state, event);
+    }
     if (effects.dsp)
     {
         for(auto &observer : state->observers_audio)

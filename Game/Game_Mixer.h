@@ -66,6 +66,7 @@ struct MixerGame_State {
     //io
     int gen_idx_active;
     int gen_idx_counter;
+    std::unique_ptr<std::mutex> update_fn_mutex;
     Application *app;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;

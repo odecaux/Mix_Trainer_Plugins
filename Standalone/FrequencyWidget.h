@@ -238,6 +238,7 @@ struct FrequencyGame_State
 
     int gen_idx_active;
     int gen_idx_counter;
+    std::unique_ptr<std::mutex> update_fn_mutex;
     std::vector<ui_observer_t> observers_ui;
     Timer timer;
     std::vector<audio_observer_t> observers_audio;
@@ -321,7 +322,11 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui)
 
 void frequency_game_post_event(FrequencyGame_State *state, Event event)
 {
-    Effects effects = frequency_game_update(state, event);
+    Effects effects;
+    {
+        std::lock_guard lock { *state->update_fn_mutex };
+        effects = frequency_game_update(state, event);
+    }
     if (effects.dsp)
     {
         for(auto &observer : state->observers_audio)
