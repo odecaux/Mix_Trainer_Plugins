@@ -387,6 +387,11 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 else
                     mix = state->mix;
             } break;
+            default:
+            {
+                jassertfalse;
+                mix = {};
+            } break;
         }
         
         effects.ui = Effect_UI {

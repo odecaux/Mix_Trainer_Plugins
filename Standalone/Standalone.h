@@ -752,7 +752,7 @@ public:
 
     int getNumRows() override { return (int)settings.size(); }
 
-    void paintListBoxItem (int rowNumber,
+    void paintListBoxItem (int,
                            juce::Graphics& g,
                            int width, int height,
                            bool rowIsSelected) override
@@ -766,7 +766,7 @@ public:
     }
 
     juce::Component *refreshComponentForRow (int rowNumber, 
-                                             bool isRowSelected, 
+                                             bool, 
                                              Component *existingComponentToUpdate) override
     {
         //jassert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
@@ -813,17 +813,17 @@ public:
 #endif
 
     
-    void listBoxItemClicked (int idx, const juce::MouseEvent&) override 
+    void listBoxItemClicked (int, const juce::MouseEvent&) override 
     {
     }
 
-    void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override {}
+    void listBoxItemDoubleClicked (int, const juce::MouseEvent &) override {}
     
-    void deleteKeyPressed (int lastRowSelected) override
+    void deleteKeyPressed (int) override
     {
-        if(getNumRows() == 1)
-            return;
         auto selected_row = list_comp.getSelectedRow();
+        if(selected_row == -1) 
+            return;
         settings.erase(settings.begin() + selected_row);
         auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
         list_comp.selectRow(row_to_select);
@@ -977,7 +977,7 @@ struct Settings_Panel : public juce::Component
             label.setJustificationType(juce::Justification::left);
         }
         
-        scroller.setSize(0, param.size() * 60);
+        scroller.setSize(0, (int)param.size() * 60);
         viewport.setScrollBarsShown(true, false);
         viewport.setViewedComponent(&scroller, false);
         addAndMakeVisible(viewport);
@@ -1386,8 +1386,8 @@ class Main_Component : public juce::Component
         auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
         frequency_game_add_ui_observer(
             state.get(), 
-            [ui = game_ui.get()] (Effect_UI &effect){ 
-                frequency_game_ui_update(*ui, effect); 
+            [ui = game_ui.get()] (Effect_UI &ui_effect){ 
+                frequency_game_ui_update(*ui, ui_effect); 
         });
         frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
         panel = std::move(game_ui);

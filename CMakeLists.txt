@@ -64,7 +64,7 @@ target_sources(MixTrainer_Host
 if(MSVC)
   target_compile_options(MixTrainer_Host PRIVATE /W4 /WX)
 else()
-  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 target_precompile_headers(MixTrainer_Host
@@ -100,7 +100,7 @@ target_sources(MixTrainer_Track
 if(MSVC)
   target_compile_options(MixTrainer_Track PRIVATE /W4 /WX)
 else()
-  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 target_precompile_headers(MixTrainer_Track
@@ -124,7 +124,7 @@ target_sources(Standalone
 if(MSVC)
   target_compile_options(Standalone PRIVATE /W4 /WX)
 else()
-  target_compile_options(Standalone PRIVATE -Wall -Wextra -Wpedantic -Werror)
+  target_compile_options(Standalone PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 target_precompile_headers(Standalone

@@ -30,7 +30,7 @@ int positionToFrequency(juce::Point<int> position, juce::Rectangle<int> bounds)
 {
     auto ratio = ratioInRect(position, bounds);
     if(ratio == -1.0f)
-        return -1.0f;
+        return -1;
     return ratioToHz(ratio);
 }
 
@@ -52,7 +52,7 @@ struct FrequencyWidget : public juce::Component
         
         //frequency guide lines
         g.setColour(juce::Colour(170, 170, 170));
-        for (float line_freq : { 100.0f, 200.0f, 400.0f, 800.0f, 1600.0f, 3200.0f, 6400.0f, 12800.0f })
+        for (int line_freq : { 100, 200, 400, 800, 1600, 3200, 6400, 12800 })
         {
             auto x = frequencyToX(line_freq, r);
             drawLineAt(10.0f, 45.0f, x);
@@ -530,7 +530,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             step = GameStep_Question;
             state->target_frequency = ratioToHz(juce::Random::getSystemRandom().nextFloat());
     
-            state->current_file_idx = juce::Random::getSystemRandom().nextInt(state->files.size());
+            state->current_file_idx = juce::Random::getSystemRandom().nextInt((int)state->files.size());
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state->files[state->current_file_idx].file },
@@ -582,7 +582,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             case GameStep_Result :
             {
                 dsp.bands[0].type = Filter_Peak;
-                dsp.bands[0].frequency = state->target_frequency;
+                dsp.bands[0].frequency = (float)state->target_frequency;
                 dsp.bands[0].gain = state->settings.eq_gain;
                 dsp.bands[0].quality = state->settings.eq_quality;
             } break;
