@@ -502,6 +502,7 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
         .db_slider_values = db_slider_values,
         .gen_idx_active = -1,
         .gen_idx_counter = 0,
+        .update_fn_mutex = std::make_unique<std::mutex>(),
         .app = app
     };
     return std::make_unique < MixerGame_State > (std::move(state));

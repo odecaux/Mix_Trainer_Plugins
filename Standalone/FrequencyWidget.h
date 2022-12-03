@@ -365,6 +365,7 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Set
         .settings = settings,
         .gen_idx_active = -1,
         .gen_idx_counter = 0,
+        .update_fn_mutex = std::make_unique<std::mutex>(),
         .quit = std::move(onQuit)
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
@@ -402,7 +403,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             auto distance = std::abs(clicked_ratio - target_ratio);
             if (distance < state->correct_answer_window)
             {
-                state->score++;
+                int points_scored = int((1.0f - distance) * 100.0f);
+                state->score += points_scored;
                 state->correct_answer_window *= 0.95f;
             }
             else
