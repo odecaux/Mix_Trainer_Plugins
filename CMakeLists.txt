@@ -74,7 +74,13 @@ target_compile_definitions(MixTrainer_Host
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
-target_link_libraries(MixTrainer_Host PUBLIC juce_plugin_modules)
+target_link_libraries(MixTrainer_Host 
+    PUBLIC 
+        juce_plugin_modules
+    PRIVATE
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
 
 juce_add_plugin(MixTrainer_Track
     VERSION 0.0.1
@@ -110,7 +116,13 @@ target_compile_definitions(MixTrainer_Track
     PUBLIC
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
-target_link_libraries(MixTrainer_Track PUBLIC juce_plugin_modules)
+target_link_libraries(MixTrainer_Track 
+    PUBLIC 
+        juce_plugin_modules
+    PRIVATE 
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
 
 juce_add_gui_app(Standalone
     PRODUCT_NAME "Mix Trainer")
@@ -135,4 +147,10 @@ target_compile_definitions(Standalone
         JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:Standalone,JUCE_PRODUCT_NAME>"
         JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:Standalone,JUCE_VERSION>")
 
-target_link_libraries(Standalone PUBLIC juce_plugin_modules)
+target_link_libraries(Standalone 
+    PUBLIC 
+        juce_plugin_modules
+    PRIVATE
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
