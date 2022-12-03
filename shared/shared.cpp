@@ -32,27 +32,27 @@ Channel_DSP_State ChannelDSP_gain(double gain)
     return state;
 }
 
-double equal_double(double a, double b, double theta)
+bool equal_double(double a, double b, double theta)
 {
     return std::abs(a - b) < theta;
 }
 
-int db_to_slider_pos(double db, const std::vector<double> &db_values)
+size_t db_to_slider_pos(double db, const std::vector<double> &db_values)
 {
     for(size_t i = 0; i < db_values.size(); i++)
     {
-        if(equal_double(db, db_values[i], 0.001)) return (int)i;
+        if(equal_double(db, db_values[i], 0.001)) return i;
     }
     jassertfalse;
-    return -1;
+    return 0;
 }
 
-int gain_to_slider_pos(double gain, const std::vector<double> &db_values)
+size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values)
 { 
     return db_to_slider_pos(juce::Decibels::gainToDecibels(gain), db_values);
 }
 
-double slider_pos_to_gain(int pos, const std::vector<double> &db_values)
+double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values)
 {
     return juce::Decibels::decibelsToGain(db_values[pos]);
 }

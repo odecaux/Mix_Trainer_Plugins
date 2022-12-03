@@ -61,10 +61,10 @@ struct Stats {
     int total_score;
 };
 
-double equal_double(double a, double b, double theta);
-int db_to_slider_pos(double db, const std::vector<double> &db_values);
-int gain_to_slider_pos(double gain, const std::vector<double> &db_values);
-double slider_pos_to_gain(int pos, const std::vector<double> &db_values);
+bool equal_double(double a, double b, double theta);
+size_t db_to_slider_pos(double db, const std::vector<double> &db_values);
+size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values);
+double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values);
 
 class DecibelSlider : public juce::Slider
 {
@@ -76,7 +76,7 @@ public:
     
     juce::String getTextFromValue(double pos) override
     {
-        double db = db_values[(int)pos];
+        double db = db_values[(size_t)pos];
         if (db == -100.0) 
             return "Muted";
         else

@@ -23,7 +23,8 @@ juce::String step_to_str(GameStep step)
         {
             return "End Results";
         } break;
-        default : 
+        case GameStep_None :
+        default :
         {
             jassertfalse;
             return "";
@@ -61,7 +62,9 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
             jassert(mix != Mix_Hidden);
             return FaderStep_Showing;
         } break;
-        default:
+        case GameStep_EndResults :
+        case GameStep_None :
+        default :
         {
             jassertfalse;
             return {};
