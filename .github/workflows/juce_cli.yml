@@ -167,22 +167,22 @@ jobs:
       if: ${{ matrix.name == 'Windows' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.STANDALONE_PRODUCT_NAME }}.exe
-        path: '${{ env.STANDALONE_ARTIFACTS_PATH }}/${{ env.STANDALONE_PRODUCT_NAME }}.exe'
+        name: ${{ env.STANDALONE_PROJECT_NAME }}.exe
+        path: '${{ env.STANDALONE_ARTIFACTS_PATH }}/${{ env.STANDALONE_PROJECT_NAME }}.exe'
 
     - name: Upload Zip (Linux)
       if: ${{ matrix.name == 'Linux' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.STANDALONE_PRODUCT_NAME }}.zip
-        path: '${{ env.STANDALONE_ARTIFACTS_PATH }}/${{ env.STANDALONE_PRODUCT_NAME }}.zip'
+        name: ${{ env.STANDALONE_PROJECT_NAME }}.zip
+        path: '${{ env.STANDALONE_ARTIFACTS_PATH }}/${{ env.STANDALONE_PROJECT_NAME }}.zip'
 
     - name: Upload DMG (MacOS)
       if: ${{ matrix.name == 'macOS' }}
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ env.STANDALONE_PRODUCT_NAME }}.dmg
-        path: packaging/${{ env.STANDALONE_PRODUCT_NAME }}.dmg
+        name: ${{ env.STANDALONE_PROJECT_NAME }}.dmg
+        path: packaging/${{ env.STANDALONE_PROJECT_NAME }}.dmg
 
 
 #  release:
