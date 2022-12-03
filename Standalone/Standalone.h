@@ -287,6 +287,11 @@ public:
         }
     }
 
+    void removeFile()
+    {
+        thumbnail.setSource(nullptr);
+    }
+
     void setZoomFactor (double amount)
     {
         if (thumbnail.getTotalLength() > 0)
@@ -463,6 +468,11 @@ public:
         fileListComp.setBounds(getLocalBounds());
     }
 
+    void setThumbnail(DemoThumbnailComp *new_thumbnail)
+    {
+        thumbnail = new_thumbnail;
+    }
+
     void paintOverChildren(juce::Graphics& g) override
     {
         if (files.empty())
@@ -549,14 +559,7 @@ public:
     
     void listBoxItemClicked (int, const juce::MouseEvent&) override {}
 
-    void listBoxItemDoubleClicked (int row, const juce::MouseEvent &) override
-    {
-        assert(row < files.size());
-        const auto &file = files[row].file;
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
-        assert(ret.value_b); //file still exists on drive ?
-        player.post_command( { .type = Audio_Command_Play });
-    }
+    void listBoxItemDoubleClicked (int, const juce::MouseEvent &) override {}
     
     void deleteKeyPressed (int lastRowSelected) override
     {
@@ -593,12 +596,35 @@ public:
         }
     }
 
+    
+    void selectedRowsChanged (int lastRowSelected) override
+    {
+        if (lastRowSelected != -1)
+        {
+            assert(lastRowSelected < files.size());
+            const auto &file = files[lastRowSelected].file;
+            auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
+            assert(ret.value_b); //file still exists on drive ?
+            player.post_command( { .type = Audio_Command_Play });
+
+            if (thumbnail)
+                thumbnail->setFile(file);
+        }
+        else
+        {
+            player.post_command( { .type = Audio_Command_Stop });
+            if (thumbnail)
+                thumbnail->removeFile();
+        }
+    }
+
 private:
     FilePlayer &player;
     std::vector<Audio_File> &files;
     juce::ListBox fileListComp = { {}, this};
 
     juce::Component *dropSource;
+    DemoThumbnailComp *thumbnail = nullptr;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
 };
@@ -653,6 +679,7 @@ public:
         }
 
         {
+            fileList.setThumbnail(&thumbnail);
             addAndMakeVisible(fileList);
         }
 
@@ -707,6 +734,7 @@ private:
     
     void selectionChanged() override
     {
+        thumbnail.setFile(explorer.getSelectedFile());
         auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = explorer.getSelectedFile() });
         if (ret.value_b)
             player.post_command({ .type = Audio_Command_Play });
