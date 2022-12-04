@@ -257,6 +257,7 @@ struct Audio_File
     juce::File file;
     juce::String title;
     juce::Range<juce::int64> loop_bounds;
+    juce::Range<int> freq_bounds;
 };
 
 using observer_t = std::function<void(const Effects &)>;

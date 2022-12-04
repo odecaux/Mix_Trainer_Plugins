@@ -1,19 +1,15 @@
 Priority 1 :
+
 ajouter preview et bounds au file selector panel
-EndResult ui
-button create
 
 Priority 2 :
 
 files : active, desactivate
 File explorer
 
-
-
 Priority 3 :
 
-rename settings to config
-state change/transition observer
+Les freq bounds d'un fichier audio influent sur le score
 Hierarchical FSM ?
 
 design a save system 
