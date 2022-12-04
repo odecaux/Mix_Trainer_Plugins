@@ -61,7 +61,6 @@ struct FrequencyWidget : public juce::Component
             g.drawText(juce::String(line_freq), textBounds, juce::Justification::centred, false);
         }
         
-        if(is_active_at_all)
         {
             auto mouse_position = getMouseXYRelative();
             auto mouse_ratio = ratioInRect(mouse_position, r);
@@ -128,7 +127,7 @@ struct FrequencyWidget : public juce::Component
 private:
     void mouseMove (const juce::MouseEvent&) override
     {
-        if(is_cursor_locked || !is_active_at_all)
+        if(is_cursor_locked)
             return;
         //static_assert(false); //mouse_move
         repaint();
@@ -137,7 +136,7 @@ private:
     
     void mouseDrag (const juce::MouseEvent&) override
     {
-        if(is_cursor_locked || !is_active_at_all)
+        if(is_cursor_locked)
             return;
         //static_assert(false); //mouse_move ?
         repaint();
@@ -145,14 +144,13 @@ private:
 
     void mouseDown(const juce::MouseEvent&) override
     {
-        if(is_cursor_locked || !is_active_at_all)
+        if(is_cursor_locked)
             return;
         auto clicked_freq = positionToFrequency(getMouseXYRelative(), getLocalBounds());
         onClick(clicked_freq);
     }
 
 public:
-    bool is_active_at_all;
     bool display_target;
     int target_frequency;
     bool is_cursor_locked;
@@ -195,19 +193,17 @@ struct Effect_DSP {
 };
 
 struct Effect_UI {
-    //GameStep step; 
-
-    bool is_active_at_all;
-    
-    bool display_target;
-    int target_frequency;
-    bool is_cursor_locked;
-    int locked_cursor_frequency;
-    bool display_window;
-    float correct_answer_window;
-
+    struct {
+        bool display_target;
+        int target_frequency;
+        bool is_cursor_locked;
+        int locked_cursor_frequency;
+        bool display_window;
+        float correct_answer_window;
+    } freq_widget;
+    FrequencyGame_Results results;
     juce::String header_text;
-    int score; 
+    int score;
     Mix mix;
     bool display_button;
     juce::String button_text;
@@ -371,7 +367,7 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
     }
     else if (ui.results_panel)
     {
-        ui.results_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.score), juce::dontSendNotification);
+        ui.results_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.results.score), juce::dontSendNotification);
     }
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
@@ -680,8 +676,6 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         {
             case GameStep_Begin :
             {
-                effect_ui.is_active_at_all = false;
-
                 effect_ui.header_text = "Ready ?";
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Begin";
@@ -689,27 +683,23 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             } break;
             case GameStep_Question :
             {
-                effect_ui.is_active_at_all = true;
-
-                effect_ui.display_target = false;
-                effect_ui.is_cursor_locked = false;
-                effect_ui.display_window = true;
-                effect_ui.correct_answer_window = state->correct_answer_window;
+                effect_ui.freq_widget.display_target = false;
+                effect_ui.freq_widget.is_cursor_locked = false;
+                effect_ui.freq_widget.display_window = true;
+                effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
 
                 effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = false;
             } break;
             case GameStep_Result :
             {
-                effect_ui.is_active_at_all = true;
-
-                effect_ui.display_target = true;
-                effect_ui.target_frequency = state->target_frequency;
-                effect_ui.is_cursor_locked = true;
+                effect_ui.freq_widget.display_target = true;
+                effect_ui.freq_widget.target_frequency = state->target_frequency;
+                effect_ui.freq_widget.is_cursor_locked = true;
                 assert(event.type == Event_Click_Frequency);
-                effect_ui.locked_cursor_frequency = event.value_i;
-                effect_ui.display_window = true;
-                effect_ui.correct_answer_window = state->correct_answer_window;
+                effect_ui.freq_widget.locked_cursor_frequency = event.value_i;
+                effect_ui.freq_widget.display_window = true;
+                effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
 
                 effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = true;
@@ -718,8 +708,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             } break;
             case GameStep_EndResults :
             {
-                effect_ui.is_active_at_all = false;
-
+                effect_ui.results.score = state->score;
                 effect_ui.header_text = "Results";
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Quit";
@@ -743,12 +732,11 @@ void frequency_game_add_observer(FrequencyGame_State *state, observer_t &&observ
 
 void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui)
 {
-    widget->is_active_at_all = new_ui.is_active_at_all;
-    widget->display_target = new_ui.display_target;
-    widget->target_frequency = new_ui.target_frequency;
-    widget->is_cursor_locked = new_ui.is_cursor_locked;
-    widget->locked_cursor_frequency = new_ui.locked_cursor_frequency;
-    widget->display_window = new_ui.display_window;
-    widget->correct_answer_window = new_ui.correct_answer_window;
+    widget->display_target = new_ui.freq_widget.display_target;
+    widget->target_frequency = new_ui.freq_widget.target_frequency;
+    widget->is_cursor_locked = new_ui.freq_widget.is_cursor_locked;
+    widget->locked_cursor_frequency = new_ui.freq_widget.locked_cursor_frequency;
+    widget->display_window = new_ui.freq_widget.display_window;
+    widget->correct_answer_window = new_ui.freq_widget.correct_answer_window;
     widget->repaint();
 }
