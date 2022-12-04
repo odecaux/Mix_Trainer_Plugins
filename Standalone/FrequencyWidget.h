@@ -1,14 +1,16 @@
 constexpr int max_f = 12800;
 constexpr int min_f = 50;
-double power = 2.0;
 
 int totalSections = 9;
 
-int ratioToHz(float pos) {
-    return int(min_f * std::pow(2, totalSections * pos));
+int ratioToHz(float ratio) {
+    double exponent = 0.5 + (double)ratio * double(totalSections - 1);
+    return int(min_f * std::pow(2, exponent));
 }
 float hzToRatio(int hz) {
-    return float(std::log((double)hz / (double)min_f) / (totalSections * std::log(2.0)));
+    double a = std::log((double)hz / (double)min_f) / std::log(2.0);
+    double ratio = (a - 0.5) / double(totalSections - 1);
+    return (float)ratio;
 }
 
 float frequencyToX(int frequency, juce::Rectangle<int> bounds)
@@ -57,7 +59,7 @@ struct FrequencyWidget : public juce::Component
             auto x = frequencyToX(line_freq, r);
             drawLineAt(10.0f, 45.0f, x);
             juce::Point<float> textCentre = { x, 0.0f }; //TODO yolo
-            auto textBounds = juce::Rectangle<float> { 30.0f, 40.0f }.withCentre(textCentre).withY((float)r.getBottom() - 45.0f);
+            auto textBounds = juce::Rectangle<float> { 40.0f, 40.0f }.withCentre(textCentre).withY((float)r.getBottom() - 45.0f);
             g.drawText(juce::String(line_freq), textBounds, juce::Justification::centred, false);
         }
         
