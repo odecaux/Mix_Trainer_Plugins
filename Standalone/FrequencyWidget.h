@@ -162,6 +162,22 @@ public:
     std::function < void(int) > onClick;
 };
 
+struct FrequencyGame_Results_Panel : public juce::Component
+{
+    FrequencyGame_Results_Panel()
+    {
+        score_label.setSize(100, 50);
+        addAndMakeVisible(score_label);
+    }
+
+    void resized()
+    {
+        auto r = getLocalBounds();
+        score_label.setCentrePosition(r.getCentre());
+    }
+    juce::Label score_label;
+};
+
 struct FrequencyGame_Results
 {
     int score;
@@ -308,11 +324,14 @@ struct FrequencyGame_UI : public juce::Component
         header.setBounds(header_bounds);
         if(frequency_widget)
             frequency_widget->setBounds(game_bounds);
+        else if(results_panel)
+            results_panel->setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
     }
 
     GameUI_Header header;
     std::unique_ptr<FrequencyWidget> frequency_widget;
+    std::unique_ptr<FrequencyGame_Results_Panel> results_panel;
     GameUI_Bottom bottom;
     FrequencyGame_State *state;
 private:
@@ -337,6 +356,9 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
     if (transition.in_transition == GameStep_EndResults)
     {
         ui.frequency_widget.reset();
+        ui.results_panel = std::make_unique < FrequencyGame_Results_Panel > ();
+        ui.addAndMakeVisible(*ui.results_panel);
+        ui.resized();
     }
 }
 
@@ -346,6 +368,10 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
     if (ui.frequency_widget)
     {
         frequency_widget_update(ui.frequency_widget.get(), new_ui);
+    }
+    else if (ui.results_panel)
+    {
+        ui.results_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.score), juce::dontSendNotification);
     }
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
