@@ -1408,9 +1408,8 @@ class Main_Component : public juce::Component
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
-        auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
 
-        auto observer = [this, ui = game_ui.get()] (const Effects &effects) { 
+        auto observer = [this] (const Effects &effects) { 
             if(effects.dsp)
                 player.push_new_dsp_state(effects.dsp->dsp_state);
             if(effects.player)
@@ -1418,8 +1417,17 @@ class Main_Component : public juce::Component
                     player.post_command(command);
             if(effects.results)
                 DBG(effects.results->score);
-            if(effects.ui)
-                frequency_game_ui_update(*ui, *effects.ui);
+            if (effects.transition)
+            {
+                if(effects.transition->in_transition == GameStep_Begin)
+                    panel = std::make_unique < FrequencyGame_UI > (state.get());
+            }
+            if (effects.ui)
+            {
+                auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
+                jassert(game_ui);
+                frequency_game_ui_update(*game_ui, *effects.ui);
+            }
             if (effects.timer)
             {
                 state->timer.stopTimer();
@@ -1437,9 +1445,8 @@ class Main_Component : public juce::Component
         frequency_game_add_observer(state.get(), std::move(debug_observer));
 
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
-        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
+        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI });
 
-        panel = std::move(game_ui);
         addAndMakeVisible(*panel);
         resized();
     }
