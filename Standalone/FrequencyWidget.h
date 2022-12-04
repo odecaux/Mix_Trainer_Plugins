@@ -261,7 +261,7 @@ struct FrequencyGame_UI;
 
 
 void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
-void frequency_game_ui_transitions(FrequencyGame_UI &ui);
+void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition);
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui);
 Effects frequency_game_update(FrequencyGame_State *state, Event event);
 void frequency_game_post_event(FrequencyGame_State *state, Event event);
@@ -273,14 +273,6 @@ struct FrequencyGame_UI : public juce::Component
     FrequencyGame_UI(FrequencyGame_State *state) 
     : state(state)
     {
-        frequency_widget.onClick = [state] (int frequency) {
-            Event event = {
-                .type = Event_Click_Frequency,
-                .value_i = frequency
-            };
-            frequency_game_post_event(state, event);
-        };
-
         bottom.onNextClicked = [state] (Event_Type e){
             Event event = {
                 .type = e
@@ -301,7 +293,6 @@ struct FrequencyGame_UI : public juce::Component
             frequency_game_post_event(state, event);
         };
         addAndMakeVisible(header);
-        addAndMakeVisible(frequency_widget);
         addAndMakeVisible(bottom);
     }
 
@@ -315,25 +306,47 @@ struct FrequencyGame_UI : public juce::Component
         auto game_bounds = bounds.withTrimmedTop(4).withTrimmedBottom(4);
 
         header.setBounds(header_bounds);
-        frequency_widget.setBounds(game_bounds);
+        if(frequency_widget)
+            frequency_widget->setBounds(game_bounds);
         bottom.setBounds(bottom_bounds);
     }
 
-    FrequencyWidget frequency_widget;
     GameUI_Header header;
+    std::unique_ptr<FrequencyWidget> frequency_widget;
     GameUI_Bottom bottom;
     FrequencyGame_State *state;
+private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyGame_UI)
 };
 
-void frequency_game_ui_transitions(FrequencyGame_UI &ui)
+void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition)
 {
-    juce::ignoreUnused(ui);
+    if (transition.out_transition == GameStep_Begin)
+    {
+        ui.frequency_widget = std::make_unique < FrequencyWidget > ();
+        ui.frequency_widget->onClick = [state = ui.state] (int frequency) {
+            Event event = {
+                .type = Event_Click_Frequency,
+                .value_i = frequency
+            };
+            frequency_game_post_event(state, event);
+        };
+        ui.addAndMakeVisible(*ui.frequency_widget);
+        ui.resized();
+    }
+    if (transition.in_transition == GameStep_EndResults)
+    {
+        ui.frequency_widget.reset();
+    }
 }
 
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
-    frequency_widget_update(&ui.frequency_widget, new_ui);
+    if (ui.frequency_widget)
+    {
+        frequency_widget_update(ui.frequency_widget.get(), new_ui);
+    }
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 

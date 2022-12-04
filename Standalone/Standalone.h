@@ -1421,6 +1421,9 @@ class Main_Component : public juce::Component
             {
                 if(effects.transition->in_transition == GameStep_Begin)
                     panel = std::make_unique < FrequencyGame_UI > (state.get());
+                auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
+                if(game_ui)
+                    frequency_game_ui_transitions(*game_ui, *effects.transition);
             }
             if (effects.ui)
             {
