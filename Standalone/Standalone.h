@@ -1186,7 +1186,6 @@ public :
         stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 50));
     }
 
-private :
     juce::TextButton game_button;
     juce::TextButton file_list_button;
     juce::TextButton stats_button;
@@ -1459,11 +1458,17 @@ class Main_Component : public juce::Component
     void toMainMenu()
     {
         state.reset();
-        panel = std::make_unique < MainMenu_Panel > (
+        auto main_menu_panel = std::make_unique < MainMenu_Panel > (
             [this] { toGameConfig(); },
             [this] { toFileSelector(); },
             [this] {}
         );
+        if (files.empty())
+        {
+            main_menu_panel->game_button.setEnabled(false);
+            main_menu_panel->game_button.setTooltip("Please add audio files");
+        }
+        panel = std::move(main_menu_panel);
         addAndMakeVisible(*panel);
         resized();
     }
@@ -1563,9 +1568,11 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    std::vector<FrequencyGame_Config> game_configs = {};
-    std::vector<FrequencyGame_Results> game_results_history = {};
+    std::vector<FrequencyGame_Config> game_configs = nullptr;
+    std::vector<FrequencyGame_Results> game_results_history = nullptr;
     int current_config_idx = 0;
+
+    juce::TooltipWindow tooltip_window {this, 300};
     
 #if 0
     juce::TextButton burger { "menu" };
