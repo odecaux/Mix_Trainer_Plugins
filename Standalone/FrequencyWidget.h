@@ -169,6 +169,11 @@ struct FrequencyGame_Results
     //temps moyen ? distance moyenne ? stats ?
 };
 
+struct Effect_Transition {
+    GameStep in_transition;
+    GameStep out_transition;
+};
+
 struct Effect_DSP {
     Channel_DSP_State dsp_state;
 };
@@ -204,6 +209,7 @@ struct Effect_Timer {
 };
 
 struct Effects {
+    std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP > dsp;
     std::optional < Effect_Player > player;
     std::optional < Effect_UI > ui;
@@ -255,6 +261,7 @@ struct FrequencyGame_UI;
 
 
 void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
+void frequency_game_ui_transitions(FrequencyGame_UI &ui);
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui);
 Effects frequency_game_update(FrequencyGame_State *state, Event event);
 void frequency_game_post_event(FrequencyGame_State *state, Event event);
@@ -317,6 +324,11 @@ struct FrequencyGame_UI : public juce::Component
     GameUI_Bottom bottom;
     FrequencyGame_State *state;
 };
+
+void frequency_game_ui_transitions(FrequencyGame_UI &ui)
+{
+    juce::ignoreUnused(ui);
+}
 
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
 {
@@ -507,6 +519,14 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
     }
     
+    if (in_transition != GameStep_None || out_transition != GameStep_None)
+    {
+        effects.transition = {
+            .in_transition = in_transition,
+            .out_transition = out_transition
+        };
+    }
+
     switch (out_transition)
     {
         case GameStep_None :

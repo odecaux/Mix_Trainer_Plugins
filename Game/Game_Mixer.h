@@ -27,6 +27,7 @@ struct Effect_Timer {
 };
 
 struct Effects {
+    std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP> dsp;
     std::optional < Effect_UI > ui;
     std::optional < Effect_Rename > rename;
