@@ -1195,11 +1195,17 @@ private :
 
 static const juce::Identifier id_config_root = "configs";
 static const juce::Identifier id_config = "config";
-static const juce::Identifier id_title = "title";
-static const juce::Identifier id_gain = "gain";
-static const juce::Identifier id_q = "q";
-static const juce::Identifier id_window = "window";
-static const juce::Identifier id_timeout = "timeout";
+static const juce::Identifier id_config_title = "title";
+static const juce::Identifier id_config_gain = "gain";
+static const juce::Identifier id_config_quality = "q";
+static const juce::Identifier id_config_window = "window";
+static const juce::Identifier id_config_timeout = "timeout";
+
+static const juce::Identifier id_results_root = "results_history";
+static const juce::Identifier id_result = "result";
+static const juce::Identifier id_result_score = "score";
+static const juce::Identifier id_result_timestamp = "timestamp";
+
 
 class Main_Component : public juce::Component
 {
@@ -1256,7 +1262,7 @@ class Main_Component : public juce::Component
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
             assert(app_data.exists() && app_data.isDirectory());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.json");
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.xml");
             if (!file_RENAME.existsAsFile())
             {
                 file_RENAME.create();
@@ -1265,26 +1271,79 @@ class Main_Component : public juce::Component
             auto stream = file_RENAME.createInputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/configs.json");
+                DBG("couldn't open %appdata%/MixerTrainer/configs.xml");
                 return;
             }
-            juce::String config_string = stream->readString();
-            juce::ValueTree root_config_node = juce::ValueTree::fromXml(config_string);
-            if(root_config_node.getType() != id_config_root)
+            juce::String xml_string = stream->readString();
+            juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+            if(root_node.getType() != id_config_root)
                 return;
-            for (int i = 0; i < root_config_node.getNumChildren(); i++)
+            for (int i = 0; i < root_node.getNumChildren(); i++)
             {
-                juce::ValueTree config_node = root_config_node.getChild(i);
-                if(config_node.getType() != id_config)
+                juce::ValueTree node = root_node.getChild(i);
+                if(node.getType() != id_result)
                     continue;
                 FrequencyGame_Settings config = {
-                    .title = config_node.getProperty(id_title, ""),
-                    .eq_gain = config_node.getProperty(id_gain, -1.0f),
-                    .eq_quality = config_node.getProperty(id_q, -1.0f),
-                    .initial_correct_answer_window = config_node.getProperty(id_window, -1.0f),
-                    .next_question_timeout_ms = config_node.getProperty(id_timeout, -1),
+                    .title = node.getProperty(id_config_title, ""),
+                    .eq_gain = node.getProperty(id_config_gain, -1.0f),
+                    .eq_quality = node.getProperty(id_config_quality, -1.0f),
+                    .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
+                    .next_question_timeout_ms = node.getProperty(id_config_timeout, -1),
                 };
                 settings.push_back(config);
+            }
+        }();
+
+        if (settings.empty())
+        {
+            settings = { {
+                .title = "Default",
+                .eq_gain = 4.0f,
+                .eq_quality = 0.7f,
+                .initial_correct_answer_window = 0.15f,
+                .next_question_timeout_ms = 1000
+            },
+            {
+                .title = "Default_2",
+                .eq_gain = 4.0f,
+                .eq_quality = 0.7f,
+                .initial_correct_answer_window = 0.15f,
+                .next_question_timeout_ms = 1000
+            },
+            };
+        }
+
+        
+        //load previous results
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            assert(app_data.exists() && app_data.isDirectory());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("results.xml");
+            if (!file_RENAME.existsAsFile())
+            {
+                file_RENAME.create();
+                return;
+            }
+            auto stream = file_RENAME.createInputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/results.xml");
+                return;
+            }
+            juce::String xml_string = stream->readString();
+            juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+            if(root_node.getType() != id_results_root)
+                return;
+            for (int i = 0; i < root_node.getNumChildren(); i++)
+            {
+                juce::ValueTree node = root_node.getChild(i);
+                if(node.getType() != id_result)
+                    continue;
+                FrequencyGame_Results result = {
+                    .score = node.getProperty(id_result_score, "")
+                };
+                game_results_history.push_back(result);
             }
         }();
 
@@ -1345,28 +1404,54 @@ class Main_Component : public juce::Component
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.json");
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.xml");
             auto stream = file_RENAME.createOutputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/configs.json");
+                DBG("couldn't open %appdata%/MixerTrainer/configs.xml");
                 return;
             }
             stream->setPosition(0);
             stream->truncate();
-            juce::ValueTree root_config_node { id_config_root };
+            juce::ValueTree root_node { id_config_root };
             for (const FrequencyGame_Settings& config : settings)
             {
-                juce::ValueTree config_node = { id_config, {
-                    { id_title,  config.title },
-                    { id_gain, config.eq_gain },
-                    { id_q, config.eq_quality },
-                    { id_window, config.initial_correct_answer_window },
-                    { id_timeout, config.next_question_timeout_ms }
+                juce::ValueTree node = { id_result, {
+                    { id_result_score,  config.title },
+                    { id_config_gain, config.eq_gain },
+                    { id_config_quality, config.eq_quality },
+                    { id_config_window, config.initial_correct_answer_window },
+                    { id_config_timeout, config.next_question_timeout_ms }
                 }};
-                root_config_node.addChild(config_node, -1, nullptr);
+                root_node.addChild(node, -1, nullptr);
             }
-            auto xml_string = root_config_node.toXmlString();
+            auto xml_string = root_node.toXmlString();
+            *stream << xml_string;
+        }();
+
+        
+        //save previous results
+        [&] {
+            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+            DBG(app_data.getFullPathName());
+            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("results.xml");
+            auto stream = file_RENAME.createOutputStream();
+            if (!stream->openedOk())
+            {
+                DBG("couldn't open %appdata%/MixerTrainer/results.xml");
+                return;
+            }
+            stream->setPosition(0);
+            stream->truncate();
+            juce::ValueTree root_node { id_results_root };
+            for (const FrequencyGame_Results& result : game_results_history)
+            {
+                juce::ValueTree node = { id_result, {
+                    { id_result_score,  result.score }
+                }};
+                root_node.addChild(node, -1, nullptr);
+            }
+            auto xml_string = root_node.toXmlString();
             *stream << xml_string;
         }();
     }
@@ -1415,8 +1500,10 @@ class Main_Component : public juce::Component
             if(effects.player)
                 for(const auto& command : effects.player->commands)
                     player.post_command(command);
-            if(effects.results)
-                DBG(effects.results->score);
+            if (effects.results)
+            {
+                game_results_history.push_back(*effects.results);
+            }
             if (effects.transition)
             {
                 if(effects.transition->in_transition == GameStep_Begin)
@@ -1477,6 +1564,7 @@ class Main_Component : public juce::Component
 
     std::vector<Audio_File> files;
     std::vector<FrequencyGame_Settings> settings = {};
+    std::vector<FrequencyGame_Results> game_results_history = {};
     int current_settings_idx = 0;
     
 #if 0
