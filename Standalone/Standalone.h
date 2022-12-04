@@ -1559,13 +1559,6 @@ class Main_Component : public juce::Component
                 jassert(game_ui);
                 frequency_game_ui_update(*game_ui, *effects.ui);
             }
-            if (effects.timer)
-            {
-                state->timer.stopTimer();
-                state->timer.callback = std::move(effects.timer->callback);
-                state->timer.gen_idx = effects.timer->gen_idx;
-                state->timer.startTimer(effects.timer->timeout_ms);
-            }
         };
 
         auto debug_observer = [this] (const Effects &effects) {

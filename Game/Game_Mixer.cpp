@@ -39,13 +39,6 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
         for(auto &observer : state->observers_ui)
             observer(*effects.ui);
     }
-    if (effects.timer)
-    {
-        state->timer.stopTimer();
-        state->timer.gen_idx = effects.timer->gen_idx;
-        state->timer.callback = std::move(effects.timer->callback);
-        state->timer.startTimer(effects.timer->timeout_ms);
-    }
     if (effects.rename)
     {
         state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
@@ -69,8 +62,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         .dsp = std::nullopt, 
         .ui = std::nullopt, 
         .rename = std::nullopt, 
-        .quit = false, 
-        .timer = std::nullopt 
+        .quit = false
     };
     
     bool done_listening = false;
@@ -156,17 +148,26 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
-        case Event_Timeout : 
+        case Event_Timer_Tick : 
         {
-            if (event.timer_gen_idx == state->gen_idx_active)
+            if (step == GameStep_Question 
+                && state->variant == MixerGame_Timer
+                && state->mix == Mix_Target)
             {
-                assert(step == GameStep_Question);
-                done_listening = true;
+                auto current_time_ms = juce::Time::currentTimeMillis();
+                if (current_time_ms >= state->timestamp_start + state->timeout_ms)
+                {
+                    done_listening = true;
+                }
+            }
+            else
+            {
+                assert(state->timestamp_start == -1);
             }
         } break;
         case Event_Click_Done_Listening : 
         {
-            assert(state->timer.isTimerRunning());
+            assert(step == GameStep_Question && state->variant == MixerGame_Timer);
             done_listening = true;
         } break;
         case Event_Click_Answer : 
@@ -252,8 +253,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         assert(step == GameStep_Question);
         assert(state->mix == Mix_Target);
         state->mix = Mix_User;
-        
-        state->gen_idx_active = -1;
+        state->timestamp_start = -1;
 
         state->can_still_listen = false;
         update_audio = true;
@@ -316,15 +316,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 case MixerGame_Normal : {
                 } break;
                 case MixerGame_Timer : {
-                    state->gen_idx_active = state->gen_idx_counter++;
-
-                    effects.timer = Effect_Timer {
-                        .timeout_ms = state->timeout_ms,
-                        .gen_idx = state->gen_idx_active,
-                        .callback = [state] (int gen_idx) {
-                            mixer_game_post_event(state, Event { .type = Event_Timeout, .timer_gen_idx = gen_idx });
-                        }
-                    };
+                    state->timestamp_start = juce::Time::currentTimeMillis();
                 } break;
                 case MixerGame_Tries : {
                     state->remaining_listens = state->listens;
@@ -481,7 +473,7 @@ void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t &&ob
 }
 
 
-std::unique_ptr<MixerGame_State> mixer_game_init(
+std::unique_ptr < MixerGame_State > mixer_game_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
     MixerGame_Variant variant,
     int listens,
@@ -489,9 +481,9 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
     std::vector<double> db_slider_values,
     Application *app)
 {
-    if(variant != MixerGame_Tries)
+    if (variant != MixerGame_Tries)
         assert(listens == -1);
-    if(variant != MixerGame_Timer)
+    if (variant != MixerGame_Timer)
         assert(timeout_ms == -1);
 
     MixerGame_State state = {
@@ -500,10 +492,14 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
         .listens = listens,
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
-        .gen_idx_active = -1,
-        .gen_idx_counter = 0,
-        .update_fn_mutex = std::make_unique<std::mutex>(),
+        .timestamp_start = -1,
+        .update_fn_mutex = std::make_unique < std::mutex > (),
         .app = app
     };
-    return std::make_unique < MixerGame_State > (std::move(state));
+    auto state_ptr = std::make_unique < MixerGame_State > (std::move(state));
+    state_ptr->timer.callback = [state = state_ptr.get()] {
+        mixer_game_post_event(state, Event { .type = Event_Timer_Tick });
+    };
+    state_ptr->timer.startTimerHz(60);
+    return state_ptr;
 }

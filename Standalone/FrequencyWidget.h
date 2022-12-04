@@ -216,12 +216,6 @@ struct Effect_Player {
     std::vector<Audio_Command> commands;
 };
 
-struct Effect_Timer {
-    int timeout_ms;
-    int gen_idx;
-    std::function<void(int)> callback;
-};
-
 struct Effects {
     std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP > dsp;
@@ -229,7 +223,6 @@ struct Effects {
     std::optional < Effect_UI > ui;
     std::optional < FrequencyGame_Results > results;
     bool quit;
-    std::optional < Effect_Timer > timer;
 };
 
 struct FrequencyGame_Config
@@ -274,8 +267,7 @@ struct FrequencyGame_State
     FrequencyGame_Config config;
     FrequencyGame_Results results;
 
-    int gen_idx_active;
-    int gen_idx_counter;
+    juce::int64 timestamp_start;
     std::unique_ptr<std::mutex> update_fn_mutex;
     Timer timer;
     std::vector<observer_t> observers;
@@ -394,37 +386,10 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
     }
     for(auto &observer : state->observers)
         observer(effects);
-#if 0
-    if (effects.dsp)
-    {
-        for(auto &observer : state->observers_audio)
-            observer(*effects.dsp);
-    }
-    if (effects.ui)
-    {
-        for(auto &observer : state->observers_ui)
-            observer(*effects.ui);
-    }
-    if (effects.timer)
-    {
-        state->timer.stopTimer();
-        state->timer.callback = std::move(effects.timer->callback);
-        state->timer.gen_idx = effects.timer->gen_idx;
-        state->timer.startTimer(effects.timer->timeout_ms);
-    }
-    if (effects.player)
-    {
-        for(auto &observer : state->observers_player)
-            observer(*effects.player);
-    }
-    if (effects.results)
-    {
-        for(auto &observer : state->observers_results)
-            observer(*effects.results);
-    }
-#endif
+
     if (effects.quit)
     {
+        state->timer.stopTimer();
         state->on_quit();
     }
 }
@@ -437,12 +402,17 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Con
     auto state = FrequencyGame_State {
         .files = std::move(files),
         .config = config,
-        .gen_idx_active = -1,
-        .gen_idx_counter = 0,
+        .timestamp_start = -1,
         .update_fn_mutex = std::make_unique<std::mutex>(),
         .on_quit = std::move(on_quit)
     };
-    return std::make_unique < FrequencyGame_State > (std::move(state));
+
+    auto state_ptr = std::make_unique < FrequencyGame_State > (std::move(state));
+    state_ptr->timer.callback = [state = state_ptr.get()] {
+        frequency_game_post_event(state, Event {.type = Event_Timer_Tick});
+    };
+    state_ptr->timer.startTimerHz(60);
+    return state_ptr;
 }
 
 Effects frequency_game_update(FrequencyGame_State *state, Event event)
@@ -459,7 +429,6 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         .player = std::nullopt, 
         .ui = std::nullopt, 
         .quit = false, 
-        .timer = std::nullopt 
     };
 
     switch (event.type) 
@@ -516,13 +485,21 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 #endif
             jassertfalse;
         } break;
-        case Event_Timeout :
+        case Event_Timer_Tick :
         {
-            if (event.timer_gen_idx == state->gen_idx_active)
+            if (step == GameStep_Result)
             {
-                assert(old_step == GameStep_Result);
-                out_transition = GameStep_Result;
-                in_transition = GameStep_Question;
+                auto current_time_ms = juce::Time::currentTimeMillis();
+                if (current_time_ms >=
+                    state->timestamp_start + state->config.next_question_timeout_ms)
+                {
+                    out_transition = GameStep_Result;
+                    in_transition = GameStep_Question;
+                }
+            }
+            else
+            {
+                assert(state->timestamp_start == -1);
             }
         } break;
         case Event_Click_Begin :
@@ -588,7 +565,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case GameStep_Result :
         {
-            state->gen_idx_active = -1;
+            state->timestamp_start = -1;
         } break;
         case GameStep_EndResults :
         {
@@ -628,15 +605,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case GameStep_Result : 
         {
             step = GameStep_Result;
-            state->gen_idx_active = state->gen_idx_counter++;
-
-            effects.timer = Effect_Timer {
-                .timeout_ms = state->config.next_question_timeout_ms,
-                .gen_idx = state->gen_idx_active,
-                .callback = [state] (int gen_idx) {
-                    frequency_game_post_event(state, Event { .type = Event_Timeout, .timer_gen_idx = gen_idx });
-                }
-            };
+            auto current_time_ms = juce::Time::currentTimeMillis();
+            state->timestamp_start = current_time_ms;
             update_audio = true;
             update_ui = true;
         }break;

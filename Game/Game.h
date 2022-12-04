@@ -38,7 +38,7 @@ enum Event_Type{
     Event_Slider, //value_i = slider_position
     Event_Click_Frequency,
     Event_Toggle_Input_Target, //value_b = was_target
-    Event_Timeout,
+    Event_Timer_Tick,
     Event_Click_Begin,
     Event_Click_Done_Listening,
     Event_Click_Answer,

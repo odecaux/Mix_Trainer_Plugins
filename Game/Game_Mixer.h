@@ -1,6 +1,11 @@
 struct MixerGameUI;
 
 
+struct Effect_Transition {
+    GameStep in_transition;
+    GameStep out_transition;
+};
+
 struct Effect_DSP {
     std::unordered_map<int, Channel_DSP_State> dsp_states;
 };
@@ -20,19 +25,12 @@ struct Effect_Rename {
     std::string new_name;
 };
 
-struct Effect_Timer {
-    int timeout_ms;
-    int gen_idx;
-    std::function<void(int)> callback;
-};
-
 struct Effects {
     std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP> dsp;
     std::optional < Effect_UI > ui;
     std::optional < Effect_Rename > rename;
     bool quit;
-    std::optional < Effect_Timer > timer;
 };
 
 using audio_observer_t = std::function<void(Effect_DSP)>;
@@ -65,8 +63,7 @@ struct MixerGame_State {
     int timeout_ms;
     std::vector < double > db_slider_values;
     //io
-    int gen_idx_active;
-    int gen_idx_counter;
+    juce::int64 timestamp_start;
     std::unique_ptr<std::mutex> update_fn_mutex;
     Application *app;
     std::vector<ui_observer_t> observers_ui;

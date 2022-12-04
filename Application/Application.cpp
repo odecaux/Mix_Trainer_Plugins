@@ -71,7 +71,7 @@ void Application::toGame(MixerGame_Variant variant)
             game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
         } break;
         case MixerGame_Timer : {
-            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 8000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
         } break;
         case MixerGame_Tries : {
             game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
