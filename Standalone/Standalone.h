@@ -784,14 +784,14 @@ public:
         }
     }
 
-    int getNumRows() override { return (int)config.size(); }
+    int getNumRows() override { return (int)config.size() + 1; }
 
-    void paintListBoxItem (int,
+    void paintListBoxItem (int row,
                            juce::Graphics& g,
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowIsSelected)
+        if (rowIsSelected && row < config.size())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -799,23 +799,35 @@ public:
         }
     }
 
-    juce::Component *refreshComponentForRow (int rowNumber, 
-                                             bool, 
+    juce::Component *refreshComponentForRow (int rowNumber,
+                                             bool,
                                              Component *existingComponentToUpdate) override
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
-        if (rowNumber >= config.size())
+        //unused row
+        if (rowNumber > config.size())
         {
             if (existingComponentToUpdate != nullptr)
                 delete existingComponentToUpdate;
             return nullptr;
         }
-        EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ? 
-            dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) : 
-            new EditableTextCustomComponent(*this);
-        label->setText(config[rowNumber].title, juce::dontSendNotification);
-        label->setRow (rowNumber);
-        return label;
+        //"Insert config" row
+        else if (rowNumber == config.size()) 
+        {
+            EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
+                dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
+                new EditableTextCustomComponent(*this);
+            label->setRow (rowNumber);
+            return label;
+        }
+        else
+        {
+            EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
+                dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
+                new EditableTextCustomComponent(*this);
+            label->setRow (rowNumber);
+            return label;
+        } 
     }
 
 #if 0
@@ -874,7 +886,7 @@ public:
 
     void selectedRowsChanged (int lastRowSelected) override
     {   
-        if(lastRowSelected != -1)
+        if(lastRowSelected != -1 && lastRowSelected != config.size())
             onClick(lastRowSelected);
     }
 
@@ -885,53 +897,91 @@ public:
 
 private:
     std::vector<FrequencyGame_Config> &config;
-    juce::ListBox list_comp = { {}, this};
+    juce::ListBox list_comp = { {}, this };
     std::function < void(int) > onClick;
     
     
-       class EditableTextCustomComponent  : public juce::Label
-       {
-       public:
-           EditableTextCustomComponent (Config_List& list)  : owner (list)
-           {
-               // double click to edit the label text; single click handled below
-               setEditable (false, true, false);
-           }
+    class EditableTextCustomComponent  : public juce::Label
+    {
+    public:
+        EditableTextCustomComponent (Config_List& list)  : owner (list)
+        {
+            // double click to edit the label text; single click handled below
+            setEditable (false, true, true);
+        }
 
-           void mouseDown (const juce::MouseEvent& event) override
-           {
-               // single click on the label should simply select the row
-               owner.list_comp.selectRowsBasedOnModifierKeys (row, event.mods, false);
+        void mouseDown (const juce::MouseEvent& event) override
+        {   
+            // single click on the label should simply select the row
+            owner.list_comp.selectRowsBasedOnModifierKeys (row, event.mods, false);
 
-               juce::Label::mouseDown (event);
-           }
+            juce::Label::mouseDown (event);
+        }
 
-           void textWasEdited() override
-           {
-               owner.config[row].title = getText();
-           }
+        void editorShown (juce::TextEditor * new_editor) override
+        {
+            new_editor->setText("", juce::dontSendNotification);
+        }
 
-           // Our demo code will call this when we may need to update our contents
-           void setRow (const int newRow)
-           {
-               row = newRow;
-               setText (owner.config[newRow].title, juce::dontSendNotification);
-           }
+        void textWasEdited() override
+        {
+            bool restore_text = getText() == "";
 
-           void paint (juce::Graphics& g) override
-           {
-               auto& lf = getLookAndFeel();
-               if (! dynamic_cast<juce::LookAndFeel_V4*> (&lf))
-                   lf.setColour (textColourId, juce::Colours::black);
+            if (row < owner.config.size())
+            {
+                if (restore_text)
+                {
+                    setText(owner.config[row].title, juce::dontSendNotification);
+                    return;
+                }
+                owner.config[row].title = getText();
+            }
+            else //
+            {
+                
+                if (restore_text)
+                {
+                    setText("Insert new config", juce::dontSendNotification);
+                    return;
+                }
+                owner.config.push_back(frequency_game_config_default(getText()));
+                owner.onClick(row);
+                owner.list_comp.updateContent();
+            }
+        }
 
-               juce::Label::paint (g);
-           }
+        // Our demo code will call this when we may need to update our contents
+        void setRow (const int newRow)
+        {
+            row = newRow;
+            if (row < owner.config.size())
+            {
+                setJustificationType(juce::Justification::left);
+                setText (owner.config[newRow].title, juce::dontSendNotification);
+                setColour(juce::Label::textColourId, juce::Colours::white);
+            }
+            else
+            {
+                setJustificationType(juce::Justification::centred);
+                setText ("Insert new config", juce::dontSendNotification);
+                setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+            }
+        }
 
-       private:
-           Config_List& owner;
-           int row;
-           juce::Colour textColour;
-       };
+        void paint (juce::Graphics& g) override
+        {
+            auto& lf = getLookAndFeel();
+            if (! dynamic_cast<juce::LookAndFeel_V4*>(&lf))
+                lf.setColour (textColourId, juce::Colours::black);
+    
+            juce::Label::paint (g);
+        }
+    
+    private:
+        Config_List& owner;
+        int row;
+        juce::Colour textColour;
+    };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Config_List)
 };
@@ -1348,21 +1398,7 @@ class Main_Component : public juce::Component
 
         if (game_configs.empty())
         {
-            game_configs = { {
-                .title = "Default",
-                .eq_gain = 4.0f,
-                .eq_quality = 0.7f,
-                .initial_correct_answer_window = 0.15f,
-                .next_question_timeout_ms = 1000
-            },
-            {
-                .title = "Default_2",
-                .eq_gain = 4.0f,
-                .eq_quality = 0.7f,
-                .initial_correct_answer_window = 0.15f,
-                .next_question_timeout_ms = 1000
-            },
-            };
+            game_configs = { frequency_game_config_default("Default") };
         }
 
         toMainMenu();
@@ -1415,8 +1451,8 @@ class Main_Component : public juce::Component
             juce::ValueTree root_node { id_config_root };
             for (const FrequencyGame_Config& config : game_configs)
             {
-                juce::ValueTree node = { id_result, {
-                    { id_result_score,  config.title },
+                juce::ValueTree node = { id_config, {
+                    { id_config_title,  config.title },
                     { id_config_gain, config.eq_gain },
                     { id_config_quality, config.eq_quality },
                     { id_config_window, config.initial_correct_answer_window },
@@ -1568,8 +1604,8 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    std::vector<FrequencyGame_Config> game_configs = nullptr;
-    std::vector<FrequencyGame_Results> game_results_history = nullptr;
+    std::vector<FrequencyGame_Config> game_configs = {};
+    std::vector<FrequencyGame_Results> game_results_history = {};
     int current_config_idx = 0;
 
     juce::TooltipWindow tooltip_window {this, 300};

@@ -241,6 +241,16 @@ struct FrequencyGame_Config
     int next_question_timeout_ms;
 };
 
+FrequencyGame_Config frequency_game_config_default(juce::String name)
+{
+    return {
+        .title = name,
+        .eq_gain = 4.0f,
+        .eq_quality = 0.7f,
+        .initial_correct_answer_window = 0.15f,
+        .next_question_timeout_ms = 1000
+    };
+}
 
 struct Audio_File
 {
