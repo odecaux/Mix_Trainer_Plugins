@@ -750,16 +750,15 @@ private:
 
 
 //------------------------------------------------------------------------
-class Settings_List : 
+class Config_List : 
     public juce::Component,
     public juce::ListBoxModel
 {
-    
-
+   
 public:
-    Settings_List(std::vector<FrequencyGame_Settings> &settings,
+    Config_List(std::vector<FrequencyGame_Config> &config,
                   std::function<void(int)> onClick) : 
-        settings(settings),
+        config(config),
         onClick(std::move(onClick))
     {
         list_comp.setMultipleSelectionEnabled(false);
@@ -768,7 +767,7 @@ public:
         addAndMakeVisible(list_comp);
     }
 
-    virtual ~Settings_List() override = default;
+    virtual ~Config_List() override = default;
 
     void resized() override
     {
@@ -777,7 +776,7 @@ public:
 
     void paintOverChildren(juce::Graphics& g) override
     {
-        if (settings.empty())
+        if (config.empty())
         {
             auto r = getLocalBounds();
             g.setColour(juce::Colours::white);
@@ -785,7 +784,7 @@ public:
         }
     }
 
-    int getNumRows() override { return (int)settings.size(); }
+    int getNumRows() override { return (int)config.size(); }
 
     void paintListBoxItem (int,
                            juce::Graphics& g,
@@ -805,7 +804,7 @@ public:
                                              Component *existingComponentToUpdate) override
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
-        if (rowNumber >= settings.size())
+        if (rowNumber >= config.size())
         {
             if (existingComponentToUpdate != nullptr)
                 delete existingComponentToUpdate;
@@ -814,7 +813,7 @@ public:
         EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ? 
             dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) : 
             new EditableTextCustomComponent(*this);
-        label->setText(settings[rowNumber].title, juce::dontSendNotification);
+        label->setText(config[rowNumber].title, juce::dontSendNotification);
         label->setRow (rowNumber);
         return label;
     }
@@ -859,7 +858,7 @@ public:
         auto selected_row = list_comp.getSelectedRow();
         if(selected_row == -1) 
             return;
-        settings.erase(settings.begin() + selected_row);
+        config.erase(config.begin() + selected_row);
         auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
         list_comp.selectRow(row_to_select);
         list_comp.updateContent();
@@ -885,7 +884,7 @@ public:
     }
 
 private:
-    std::vector<FrequencyGame_Settings> &settings;
+    std::vector<FrequencyGame_Config> &config;
     juce::ListBox list_comp = { {}, this};
     std::function < void(int) > onClick;
     
@@ -893,7 +892,7 @@ private:
        class EditableTextCustomComponent  : public juce::Label
        {
        public:
-           EditableTextCustomComponent (Settings_List& list)  : owner (list)
+           EditableTextCustomComponent (Config_List& list)  : owner (list)
            {
                // double click to edit the label text; single click handled below
                setEditable (false, true, false);
@@ -909,14 +908,14 @@ private:
 
            void textWasEdited() override
            {
-               owner.settings[row].title = getText();
+               owner.config[row].title = getText();
            }
 
            // Our demo code will call this when we may need to update our contents
            void setRow (const int newRow)
            {
                row = newRow;
-               setText (owner.settings[newRow].title, juce::dontSendNotification);
+               setText (owner.config[newRow].title, juce::dontSendNotification);
            }
 
            void paint (juce::Graphics& g) override
@@ -929,17 +928,17 @@ private:
            }
 
        private:
-           Settings_List& owner;
+           Config_List& owner;
            int row;
            juce::Colour textColour;
        };
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_List)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Config_List)
 };
 
 
 //------------------------------------------------------------------------
-struct Settings_Panel : public juce::Component
+struct Config_Panel : public juce::Component
 {
     using param_temp_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
     
@@ -969,35 +968,35 @@ struct Settings_Panel : public juce::Component
         param_temp_t &param;
     };
 
-    Settings_Panel(std::vector<FrequencyGame_Settings> &settings,
-                   int &current_settings_idx,
+    Config_Panel(std::vector<FrequencyGame_Config> &configs,
+                   int &current_config_idx,
                    std::function < void() > onClickBack,
                    std::function < void() > onClickNext) :
-        settings(settings), current_settings_idx(current_settings_idx)
+        configs(configs), current_config_idx(current_config_idx)
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
                 click();
             };
-            game_ui_header_update(&header, "Settings", -1);
+            game_ui_header_update(&header, "Config", -1);
             addAndMakeVisible(header);
         }
         
-        addAndMakeVisible(settings_list_comp);
+        addAndMakeVisible(config_list_comp);
         
         eq_gain.setTextValueSuffix (" dB");
         eq_gain.onValueChange = [&] {
-            settings[current_settings_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+            configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
         };
         eq_quality.onValueChange = [&] {
-            settings[current_settings_idx].eq_quality = (float) eq_quality.getValue();
+            configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
         };
         initial_correct_answer_window.onValueChange = [&] {
-            settings[current_settings_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+            configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
         };
         next_question_timeout_ms.setTextValueSuffix (" ms");
         next_question_timeout_ms.onValueChange = [&] {
-            settings[current_settings_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
+            configs[current_config_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
         };
         next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
 
@@ -1024,8 +1023,8 @@ struct Settings_Panel : public juce::Component
             addAndMakeVisible(nextButton);
         }
 
-        settings_list_comp.selectRow(current_settings_idx);
-        //selectConfig(current_settings_idx);
+        config_list_comp.selectRow(current_config_idx);
+        //selectConfig(current_config_idx);
     }
 
     void resized()
@@ -1039,7 +1038,7 @@ struct Settings_Panel : public juce::Component
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
         auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
 
-        settings_list_comp.setBounds(left_bounds);
+        config_list_comp.setBounds(left_bounds);
         scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
         viewport.setBounds(right_bounds);
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
@@ -1048,14 +1047,14 @@ struct Settings_Panel : public juce::Component
 
     void selectConfig(int new_config_idx)
     {
-        assert(new_config_idx < settings.size());
-        current_settings_idx = new_config_idx;
-        auto &current_settings = settings[current_settings_idx];
-        float gain_db = juce::Decibels::gainToDecibels(current_settings.eq_gain);
+        assert(new_config_idx < configs.size());
+        current_config_idx = new_config_idx;
+        auto &current_config = configs[current_config_idx];
+        float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
-        eq_quality.setValue(current_settings.eq_quality);
-        initial_correct_answer_window.setValue(current_settings.initial_correct_answer_window);
-        next_question_timeout_ms.setValue((double)current_settings.next_question_timeout_ms);
+        eq_quality.setValue(current_config.eq_quality);
+        initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
+        next_question_timeout_ms.setValue((double)current_config.next_question_timeout_ms);
     }
     
     param_temp_t param = { 
@@ -1065,9 +1064,9 @@ struct Settings_Panel : public juce::Component
         { next_question_timeout_ms , next_question_timeout_ms_label, { 1000, 4000 }, 500 } 
     };
 
-    std::vector<FrequencyGame_Settings> &settings;
-    int &current_settings_idx;
-    Settings_List settings_list_comp = { settings, [&] (int idx) { selectConfig(idx); } };
+    std::vector<FrequencyGame_Config> &configs;
+    int &current_config_idx;
+    Config_List config_list_comp = { configs, [&] (int idx) { selectConfig(idx); } };
     
     GameUI_Header header;
     juce::Slider eq_gain;
@@ -1085,7 +1084,7 @@ struct Settings_Panel : public juce::Component
     juce::TextButton nextButton { "Next" };
    
 private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Settings_Panel)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Config_Panel)
 };
 
 
@@ -1257,7 +1256,7 @@ class Main_Component : public juce::Component
             }
         }();
 
-        //load settings list
+        //load config list
         [&] {
             juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
             DBG(app_data.getFullPathName());
@@ -1283,20 +1282,20 @@ class Main_Component : public juce::Component
                 juce::ValueTree node = root_node.getChild(i);
                 if(node.getType() != id_result)
                     continue;
-                FrequencyGame_Settings config = {
+                FrequencyGame_Config config = {
                     .title = node.getProperty(id_config_title, ""),
                     .eq_gain = node.getProperty(id_config_gain, -1.0f),
                     .eq_quality = node.getProperty(id_config_quality, -1.0f),
                     .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
                     .next_question_timeout_ms = node.getProperty(id_config_timeout, -1),
                 };
-                settings.push_back(config);
+                game_configs.push_back(config);
             }
         }();
-
-        if (settings.empty())
+        
+        if (game_configs.empty())
         {
-            settings = { {
+            game_configs = { {
                 .title = "Default",
                 .eq_gain = 4.0f,
                 .eq_quality = 0.7f,
@@ -1312,6 +1311,7 @@ class Main_Component : public juce::Component
             },
             };
         }
+        jassert(!game_configs.empty());
 
         
         //load previous results
@@ -1347,9 +1347,9 @@ class Main_Component : public juce::Component
             }
         }();
 
-        if (settings.empty())
+        if (game_configs.empty())
         {
-            settings = { {
+            game_configs = { {
                 .title = "Default",
                 .eq_gain = 4.0f,
                 .eq_quality = 0.7f,
@@ -1414,7 +1414,7 @@ class Main_Component : public juce::Component
             stream->setPosition(0);
             stream->truncate();
             juce::ValueTree root_node { id_config_root };
-            for (const FrequencyGame_Settings& config : settings)
+            for (const FrequencyGame_Config& config : game_configs)
             {
                 juce::ValueTree node = { id_result, {
                     { id_result_score,  config.title },
@@ -1460,7 +1460,7 @@ class Main_Component : public juce::Component
     {
         state.reset();
         panel = std::make_unique < MainMenu_Panel > (
-            [this] { toSettings(); },
+            [this] { toGameConfig(); },
             [this] { toFileSelector(); },
             [this] {}
         );
@@ -1476,10 +1476,10 @@ class Main_Component : public juce::Component
         resized();
     }
 
-    void toSettings()
+    void toGameConfig()
     {
         assert(state == nullptr);
-        panel = std::make_unique < Settings_Panel > (settings, current_settings_idx, [&] { toMainMenu(); }, [&] { toGame(); });
+        panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
         resized();
     }
@@ -1489,7 +1489,7 @@ class Main_Component : public juce::Component
         auto on_quit = [this] { 
             toMainMenu();
         };
-        state = frequency_game_state_init(settings[current_settings_idx], files, std::move(on_quit));
+        state = frequency_game_state_init(game_configs[current_config_idx], files, std::move(on_quit));
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
@@ -1563,9 +1563,9 @@ class Main_Component : public juce::Component
     
 
     std::vector<Audio_File> files;
-    std::vector<FrequencyGame_Settings> settings = {};
+    std::vector<FrequencyGame_Config> game_configs = {};
     std::vector<FrequencyGame_Results> game_results_history = {};
-    int current_settings_idx = 0;
+    int current_config_idx = 0;
     
 #if 0
     juce::TextButton burger { "menu" };
