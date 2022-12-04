@@ -1401,35 +1401,44 @@ class Main_Component : public juce::Component
     
     void toGame()
     {
-        state = frequency_game_state_init(settings[current_settings_idx], files, [this] { toMainMenu(); });
+        auto on_quit = [this] { 
+            toMainMenu();
+        };
+        state = frequency_game_state_init(settings[current_settings_idx], files, std::move(on_quit));
         if(state == nullptr)
             return;
         removeChildComponent(panel.get());
-        frequency_game_add_audio_observer(
-            state.get(), 
-            [this] (auto &&effect) { 
-                player.push_new_dsp_state(effect.dsp_state);
-        });
-        frequency_game_add_player_observer(
-            state.get(), 
-            [this] (auto &&effect){ 
-                for(const auto& command : effect.commands)
-                    player.post_command(command);
-        });
-        frequency_game_add_results_observer(
-            state.get(),
-            [this] (auto &&effect) {
-                DBG(effect.score);
-        });
-        frequency_game_post_event(state.get(), Event { .type = Event_Init });
-
         auto game_ui = std::make_unique < FrequencyGame_UI > (state.get());
-        frequency_game_add_ui_observer(
-            state.get(), 
-            [ui = game_ui.get()] (Effect_UI &ui_effect){ 
-                frequency_game_ui_update(*ui, ui_effect); 
-        });
+
+        auto observer = [this, ui = game_ui.get()] (const Effects &effects) { 
+            if(effects.dsp)
+                player.push_new_dsp_state(effects.dsp->dsp_state);
+            if(effects.player)
+                for(const auto& command : effects.player->commands)
+                    player.post_command(command);
+            if(effects.results)
+                DBG(effects.results->score);
+            if(effects.ui)
+                frequency_game_ui_update(*ui, *effects.ui);
+            if (effects.timer)
+            {
+                state->timer.stopTimer();
+                state->timer.callback = std::move(effects.timer->callback);
+                state->timer.gen_idx = effects.timer->gen_idx;
+                state->timer.startTimer(effects.timer->timeout_ms);
+            }
+        };
+
+        auto debug_observer = [this] (const Effects &effects) {
+            juce::ignoreUnused(effects);
+        };
+
+        frequency_game_add_observer(state.get(), std::move(observer));
+        frequency_game_add_observer(state.get(), std::move(debug_observer));
+
+        frequency_game_post_event(state.get(), Event { .type = Event_Init });
         frequency_game_post_event(state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui.get() });
+
         panel = std::move(game_ui);
         addAndMakeVisible(*panel);
         resized();

@@ -229,10 +229,7 @@ struct Audio_File
     juce::Range<juce::int64> loop_bounds;
 };
 
-using audio_observer_t = std::function<void(Effect_DSP &)>;
-using player_observer_t = std::function<void(Effect_Player &)>;
-using ui_observer_t = std::function<void(Effect_UI &)>;
-using results_observer_t = std::function<void(FrequencyGame_Results &)>;
+using observer_t = std::function<void(const Effects &)>;
 
 struct FrequencyGame_State
 {
@@ -249,19 +246,16 @@ struct FrequencyGame_State
     int gen_idx_active;
     int gen_idx_counter;
     std::unique_ptr<std::mutex> update_fn_mutex;
-    std::vector<ui_observer_t> observers_ui;
     Timer timer;
-    std::vector<audio_observer_t> observers_audio;
-    std::vector<player_observer_t> observers_player;
-    std::vector<results_observer_t> observers_results;
-    std::function < void() > quit;
+    std::vector<observer_t> observers;
+    std::function < void() > on_quit;
 };
 
 struct FrequencyGame_UI;
 
 
-void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui);
-void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui);
+void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
+void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui);
 Effects frequency_game_update(FrequencyGame_State *state, Event event);
 void frequency_game_post_event(FrequencyGame_State *state, Event event);
 
@@ -324,7 +318,7 @@ struct FrequencyGame_UI : public juce::Component
     FrequencyGame_State *state;
 };
 
-void frequency_game_ui_update(FrequencyGame_UI &ui, Effect_UI &new_ui)
+void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     frequency_widget_update(&ui.frequency_widget, new_ui);
@@ -338,6 +332,9 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
         std::lock_guard lock { *state->update_fn_mutex };
         effects = frequency_game_update(state, event);
     }
+    for(auto &observer : state->observers)
+        observer(effects);
+#if 0
     if (effects.dsp)
     {
         for(auto &observer : state->observers_audio)
@@ -365,15 +362,16 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
         for(auto &observer : state->observers_results)
             observer(*effects.results);
     }
+#endif
     if (effects.quit)
     {
-        state->quit();
+        state->on_quit();
     }
 }
 
 std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Settings settings, 
                                                                std::vector<Audio_File> files,
-                                                               std::function<void()> onQuit)
+                                                               std::function<void()> on_quit)
 {
     assert(!files.empty());
     auto state = FrequencyGame_State {
@@ -382,7 +380,7 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Set
         .gen_idx_active = -1,
         .gen_idx_counter = 0,
         .update_fn_mutex = std::make_unique<std::mutex>(),
-        .quit = std::move(onQuit)
+        .on_quit = std::move(on_quit)
     };
     return std::make_unique < FrequencyGame_State > (std::move(state));
 }
@@ -679,27 +677,12 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     return effects;
 }
 
-void frequency_game_add_ui_observer(FrequencyGame_State *state, ui_observer_t &&observer)
+void frequency_game_add_observer(FrequencyGame_State *state, observer_t &&observer)
 {
-    state->observers_ui.push_back(std::move(observer));
+    state->observers.push_back(std::move(observer));
 }
 
-void frequency_game_add_audio_observer(FrequencyGame_State *state, audio_observer_t &&observer)
-{
-    state->observers_audio.push_back(std::move(observer));
-}
-
-void frequency_game_add_player_observer(FrequencyGame_State *state, player_observer_t &&observer)
-{
-    state->observers_player.push_back(std::move(observer));
-}
-
-void frequency_game_add_results_observer(FrequencyGame_State *state, results_observer_t &&observer)
-{
-    state->observers_results.push_back(std::move(observer));
-}
-
-void frequency_widget_update(FrequencyWidget *widget, Effect_UI &new_ui)
+void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui)
 {
     widget->is_active_at_all = new_ui.is_active_at_all;
     widget->display_target = new_ui.display_target;
