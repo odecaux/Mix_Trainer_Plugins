@@ -1039,16 +1039,29 @@ struct Config_Panel : public juce::Component
             configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
         };
 
-        next_question_timeout_ms.setTextValueSuffix (" ms");
-        next_question_timeout_ms.onValueChange = [&] {
-            configs[current_config_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
-        };
-        next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
         
-        next_question_timeout_enabled.onClick = [&] {
-            bool new_toggle_state = next_question_timeout_enabled.getToggleState();
-            configs[current_config_idx].next_question_timeout_enabled = new_toggle_state;
-            next_question_timeout_ms.setEnabled(new_toggle_state);
+        question_timeout_ms.setTextValueSuffix (" ms");
+        question_timeout_ms.onValueChange = [&] {
+            configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
+        };
+        question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+        question_timeout_enabled.onClick = [&] {
+            bool new_toggle_state = question_timeout_enabled.getToggleState();
+            configs[current_config_idx].question_timeout_enabled = new_toggle_state;
+            question_timeout_ms.setEnabled(new_toggle_state);
+        };
+
+        result_timeout_ms.setTextValueSuffix (" ms");
+        result_timeout_ms.onValueChange = [&] {
+            configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
+        };
+        result_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+        result_timeout_enabled.onClick = [&] {
+            bool new_toggle_state = result_timeout_enabled.getToggleState();
+            configs[current_config_idx].result_timeout_enabled = new_toggle_state;
+            result_timeout_ms.setEnabled(new_toggle_state);
         };
 
         
@@ -1072,7 +1085,8 @@ struct Config_Panel : public juce::Component
         }
 
         slider_and_toggle_t slider_and_toggle = {
-            { next_question_timeout_ms , next_question_timeout_enabled, { 1000, 4000 }, 500 }
+            { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
+            { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
         };
 
         
@@ -1089,7 +1103,7 @@ struct Config_Panel : public juce::Component
             scroller.addAndMakeVisible(toggle);
         }
 
-        scroller.setSize(0, 4 * 60);
+        scroller.setSize(0, 5 * 60);
         viewport.setScrollBarsShown(true, false);
         viewport.setViewedComponent(&scroller, false);
         addAndMakeVisible(viewport);
@@ -1133,15 +1147,20 @@ struct Config_Panel : public juce::Component
         eq_gain.setValue(gain_db);
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
-        next_question_timeout_ms.setValue((double)current_config.next_question_timeout_ms);
-        next_question_timeout_ms.setEnabled(current_config.next_question_timeout_enabled);
-        next_question_timeout_enabled.setToggleState(current_config.next_question_timeout_enabled, juce::dontSendNotification);
+        
+        question_timeout_ms.setValue((double)current_config.question_timeout_ms);
+        question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
+        question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
+        
+        result_timeout_ms.setValue((double)current_config.result_timeout_ms);
+        result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
+        result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
     }
     
     void onResizeScroller(juce::Rectangle<int> scroller_bounds)
     {
         auto height = scroller_bounds.getHeight();
-        auto param_height = height / 4;
+        auto param_height = height / 5;
 
         auto same_bounds = [&] {
             return scroller_bounds.removeFromTop(param_height / 2);
@@ -1156,8 +1175,11 @@ struct Config_Panel : public juce::Component
         initial_correct_answer_window_label.setBounds(same_bounds());
         initial_correct_answer_window.setBounds(same_bounds());
 
-        next_question_timeout_enabled.setBounds(same_bounds());
-        next_question_timeout_ms.setBounds(same_bounds());
+        question_timeout_enabled.setBounds(same_bounds());
+        question_timeout_ms.setBounds(same_bounds());
+
+        result_timeout_enabled.setBounds(same_bounds());
+        result_timeout_ms.setBounds(same_bounds());
     }
 
     std::vector<FrequencyGame_Config> &configs;
@@ -1175,8 +1197,11 @@ struct Config_Panel : public juce::Component
     juce::Slider initial_correct_answer_window;
     juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
     
-    juce::ToggleButton next_question_timeout_enabled { "Post answer timeout" };
-    juce::Slider next_question_timeout_ms;
+    juce::ToggleButton question_timeout_enabled { "Question timeout" };
+    juce::Slider question_timeout_ms;
+
+    juce::ToggleButton result_timeout_enabled { "Post answer timeout" };
+    juce::Slider result_timeout_ms;
 
     juce::Viewport viewport;
     Scroller scroller { [this] (auto bounds) { onResizeScroller(bounds); } };
@@ -1297,7 +1322,10 @@ static const juce::Identifier id_config_title = "title";
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
 static const juce::Identifier id_config_window = "window";
-static const juce::Identifier id_config_timeout = "timeout";
+static const juce::Identifier id_config_question_timeout_enabled = "question_timeout_enabled";
+static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
+static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
+static const juce::Identifier id_config_result_timeout_ms = "result_timeout_ms";
 
 static const juce::Identifier id_results_root = "results_history";
 static const juce::Identifier id_result = "result";
@@ -1386,7 +1414,10 @@ class Main_Component : public juce::Component
                     .eq_gain = node.getProperty(id_config_gain, -1.0f),
                     .eq_quality = node.getProperty(id_config_quality, -1.0f),
                     .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
-                    .next_question_timeout_ms = node.getProperty(id_config_timeout, -1),
+                    .question_timeout_enabled = node.getProperty(id_config_question_timeout_enabled, false),
+                    .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
+                    .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
+                    .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
                 };
                 game_configs.push_back(config);
             }
@@ -1394,20 +1425,8 @@ class Main_Component : public juce::Component
         
         if (game_configs.empty())
         {
-            game_configs = { {
-                .title = "Default",
-                .eq_gain = 4.0f,
-                .eq_quality = 0.7f,
-                .initial_correct_answer_window = 0.15f,
-                .next_question_timeout_ms = 1000
-            },
-            {
-                .title = "Default_2",
-                .eq_gain = 4.0f,
-                .eq_quality = 0.7f,
-                .initial_correct_answer_window = 0.15f,
-                .next_question_timeout_ms = 1000
-            },
+            game_configs = { 
+                frequency_game_config_default("Default")
             };
         }
         jassert(!game_configs.empty());
@@ -1506,7 +1525,10 @@ class Main_Component : public juce::Component
                     { id_config_gain, config.eq_gain },
                     { id_config_quality, config.eq_quality },
                     { id_config_window, config.initial_correct_answer_window },
-                    { id_config_timeout, config.next_question_timeout_ms }
+                    { id_config_question_timeout_enabled, config.question_timeout_enabled },
+                    { id_config_question_timeout_ms, config.question_timeout_ms },
+                    { id_config_result_timeout_enabled, config.result_timeout_enabled },
+                    { id_config_result_timeout_ms, config.result_timeout_ms },
                 }};
                 root_node.addChild(node, -1, nullptr);
             }

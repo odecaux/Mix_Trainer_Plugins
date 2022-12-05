@@ -75,7 +75,7 @@ struct FrequencyWidget : public juce::Component
             juce::Line<int> cursor_line;
     
             //cursor
-            if (cursor_frequency != -1.0f)
+            if (cursor_frequency != -1)
             {
                 float window_right = std::min(1.0f, cursor_ratio + correct_answer_window);
                 float window_left = std::max(0.0f, cursor_ratio - correct_answer_window);
@@ -231,8 +231,10 @@ struct FrequencyGame_Config
     float eq_gain;
     float eq_quality;
     float initial_correct_answer_window;
-    bool next_question_timeout_enabled;
-    int next_question_timeout_ms;
+    bool question_timeout_enabled;
+    int question_timeout_ms;
+    bool result_timeout_enabled;
+    int result_timeout_ms;
 };
 
 FrequencyGame_Config frequency_game_config_default(juce::String name)
@@ -242,8 +244,8 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
         .eq_gain = 4.0f,
         .eq_quality = 0.7f,
         .initial_correct_answer_window = 0.15f,
-        .next_question_timeout_enabled = true,
-        .next_question_timeout_ms = 1000
+        .result_timeout_enabled = true,
+        .result_timeout_ms = 1000
     };
 }
 
@@ -433,6 +435,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         .quit = false, 
     };
 
+
     switch (event.type) 
     {
         case Event_Init :
@@ -489,11 +492,26 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Timer_Tick :
         {
-            if (step == GameStep_Result && state->config.next_question_timeout_enabled)
+            if (step == GameStep_Question && state->config.question_timeout_enabled)
             {
                 auto current_time_ms = juce::Time::currentTimeMillis();
                 if (current_time_ms >=
-                    state->timestamp_start + state->config.next_question_timeout_ms)
+                    state->timestamp_start + state->config.question_timeout_ms)
+                {
+                    state->lives--;
+            
+                    out_transition = GameStep_Question;
+                    if(state->lives > 0)
+                        in_transition = GameStep_Result;
+                    else
+                        in_transition = GameStep_EndResults;
+                }
+            }
+            else if (step == GameStep_Result && state->config.result_timeout_enabled)
+            {
+                auto current_time_ms = juce::Time::currentTimeMillis();
+                if (current_time_ms >=
+                    state->timestamp_start + state->config.result_timeout_ms)
                 {
                     out_transition = GameStep_Result;
                     in_transition = GameStep_Question;
@@ -564,6 +582,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case GameStep_Question :
         {
+            state->timestamp_start = -1;
         } break;
         case GameStep_Result :
         {
@@ -601,15 +620,24 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 }
             };
             
+            if (state->config.question_timeout_enabled)
+            {
+                auto current_time_ms = juce::Time::currentTimeMillis();
+                state->timestamp_start = current_time_ms;
+            }
+            else 
+                assert(state->timestamp_start == -1);
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Result : 
         {
             step = GameStep_Result;
-            auto current_time_ms = juce::Time::currentTimeMillis();
-            if(state->config.next_question_timeout_enabled)
+            if (state->config.result_timeout_enabled)
+            {
+                auto current_time_ms = juce::Time::currentTimeMillis();
                 state->timestamp_start = current_time_ms;
+            }
             else 
                 assert(state->timestamp_start == -1);
             update_audio = true;
@@ -683,11 +711,20 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             {
                 effect_ui.freq_widget.display_target = true;
                 effect_ui.freq_widget.target_frequency = state->target_frequency;
-                effect_ui.freq_widget.is_cursor_locked = true;
-                assert(event.type == Event_Click_Frequency);
-                effect_ui.freq_widget.locked_cursor_frequency = event.value_i;
-                effect_ui.freq_widget.display_window = true;
-                effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
+                if (event.type == Event_Click_Frequency)
+                {
+                    effect_ui.freq_widget.is_cursor_locked = true;
+                    effect_ui.freq_widget.locked_cursor_frequency = event.value_i;
+                    effect_ui.freq_widget.display_window = true;
+                    effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
+                } 
+                else if (event.type == Event_Timer_Tick)
+                {
+                    effect_ui.freq_widget.is_cursor_locked = true;
+                    effect_ui.freq_widget.locked_cursor_frequency = -1;
+                }
+                else 
+                    jassertfalse;
 
                 effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = true;
