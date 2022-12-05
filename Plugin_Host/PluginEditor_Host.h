@@ -24,7 +24,6 @@ public:
     }
     ~EditorHost() override
     {
-        assert(current_panel);
         removeChildComponent(current_panel.get());
         onEditorClose();
     }
@@ -36,23 +35,19 @@ public:
     
     void resized() override
     {
-        if (current_panel) //NOTE feels like a hack, anyway it should only happen in the initialization
+        if (current_panel)
         {
             current_panel->setBounds(getLocalBounds());
-        }
-        else
-        {
-            assert(!initialized);
         }
     }
     
     void changePanel(std::unique_ptr<juce::Component> new_panel)
     {
-        initialized = true;
         if(current_panel)
             removeChildComponent(current_panel.get());
         current_panel = std::move(new_panel);
-        addAndMakeVisible(*current_panel);
+        if(current_panel)
+            addAndMakeVisible(*current_panel);
         resized();
     }
 
@@ -60,7 +55,6 @@ public:
     std::unique_ptr<juce::Component> current_panel;
     ProcessorHost &audio_processor;
     std::function < void() > onEditorClose;
-    bool initialized = false;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorHost)
 };

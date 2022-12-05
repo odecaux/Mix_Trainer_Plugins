@@ -7,7 +7,19 @@
 #include "../Application/Application.h"
 
 
-void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui)
+
+void mixer_game_ui_transitions(MixerGameUI &ui, Effect_Transition transition)
+{
+    juce::ignoreUnused(ui);
+    if (transition.out_transition == GameStep_Begin)
+    {
+    }
+    if (transition.in_transition == GameStep_EndResults)
+    {
+    }
+}
+
+void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui)
 {
     if (new_ui.slider_pos_to_display)
     {
@@ -29,20 +41,15 @@ void mixer_game_post_event(MixerGame_State *state, Event event)
         std::lock_guard lock { *state->update_fn_mutex };
         effects = mixer_game_update(state, event);
     }
-    if (effects.dsp)
-    {
-        for(auto &observer : state->observers_audio)
-            observer(*effects.dsp);
-    }
-    if (effects.ui)
-    {
-        for(auto &observer : state->observers_ui)
-            observer(*effects.ui);
-    }
+    for(auto &observer : state->observers)
+        observer(effects);
+
+#if 0
     if (effects.rename)
     {
         state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
     }
+#endif
     if (effects.quit)
     {
         state->timer.stopTimer();
@@ -260,6 +267,13 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         update_ui = true;
     }
 
+    if (in_transition != GameStep_None || out_transition != GameStep_None)
+    {
+        effects.transition = {
+            .in_transition = in_transition,
+            .out_transition = out_transition
+        };
+    }
     switch (out_transition)
     {
         case GameStep_None :
@@ -461,15 +475,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
     return effects;
 }
 
-
-void mixer_game_add_ui_observer(MixerGame_State *state, ui_observer_t &&observer)
+void mixer_game_add_observer(MixerGame_State *state, observer_t &&observer)
 {
-    state->observers_ui.push_back(std::move(observer));
-}
-
-void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t &&observer)
-{
-    state->observers_audio.push_back(std::move(observer));
+    state->observers.push_back(std::move(observer));
 }
 
 

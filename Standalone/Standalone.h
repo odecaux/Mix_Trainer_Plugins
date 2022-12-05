@@ -1536,22 +1536,28 @@ class Main_Component : public juce::Component
         removeChildComponent(panel.get());
 
         auto observer = [this] (const Effects &effects) { 
-            if(effects.dsp)
-                player.push_new_dsp_state(effects.dsp->dsp_state);
-            if(effects.player)
-                for(const auto& command : effects.player->commands)
-                    player.post_command(command);
-            if (effects.results)
-            {
-                game_results_history.push_back(*effects.results);
-            }
             if (effects.transition)
             {
-                if(effects.transition->in_transition == GameStep_Begin)
+                if (effects.transition->in_transition == GameStep_Begin)
+                {
                     panel = std::make_unique < FrequencyGame_UI > (state.get());
+                }
                 auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
                 if(game_ui)
                     frequency_game_ui_transitions(*game_ui, *effects.transition);
+            }
+            if (effects.dsp)
+            {
+                player.push_new_dsp_state(effects.dsp->dsp_state);
+            }
+            if (effects.player)
+            {
+                for (const auto& command : effects.player->commands)
+                    player.post_command(command);
+            }
+            if (effects.results)
+            {
+                game_results_history.push_back(*effects.results);
             }
             if (effects.ui)
             {
@@ -1571,7 +1577,6 @@ class Main_Component : public juce::Component
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
         frequency_game_post_event(state.get(), Event { .type = Event_Create_UI });
 
-        addAndMakeVisible(*panel);
         resized();
     }
 

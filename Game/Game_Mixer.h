@@ -33,8 +33,7 @@ struct Effects {
     bool quit;
 };
 
-using audio_observer_t = std::function<void(Effect_DSP)>;
-using ui_observer_t = std::function<void(Effect_UI &)>;
+using observer_t = std::function<void(const Effects &)>;
 
 enum MixerGame_Variant
 {
@@ -66,16 +65,15 @@ struct MixerGame_State {
     juce::int64 timestamp_start;
     std::unique_ptr<std::mutex> update_fn_mutex;
     Application *app;
-    std::vector<ui_observer_t> observers_ui;
     Timer timer;
-    std::vector<audio_observer_t> observers_audio;
+    std::vector<observer_t> observers;
 };
 
 void mixer_game_post_event(MixerGame_State *state, Event event);
 Effects mixer_game_update(MixerGame_State *state, Event event);
-void game_ui_update(Effect_UI &new_ui, MixerGameUI &ui);
-void mixer_game_add_ui_observer(MixerGame_State *state, ui_observer_t && observer);
-void mixer_game_add_audio_observer(MixerGame_State *state, audio_observer_t && observer);
+void mixer_game_ui_transitions(MixerGameUI &ui, Effect_Transition transition);
+void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui);
+void mixer_game_add_observer(MixerGame_State *state, observer_t && observer);
 
 struct MixerGameUI : public juce::Component
 {

@@ -9,6 +9,7 @@
 #include "../Plugin_Host/PluginEditor_Host.h"
 
 Application::Application(ProcessorHost &host) :
+    game_ui(nullptr),
     type(PanelType::MainMenu),
     host(host), 
     editor(nullptr)
@@ -77,36 +78,54 @@ void Application::toGame(MixerGame_Variant variant)
             game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
         } break;
     }
-    mixer_game_add_audio_observer(
-        game_state.get(), 
-        [this] (auto &&effect) { 
-            broadcastDSP(effect.dsp_states); 
+
+    if(game_state == nullptr)
+        return;
+
+    editor->changePanel(nullptr);
+
+    auto observer = [this] (const Effects &effects)
+    {
+        if (effects.transition)
+        {
+            if (effects.transition->in_transition == GameStep_Begin)
+            {
+                auto new_game_ui = std::make_unique < MixerGameUI > (
+                    channels,
+                    game_state->db_slider_values,
+                    game_state.get()
+                );
+                game_ui = new_game_ui.get();
+                editor->changePanel(std::move(new_game_ui));
+            }
+            if(game_ui)
+                mixer_game_ui_transitions(*game_ui, *effects.transition);
+
         }
-    );
-    mixer_game_add_audio_observer(
-        game_state.get(), 
-        [this] (auto &&effect){ 
-            channel_dsp_log(effect.dsp_states, channels); 
+        if (effects.dsp)
+        {
+            broadcastDSP(effects.dsp->dsp_states); 
         }
-    );
+        if (effects.ui)
+        {
+            assert(game_ui);
+            game_ui_update(*effects.ui, *game_ui); 
+        }
+    };
+
+    auto debug_observer = [this] (const Effects &effects)
+    {
+        if (effects.dsp)
+        {
+            channel_dsp_log(effects.dsp->dsp_states, channels); 
+        }
+    };
+
+    mixer_game_add_observer(game_state.get(), std::move(observer));
+    mixer_game_add_observer(game_state.get(), std::move(debug_observer));
+
     mixer_game_post_event(game_state.get(), Event { .type = Event_Init });
-
-    auto game_panel = std::make_unique<MixerGameUI>(
-        channels,
-        game_state->db_slider_values,
-        game_state.get()
-    );
-    game_ui = game_panel.get();        
-
-    mixer_game_add_ui_observer(
-        game_state.get(), 
-        [this] (auto &&effect){ 
-            game_ui_update(effect, *game_ui); 
-        }
-    );      
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
-
-    editor->changePanel(std::move(game_panel));
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI });
 }
 
 void Application::toStats()
