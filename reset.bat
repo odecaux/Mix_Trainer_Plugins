@@ -1,1 +1,1 @@
-cmake -B cmake-build -DCMAKE_PREFIX_PATH=../JUCE/install 
+cmake -B cmake-build -DCMAKE_PREFIX_PATH=../JUCE_install 
