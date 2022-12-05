@@ -231,6 +231,7 @@ struct FrequencyGame_Config
     float eq_gain;
     float eq_quality;
     float initial_correct_answer_window;
+    bool next_question_timeout_enabled;
     int next_question_timeout_ms;
 };
 
@@ -241,6 +242,7 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
         .eq_gain = 4.0f,
         .eq_quality = 0.7f,
         .initial_correct_answer_window = 0.15f,
+        .next_question_timeout_enabled = true,
         .next_question_timeout_ms = 1000
     };
 }

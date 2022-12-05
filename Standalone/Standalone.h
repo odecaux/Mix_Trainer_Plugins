@@ -990,32 +990,22 @@ private:
 //------------------------------------------------------------------------
 struct Config_Panel : public juce::Component
 {
-    using param_temp_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
+    using slider_and_label_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
+    using slider_and_toggle_t = std::vector<std::tuple < juce::Slider&, juce::ToggleButton&, juce::Range<double>, double> >;
     
     class Scroller : public juce::Component
     {
     public:
-        Scroller(param_temp_t &param) : param(param)
-        {
-            for (auto &[slider, label, range, interval] : this->param)
-            {
-                addAndMakeVisible(slider);
-                addAndMakeVisible(label);
-            }
-        }
+        Scroller(std::function<void(juce::Rectangle<int>)> onResize) 
+        : onResizeCallback(std::move(onResize))
+        {}
+
         void resized() override
         {
-            auto r = getLocalBounds();
-            auto height = getHeight();
-            auto param_height = height / (int)param.size();
-            for (auto &[label, slider, range, interval] : param)
-            { 
-                r.removeFromTop(param_height / 2);
-                label.setBounds(r.removeFromTop(param_height / 2));
-            }
+            onResizeCallback(getLocalBounds());
         }
     private:
-        param_temp_t &param;
+        std::function < void(juce::Rectangle<int>) > onResizeCallback;
     };
 
     Config_Panel(std::vector<FrequencyGame_Config> &configs,
@@ -1034,34 +1024,72 @@ struct Config_Panel : public juce::Component
         
         addAndMakeVisible(config_list_comp);
         
+        FrequencyGame_Config initial_config = configs[current_config_idx];
+
         eq_gain.setTextValueSuffix (" dB");
         eq_gain.onValueChange = [&] {
             configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
         };
+
         eq_quality.onValueChange = [&] {
             configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
         };
+
         initial_correct_answer_window.onValueChange = [&] {
             configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
         };
+
         next_question_timeout_ms.setTextValueSuffix (" ms");
         next_question_timeout_ms.onValueChange = [&] {
             configs[current_config_idx].next_question_timeout_ms = (int) next_question_timeout_ms.getValue();
         };
         next_question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+        next_question_timeout_enabled.onClick = [&] {
+            bool new_toggle_state = next_question_timeout_enabled.getToggleState();
+            configs[current_config_idx].next_question_timeout_enabled = new_toggle_state;
+            next_question_timeout_ms.setEnabled(new_toggle_state);
+        };
 
+        
+        slider_and_label_t slider_and_label = { 
+            { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0}, 
+            { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 }, 
+            { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }
+        };
 
-        for (auto &[slider, label, range, interval] : param)
+        for (auto &[slider, label, range, interval] : slider_and_label)
         {
             slider.setScrollWheelEnabled(false);
             slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
             slider.setRange(range, interval);
+
             label.setBorderSize( juce::BorderSize<int>{ 0 });
-            label.attachToComponent(&slider, false);
             label.setJustificationType(juce::Justification::left);
+            
+            scroller.addAndMakeVisible(slider);
+            scroller.addAndMakeVisible(label);
         }
+
+        slider_and_toggle_t slider_and_toggle = {
+            { next_question_timeout_ms , next_question_timeout_enabled, { 1000, 4000 }, 500 }
+        };
+
         
-        scroller.setSize(0, (int)param.size() * 60);
+        for (auto &[slider, toggle, range, interval] : slider_and_toggle)
+        {
+            slider.setScrollWheelEnabled(false);
+            slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+            slider.setRange(range, interval);
+
+            //toggle.setBorderSize( juce::BorderSize<int>{ 0 });
+            //toggle.setJustificationType(juce::Justification::left);
+            
+            scroller.addAndMakeVisible(slider);
+            scroller.addAndMakeVisible(toggle);
+        }
+
+        scroller.setSize(0, 4 * 60);
         viewport.setScrollBarsShown(true, false);
         viewport.setViewedComponent(&scroller, false);
         addAndMakeVisible(viewport);
@@ -1074,7 +1102,8 @@ struct Config_Panel : public juce::Component
         }
 
         config_list_comp.selectRow(current_config_idx);
-        //selectConfig(current_config_idx);
+        
+        selectConfig(current_config_idx);
     }
 
     void resized()
@@ -1105,31 +1134,52 @@ struct Config_Panel : public juce::Component
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
         next_question_timeout_ms.setValue((double)current_config.next_question_timeout_ms);
+        next_question_timeout_ms.setEnabled(current_config.next_question_timeout_enabled);
+        next_question_timeout_enabled.setToggleState(current_config.next_question_timeout_enabled, juce::dontSendNotification);
     }
     
-    param_temp_t param = { 
-        { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0}, 
-        { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 }, 
-        { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }, 
-        { next_question_timeout_ms , next_question_timeout_ms_label, { 1000, 4000 }, 500 } 
-    };
+    void onResizeScroller(juce::Rectangle<int> scroller_bounds)
+    {
+        auto height = scroller_bounds.getHeight();
+        auto param_height = height / 4;
+
+        auto same_bounds = [&] {
+            return scroller_bounds.removeFromTop(param_height / 2);
+        };
+
+        eq_gain_label.setBounds(same_bounds());
+        eq_gain.setBounds(same_bounds());
+        
+        eq_quality_label.setBounds(same_bounds());
+        eq_quality.setBounds(same_bounds());
+        
+        initial_correct_answer_window_label.setBounds(same_bounds());
+        initial_correct_answer_window.setBounds(same_bounds());
+
+        next_question_timeout_enabled.setBounds(same_bounds());
+        next_question_timeout_ms.setBounds(same_bounds());
+    }
 
     std::vector<FrequencyGame_Config> &configs;
     int &current_config_idx;
     Config_List config_list_comp = { configs, [&] (int idx) { selectConfig(idx); } };
     
     GameUI_Header header;
+
     juce::Slider eq_gain;
     juce::Label eq_gain_label { {}, "Gain"};
+    
     juce::Slider eq_quality;
     juce::Label eq_quality_label { {}, "Q" };
+    
     juce::Slider initial_correct_answer_window;
     juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
+    
+    juce::ToggleButton next_question_timeout_enabled { "Post answer timeout" };
     juce::Slider next_question_timeout_ms;
-    juce::Label next_question_timeout_ms_label { {}, "Post answer timeout"};
 
     juce::Viewport viewport;
-    Scroller scroller { param };
+    Scroller scroller { [this] (auto bounds) { onResizeScroller(bounds); } };
    
     juce::TextButton nextButton { "Next" };
    
