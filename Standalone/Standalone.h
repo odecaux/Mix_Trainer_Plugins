@@ -1578,6 +1578,7 @@ class Main_Component : public juce::Component
     void toGame()
     {
         auto on_quit = [this] { 
+            player.post_command( { .type = Audio_Command_Stop });
             toMainMenu();
         };
         state = frequency_game_state_init(game_configs[current_config_idx], files, std::move(on_quit));
@@ -1591,6 +1592,7 @@ class Main_Component : public juce::Component
                 if (effects.transition->in_transition == GameStep_Begin)
                 {
                     panel = std::make_unique < FrequencyGame_UI > (state.get());
+                    addAndMakeVisible(*panel);
                 }
                 auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
                 if(game_ui)

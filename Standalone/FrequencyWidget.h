@@ -489,7 +489,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Timer_Tick :
         {
-            if (step == GameStep_Result)
+            if (step == GameStep_Result && state->config.next_question_timeout_enabled)
             {
                 auto current_time_ms = juce::Time::currentTimeMillis();
                 if (current_time_ms >=
@@ -608,7 +608,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         {
             step = GameStep_Result;
             auto current_time_ms = juce::Time::currentTimeMillis();
-            state->timestamp_start = current_time_ms;
+            if(state->config.next_question_timeout_enabled)
+                state->timestamp_start = current_time_ms;
+            else 
+                assert(state->timestamp_start == -1);
             update_audio = true;
             update_ui = true;
         }break;
