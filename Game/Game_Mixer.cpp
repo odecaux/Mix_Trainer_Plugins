@@ -34,11 +34,12 @@ void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui)
     game_ui_bottom_update(&ui.bottom, true, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-void mixer_game_post_event(MixerGame_State *state, Event event)
+void mixer_game_post_event(MixerGame_State *state, Event event, std::mutex* mutex)
 {
     Effects effects;
     {
-        std::lock_guard lock { *state->update_fn_mutex };
+        if(mutex)
+        std::lock_guard lock { *mutex };
         effects = mixer_game_update(state, event);
     }
     for(auto &observer : state->observers)
@@ -501,7 +502,6 @@ std::unique_ptr < MixerGame_State > mixer_game_init(
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
         .timestamp_start = -1,
-        .update_fn_mutex = std::make_unique < std::mutex > (),
         .on_quit = std::move(on_quit)
     };
     return std::make_unique < MixerGame_State > (std::move(state));

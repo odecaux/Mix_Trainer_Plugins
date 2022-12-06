@@ -61,15 +61,14 @@ struct MixerGame_State {
     bool can_still_listen;
     int timeout_ms;
     std::vector < double > db_slider_values;
-    //io
     juce::int64 timestamp_start;
     juce::int64 current_timestamp;
-    std::unique_ptr<std::mutex> update_fn_mutex;
+    //io
     std::vector<observer_t> observers;
     std::function < void() > on_quit;
 };
 
-void mixer_game_post_event(MixerGame_State *state, Event event);
+void mixer_game_post_event(MixerGame_State *state, Event event, std::mutex* mutex);
 Effects mixer_game_update(MixerGame_State *state, Event event);
 void mixer_game_ui_transitions(MixerGameUI &ui, Effect_Transition transition);
 void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui);
@@ -79,32 +78,34 @@ struct MixerGameUI : public juce::Component
 {
     MixerGameUI(const std::unordered_map<int, ChannelInfos>& channel_infos,
                 const std::vector<double> &db_slider_values,
+                std::mutex *mutex,
                 MixerGame_State *state) 
         :
         fader_row(faders),
         db_slider_values(db_slider_values),
+        mutex(mutex),
         state(state)
     {
         auto f = 
-            [&] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
+            [&, mutex = this->mutex] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
             const int id = a.first;
             
-            auto onFaderMoved = [state, id] (int new_pos){
+            auto onFaderMoved = [state, id, mutex] (int new_pos){
                 Event event = {
                     .type = Event_Slider,
                     .id = id,
                     .value_i = new_pos
                 };
-                mixer_game_post_event(state, event);
+                mixer_game_post_event(state, event, mutex);
             };
             
-            auto onEdited = [state, id](const juce::String & new_name){ 
+            auto onEdited = [state, id, mutex](const juce::String & new_name){ 
                 Event event = {
                     .type = Event_Channel_Rename_From_UI,
                     .id = id,
                     .value_js = new_name
                 };
-                mixer_game_post_event(state, event);
+                mixer_game_post_event(state, event, mutex);
             };
 
             auto new_fader = std::make_unique < FaderComponent > (
@@ -124,25 +125,25 @@ struct MixerGameUI : public juce::Component
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
 
-        bottom.onNextClicked = [state] (Event_Type e){
+        bottom.onNextClicked = [state, mutex] (Event_Type e){
             Event event = {
                 .type = e
             };
             
-            mixer_game_post_event(state, event);
+            mixer_game_post_event(state, event, mutex);
         };
-        header.onBackClicked = [state] {
+        header.onBackClicked = [state, mutex] {
             Event event = {
                 .type = Event_Click_Back
             };
-            mixer_game_post_event(state, event);
+            mixer_game_post_event(state, event, mutex);
         };
-        bottom.onToggleClicked = [state] (bool a){
+        bottom.onToggleClicked = [state, mutex] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            mixer_game_post_event(state, event);
+            mixer_game_post_event(state, event, mutex);
         };
         addAndMakeVisible(header);
         addAndMakeVisible(fader_viewport);
@@ -177,22 +178,22 @@ struct MixerGameUI : public juce::Component
             assert(assertChannel == faders.end());
         }
 
-        auto onFaderMoved = [state = this->state, id] (int new_pos){
+        auto onFaderMoved = [state = this->state, id, mutex = this->mutex] (int new_pos){
             Event event = {
                 .type = Event_Slider,
                 .id = id,
                 .value_i = new_pos
             };
-            mixer_game_post_event(state, event);
+            mixer_game_post_event(state, event, mutex);
         };
             
-        auto onEdited = [state = this->state, id](const juce::String & new_name){ 
+        auto onEdited = [state = this->state, id, mutex = this->mutex](const juce::String & new_name){ 
             Event event = {
                 .type = Event_Channel_Rename_From_UI,
                 .id = id,
                 .value_js = new_name
             };
-            mixer_game_post_event(state, event);
+            mixer_game_post_event(state, event, mutex);
         };
 
         auto [it, result] = faders.emplace(id, std::make_unique < FaderComponent > (
@@ -230,6 +231,7 @@ struct MixerGameUI : public juce::Component
     const std::vector < double > &db_slider_values;
     GameUI_Header header;
     GameUI_Bottom bottom;
+    std::mutex *mutex;
     MixerGame_State *state;
 };
 

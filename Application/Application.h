@@ -45,6 +45,7 @@ private:
         Stats
     };
     
+    std::mutex mutex;
     Timer timer;
     std::unique_ptr<MixerGame_State> game_state;
     MixerGameUI *game_ui;

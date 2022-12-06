@@ -99,6 +99,7 @@ void Application::toGame(MixerGame_Variant variant)
                 auto new_game_ui = std::make_unique < MixerGameUI > (
                     channels,
                     game_state->db_slider_values,
+                    &mutex,
                     game_state.get()
                 );
                 game_ui = new_game_ui.get();
@@ -130,13 +131,13 @@ void Application::toGame(MixerGame_Variant variant)
     mixer_game_add_observer(game_state.get(), std::move(observer));
     mixer_game_add_observer(game_state.get(), std::move(debug_observer));
     
-    timer.callback = [state = game_state.get()] (juce::int64 timestamp) {
-        mixer_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    timer.callback = [state = game_state.get(), mutex = &this->mutex] (juce::int64 timestamp) {
+        mixer_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp}, mutex);
     };
     timer.startTimerHz(60);
 
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Init });
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI });
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Init }, &mutex);
+    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, &mutex);
 }
 
 void Application::toStats()
@@ -171,7 +172,7 @@ void Application::onEditorDelete()
     if (type == PanelType::Game)
     {
         assert(game_state);
-        mixer_game_post_event(game_state.get(), Event { .type = Event_Destroy_UI });
+        mixer_game_post_event(game_state.get(), Event { .type = Event_Destroy_UI }, &mutex);
         game_ui = nullptr;
     }
 }
@@ -205,10 +206,11 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
             auto game_ui_temp = std::make_unique<MixerGameUI>(
                 channels,
                 game_state->db_slider_values,
+                &mutex,
                 game_state.get()
             );
             game_ui = game_ui_temp.get();
-            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui });
+            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui }, &mutex);
             panel = std::move(game_ui_temp);
         } break;
     }
@@ -235,7 +237,7 @@ void Application::createChannel(int id)
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event, &mutex);
     }
 }
     
@@ -250,7 +252,7 @@ void Application::deleteChannel(int id)
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event, &mutex);
     }
     channels.erase(channel);
 }
@@ -277,7 +279,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event, &mutex);
     }
 }
     
@@ -295,6 +297,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event(game_state.get(), event);
+        mixer_game_post_event(game_state.get(), event, &mutex);
     }
 }
