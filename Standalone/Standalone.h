@@ -468,11 +468,6 @@ public:
         fileListComp.setBounds(getLocalBounds());
     }
 
-    void setThumbnail(DemoThumbnailComp *new_thumbnail)
-    {
-        thumbnail = new_thumbnail;
-    }
-
     void paintOverChildren(juce::Graphics& g) override
     {
         if (files.empty())
@@ -607,16 +602,15 @@ public:
             assert(ret.value_b); //file still exists on drive ?
             player.post_command( { .type = Audio_Command_Play });
 
-            if (thumbnail)
-                thumbnail->setFile(file);
+            file_changed_callback(file);
         }
         else
         {
             player.post_command( { .type = Audio_Command_Stop });
-            if (thumbnail)
-                thumbnail->removeFile();
+            file_changed_callback({});
         }
     }
+    std::function < void(juce::File) > file_changed_callback;
 
 private:
     FilePlayer &player;
@@ -624,8 +618,7 @@ private:
     juce::ListBox fileListComp = { {}, this};
 
     juce::Component *dropSource;
-    DemoThumbnailComp *thumbnail = nullptr;
-    
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
 };
 
@@ -679,12 +672,23 @@ public:
         }
 
         {
-            fileList.setThumbnail(&thumbnail);
+            fileList.file_changed_callback = [&] (juce::File new_file)
+            {
+                if (new_file != juce::File{})
+                    thumbnail.setFile(new_file);
+                else
+                    thumbnail.removeFile();
+                //frequency_bounds_slider.setMinAndMaxValues();
+                //nochekin;
+            };
             addAndMakeVisible(fileList);
         }
 
         {
             addAndMakeVisible(thumbnail);
+        }
+        {
+            addAndMakeVisible(frequency_bounds_slider);
         }
     }
 
@@ -697,10 +701,9 @@ public:
     {
         auto r = getLocalBounds().reduced (4);
         auto header_bounds = r.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = r.removeFromBottom(80).reduced(8);
+        auto bottom_bounds = r.removeFromBottom(100);
         
         header.setBounds(header_bounds);
-        thumbnail.setBounds(bottom_bounds);
 
         auto sub_header_bounds = r.removeFromTop(40);
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
@@ -719,6 +722,9 @@ public:
         {
             fileList.setBounds (r);
         }
+        
+        frequency_bounds_slider.setBounds(bottom_bounds.removeFromBottom(20).reduced(50, 0));
+        thumbnail.setBounds(bottom_bounds);
     }
 private:
     FilePlayer &player;
@@ -731,7 +737,8 @@ private:
     juce::FileTreeComponent explorer { directoryList };
 
     DemoThumbnailComp thumbnail { player.formatManager, player.transportSource };
-    
+    Frequency_Bounds_Widget frequency_bounds_slider;
+
     void selectionChanged() override
     {
         thumbnail.setFile(explorer.getSelectedFile());

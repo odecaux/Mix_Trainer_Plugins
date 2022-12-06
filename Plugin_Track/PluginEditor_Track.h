@@ -13,11 +13,14 @@ class EditorTrack : public juce::AudioProcessorEditor
 {
     public:
     
-    EditorTrack(ProcessorTrack& p, int id, const juce::String &name, float minFrequency, float maxFrequency)
-        : AudioProcessorEditor(p), 
-    audioProcessor(p), 
-    id(id),
-    frequency_bounds_widget(minFrequency, maxFrequency)
+    EditorTrack(ProcessorTrack& p, 
+                int id, 
+                const juce::String &name, 
+                float minFrequency, 
+                float maxFrequency)
+    : AudioProcessorEditor(p),
+      audioProcessor(p),
+      id(id)
     {
         
         track_name_label.setSize(200, 30);
@@ -25,6 +28,8 @@ class EditorTrack : public juce::AudioProcessorEditor
         track_name_label.setText(name, juce::dontSendNotification);
         addAndMakeVisible(track_name_label);
 
+        
+        frequency_bounds_widget.setMinAndMaxValues(minFrequency, maxFrequency);
         frequency_bounds_widget.setSize(200, 100);
         frequency_bounds_widget.on_mix_max_changed = [&] 
             (float new_min_frequency, float new_max_frequency, bool done_dragging) 
@@ -32,6 +37,7 @@ class EditorTrack : public juce::AudioProcessorEditor
                 if(done_dragging)
                     audioProcessor.frequencyRangeChanged(new_min_frequency, new_max_frequency);
             };
+            
         addAndMakeVisible(frequency_bounds_widget);
 
         setSize(400, 300);

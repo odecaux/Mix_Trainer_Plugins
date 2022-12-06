@@ -277,50 +277,66 @@ struct Return_Value
 struct Frequency_Bounds_Widget : juce::Component
 {
 public:
-    Frequency_Bounds_Widget(float min_frequency, float max_frequency)
+    Frequency_Bounds_Widget()
     {
         
-        minLabel.setSize(200, 30);
-        minLabel.setJustificationType(juce::Justification::centred);
+        minLabel.setJustificationType(juce::Justification::right);
         addAndMakeVisible(minLabel);
         
-        maxLabel.setSize(200, 30);
-        maxLabel.setJustificationType(juce::Justification::centred);
+        maxLabel.setJustificationType(juce::Justification::left);
         addAndMakeVisible(maxLabel);
         
-        frequencyRangeSlider.setSize(200, 30);
         frequencyRangeSlider.setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
         frequencyRangeSlider.setSliderStyle(juce::Slider::TwoValueHorizontal);
         frequencyRangeSlider.setRange(0.0f, 1.0f);
-        frequencyRangeSlider.onValueChange = [this]{
-            float minValue = (float)frequencyRangeSlider.getMinValue();
-            float maxValue = (float)frequencyRangeSlider.getMaxValue();
-            float new_min_frequency = denormalize_frequency(minValue);
-            float new_max_frequency = denormalize_frequency(maxValue);
-            minLabel.setText(juce::String((int)new_min_frequency), juce::dontSendNotification);
-            maxLabel.setText(juce::String((int)new_max_frequency), juce::dontSendNotification);
-            on_mix_max_changed(new_min_frequency, new_max_frequency, false);
+
+        auto update_labels = [this] (int min_freq, int max_freq)
+        {
+            auto min_text = juce::String(min_freq) + " Hz";
+            auto max_text = juce::String(max_freq) + " Hz";
+            minLabel.setText(min_text, juce::dontSendNotification);
+            maxLabel.setText(max_text, juce::dontSendNotification);
         };
 
-        frequencyRangeSlider.onDragEnd = [this]{
+        frequencyRangeSlider.onValueChange = [this, update_labels]{
             float minValue = (float)frequencyRangeSlider.getMinValue();
             float maxValue = (float)frequencyRangeSlider.getMaxValue();
             float new_min_frequency = denormalize_frequency(minValue);
             float new_max_frequency = denormalize_frequency(maxValue);
-            maxLabel.setText(juce::String((int)new_max_frequency), juce::dontSendNotification);
-            on_mix_max_changed(new_min_frequency, new_max_frequency, true);
+            update_labels((int)new_min_frequency, (int) new_max_frequency);
+            if(on_mix_max_changed)
+                on_mix_max_changed(new_min_frequency, new_max_frequency, false);
+        };
+
+        frequencyRangeSlider.onDragEnd = [this, update_labels]{
+            float minValue = (float)frequencyRangeSlider.getMinValue();
+            float maxValue = (float)frequencyRangeSlider.getMaxValue();
+            float new_min_frequency = denormalize_frequency(minValue);
+            float new_max_frequency = denormalize_frequency(maxValue);
+            update_labels((int)new_min_frequency, (int) new_max_frequency);
+            if(on_mix_max_changed)
+                on_mix_max_changed(new_min_frequency, new_max_frequency, true);
         };
         addAndMakeVisible(frequencyRangeSlider);
-        frequencyRangeSlider.setMinAndMaxValues(normalize_frequency(min_frequency), normalize_frequency(max_frequency));
+    }
+
+    void setMinAndMaxValues(float min_frequency, float max_frequency)
+    {
+        frequencyRangeSlider.setMinAndMaxValues(
+            normalize_frequency(min_frequency), 
+            normalize_frequency(max_frequency)
+        );
     }
 
     void resized() override
     {
         auto bounds = getLocalBounds();
-        auto center = bounds.getCentre();
-        frequencyRangeSlider.setCentrePosition(center.x, center.y);
-        maxLabel.setCentrePosition(center.x, center.y - 40);
-        minLabel.setCentrePosition(center.x, center.y + 40);
+        auto min_label_bounds = bounds.removeFromLeft(70);
+        auto max_label_bounds = bounds.removeFromRight(70);
+
+        minLabel.setBounds(min_label_bounds);
+        frequencyRangeSlider.setBounds(bounds);
+        maxLabel.setBounds(max_label_bounds);
     }
     std::function < void(float, float, bool) > on_mix_max_changed;
 
