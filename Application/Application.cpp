@@ -66,16 +66,22 @@ void Application::toGame(MixerGame_Variant variant)
     assert(editor);
     assert(!game_state);
     
+    auto on_quit = [this] { 
+        timer.stopTimer();
+        game_state.reset();  
+        toMainMenu();
+    };
+
     switch (variant)
     {
         case MixerGame_Normal : {
-            game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+            game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
         } break;
         case MixerGame_Timer : {
-            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
         } break;
         case MixerGame_Tries : {
-            game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, this);
+            game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
         } break;
     }
 
@@ -123,6 +129,11 @@ void Application::toGame(MixerGame_Variant variant)
 
     mixer_game_add_observer(game_state.get(), std::move(observer));
     mixer_game_add_observer(game_state.get(), std::move(debug_observer));
+    
+    timer.callback = [state = game_state.get()] (juce::int64 timestamp) {
+        mixer_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    };
+    timer.startTimerHz(60);
 
     mixer_game_post_event(game_state.get(), Event { .type = Event_Init });
     mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI });
@@ -151,12 +162,6 @@ void Application::toSettings()
         std::make_unique < SettingsMenu > ([this] { toMainMenu(); }, settings);
     editor->changePanel(std::move(settings_menu));
    
-}
-
-void Application::quitGame()
-{
-    game_state.reset();  
-    toMainMenu();
 }
 
 void Application::onEditorDelete()

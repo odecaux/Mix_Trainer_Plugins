@@ -15,3 +15,5 @@ Hierarchical FSM ?
 
 design a save system 
 escape spaces when broadcasting name
+
+when should the timestamp be initialized ?

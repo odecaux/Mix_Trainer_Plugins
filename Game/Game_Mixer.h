@@ -63,10 +63,10 @@ struct MixerGame_State {
     std::vector < double > db_slider_values;
     //io
     juce::int64 timestamp_start;
+    juce::int64 current_timestamp;
     std::unique_ptr<std::mutex> update_fn_mutex;
-    Application *app;
-    Timer timer;
     std::vector<observer_t> observers;
+    std::function < void() > on_quit;
 };
 
 void mixer_game_post_event(MixerGame_State *state, Event event);
@@ -239,7 +239,7 @@ std::unique_ptr<MixerGame_State> mixer_game_init(
     int listens,
     int timeout_ms,
     std::vector<double> db_slider_values,
-    Application *app);
+    std::function < void() > on_quit);
 
 
 //TODO mutex ? pour les timeout

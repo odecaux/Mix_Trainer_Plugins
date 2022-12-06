@@ -272,8 +272,8 @@ struct FrequencyGame_State
     FrequencyGame_Results results;
 
     juce::int64 timestamp_start;
+    juce::int64 current_timestamp;
     std::unique_ptr<std::mutex> update_fn_mutex;
-    Timer timer;
     std::vector<observer_t> observers;
     std::function < void() > on_quit;
 };
@@ -393,7 +393,6 @@ void frequency_game_post_event(FrequencyGame_State *state, Event event)
 
     if (effects.quit)
     {
-        state->timer.stopTimer();
         state->on_quit();
     }
 }
@@ -411,12 +410,7 @@ std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Con
         .on_quit = std::move(on_quit)
     };
 
-    auto state_ptr = std::make_unique < FrequencyGame_State > (std::move(state));
-    state_ptr->timer.callback = [state = state_ptr.get()] {
-        frequency_game_post_event(state, Event {.type = Event_Timer_Tick});
-    };
-    state_ptr->timer.startTimerHz(60);
-    return state_ptr;
+    return std::make_unique < FrequencyGame_State > (std::move(state));
 }
 
 Effects frequency_game_update(FrequencyGame_State *state, Event event)
@@ -492,10 +486,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Timer_Tick :
         {
+            state->current_timestamp = event.value_i64;
             if (step == GameStep_Question && state->config.question_timeout_enabled)
             {
-                auto current_time_ms = juce::Time::currentTimeMillis();
-                if (current_time_ms >=
+                if (state->current_timestamp >=
                     state->timestamp_start + state->config.question_timeout_ms)
                 {
                     state->lives--;
@@ -509,8 +503,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             }
             else if (step == GameStep_Result && state->config.result_timeout_enabled)
             {
-                auto current_time_ms = juce::Time::currentTimeMillis();
-                if (current_time_ms >=
+                if (state->current_timestamp >=
                     state->timestamp_start + state->config.result_timeout_ms)
                 {
                     out_transition = GameStep_Result;
@@ -622,8 +615,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             
             if (state->config.question_timeout_enabled)
             {
-                auto current_time_ms = juce::Time::currentTimeMillis();
-                state->timestamp_start = current_time_ms;
+                state->timestamp_start = state->current_timestamp;
             }
             else 
                 assert(state->timestamp_start == -1);
@@ -635,8 +627,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             step = GameStep_Result;
             if (state->config.result_timeout_enabled)
             {
-                auto current_time_ms = juce::Time::currentTimeMillis();
-                state->timestamp_start = current_time_ms;
+                state->timestamp_start = state->current_timestamp;
             }
             else 
                 assert(state->timestamp_start == -1);

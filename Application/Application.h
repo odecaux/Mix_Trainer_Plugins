@@ -15,8 +15,6 @@ public:
     void toGame(MixerGame_Variant variant);
     void toStats();
     void toSettings();
-
-    void quitGame();
     
     //TODO rename
     static std::unordered_map < int, Channel_DSP_State > bypassedAllChannelsDSP(const std::unordered_map<int, ChannelInfos> &channels) {
@@ -47,7 +45,7 @@ private:
         Stats
     };
     
-    //std::unique_ptr < Game > game;
+    Timer timer;
     std::unique_ptr<MixerGame_State> game_state;
     MixerGameUI *game_ui;
     std::unordered_map<int, ChannelInfos> channels;

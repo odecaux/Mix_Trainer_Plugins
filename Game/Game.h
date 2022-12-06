@@ -60,6 +60,7 @@ struct Event{
     int timer_gen_idx;
     bool value_b;
     int value_i;
+    juce::int64 value_i64;
     float value_f;
     float value_f_2;
     double value_d;

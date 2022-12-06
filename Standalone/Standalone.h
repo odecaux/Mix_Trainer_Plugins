@@ -1600,6 +1600,7 @@ class Main_Component : public juce::Component
     void toGame()
     {
         auto on_quit = [this] { 
+            timer.stopTimer();
             player.post_command( { .type = Audio_Command_Stop });
             toMainMenu();
         };
@@ -1650,6 +1651,10 @@ class Main_Component : public juce::Component
 
         frequency_game_post_event(state.get(), Event { .type = Event_Init });
         frequency_game_post_event(state.get(), Event { .type = Event_Create_UI });
+        timer.callback = [state = state.get()] (juce::int64 timestamp) {
+            frequency_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+        };
+        timer.startTimerHz(60);
 
         resized();
     }
@@ -1671,6 +1676,7 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
+    Timer timer;
     std::unique_ptr<FrequencyGame_State> state;
     std::unique_ptr<juce::Component> panel;
     
