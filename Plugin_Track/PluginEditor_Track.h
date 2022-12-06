@@ -8,19 +8,6 @@
   ==============================================================================
 */
 
-static float denormalize_frequency(float value)
-{
-    float a = powf(value, 2.0f);
-    float b = a * (20000.0f - 20.0f);
-    return b + 20.0f;
-}
-
-
-static float normalize_frequency(float frequency)
-{
-    return std::sqrt((frequency - 20.0f) / (20000.0f - 20.0f));
-}
-
 #pragma once
 class EditorTrack : public juce::AudioProcessorEditor
 {
@@ -29,7 +16,8 @@ class EditorTrack : public juce::AudioProcessorEditor
     EditorTrack(ProcessorTrack& p, int id, const juce::String &name, float minFrequency, float maxFrequency)
         : AudioProcessorEditor(p), 
     audioProcessor(p), 
-    id(id)
+    id(id),
+    frequency_bounds_widget(minFrequency, maxFrequency)
     {
         
         track_name_label.setSize(200, 30);
@@ -37,34 +25,17 @@ class EditorTrack : public juce::AudioProcessorEditor
         track_name_label.setText(name, juce::dontSendNotification);
         addAndMakeVisible(track_name_label);
 
-        minLabel.setSize(200, 30);
-        minLabel.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(minLabel);
-        
-        maxLabel.setSize(200, 30);
-        maxLabel.setJustificationType(juce::Justification::centred);
-        addAndMakeVisible(maxLabel);
-        
-        frequencyRangeSlider.setSize(200, 30);
-        frequencyRangeSlider.setTextBoxStyle(juce::Slider::NoTextBox, true, 0, 0);
-        frequencyRangeSlider.setSliderStyle(juce::Slider::TwoValueHorizontal);
-        frequencyRangeSlider.setRange(0.0f, 1.0f);
-        frequencyRangeSlider.onValueChange = [this]{
-            float minValue = (float)frequencyRangeSlider.getMinValue();
-            float maxValue = (float)frequencyRangeSlider.getMaxValue();
-            float newMinFrequency = denormalize_frequency(minValue);
-            float newMaxFrequency = denormalize_frequency(maxValue);
-            minLabel.setText(juce::String((int)newMinFrequency), juce::dontSendNotification);
-            maxLabel.setText(juce::String((int)newMaxFrequency), juce::dontSendNotification);
-            audioProcessor.frequencyRangeChanged(newMinFrequency, newMaxFrequency);
-        };
-        addAndMakeVisible(frequencyRangeSlider);
-        frequencyRangeSlider.setMinAndMaxValues(normalize_frequency(minFrequency), normalize_frequency(maxFrequency));
-        
+        frequency_bounds_widget.setSize(200, 100);
+        frequency_bounds_widget.on_mix_max_changed = [&] 
+            (float new_min_frequency, float new_max_frequency, bool done_dragging) 
+            {
+                if(done_dragging)
+                    audioProcessor.frequencyRangeChanged(new_min_frequency, new_max_frequency);
+            };
+        addAndMakeVisible(frequency_bounds_widget);
+
         setSize(400, 300);
         setResizable(true, false);
-    }
-    ~EditorTrack() override {
     }
     
     void paint(juce::Graphics& g) override
@@ -77,10 +48,8 @@ class EditorTrack : public juce::AudioProcessorEditor
     {
         auto bounds = getLocalBounds();
         auto center = bounds.getCentre();
-        frequencyRangeSlider.setCentrePosition(center.x, center.y);
         track_name_label.setCentrePosition(center.x, 40);
-        maxLabel.setCentrePosition(center.x, center.y - 40);
-        minLabel.setCentrePosition(center.x, center.y + 40);
+        frequency_bounds_widget.setCentrePosition(center.x, center.y);
     }
 
     void renameTrack(const juce::String &new_name)
@@ -93,10 +62,8 @@ class EditorTrack : public juce::AudioProcessorEditor
     // access the processor object that created it.
     ProcessorTrack& audioProcessor;
     juce::Label track_name_label;
-    juce::Label minLabel;
-    juce::Label maxLabel;
-    juce::Slider frequencyRangeSlider;
     int id;
+    Frequency_Bounds_Widget frequency_bounds_widget;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorTrack)
 };

@@ -72,6 +72,8 @@ target_precompile_headers(MixTrainer_Host
 
 target_compile_definitions(MixTrainer_Host
     PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
 target_link_libraries(MixTrainer_Host 
@@ -114,6 +116,8 @@ target_precompile_headers(MixTrainer_Track
 
 target_compile_definitions(MixTrainer_Track
     PUBLIC
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0)
 
 target_link_libraries(MixTrainer_Track 
@@ -144,6 +148,8 @@ target_precompile_headers(MixTrainer_Standalone
 
 target_compile_definitions(MixTrainer_Standalone
     PRIVATE
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
         JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:MixTrainer_Standalone,JUCE_PRODUCT_NAME>"
         JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:MixTrainer_Standalone,JUCE_VERSION>")
 

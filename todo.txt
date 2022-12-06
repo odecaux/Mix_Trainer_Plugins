@@ -12,7 +12,4 @@ Priority 3 :
 Les freq bounds d'un fichier audio influent sur le score
 Hierarchical FSM ?
 
-design a save system 
-escape spaces when broadcasting name
-
 when should the timestamp be initialized ?
