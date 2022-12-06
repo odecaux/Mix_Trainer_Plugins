@@ -666,6 +666,11 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     {
         Channel_DSP_State dsp = ChannelDSP_on();
         
+        float compensation_gain = state->config.eq_gain > 1.0f ? 
+            1.0f / state->config.eq_gain :
+            1.0f;
+        dsp.gain = compensation_gain;
+
         switch (step)
         {
             case GameStep_Begin :
