@@ -1,6 +1,5 @@
 Priority 1 :
 
-Bug in the config loading or saving or initializing. Anyway I end up with corrupted values 
 ajouter preview et bounds au file selector panel
 
 Priority 2 :

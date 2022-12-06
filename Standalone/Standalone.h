@@ -757,7 +757,7 @@ class Config_List :
    
 public:
     Config_List(std::vector<FrequencyGame_Config> &config,
-                  std::function<void(int)> onClick) : 
+                std::function<void(int)> onClick) : 
         config(config),
         onClick(std::move(onClick))
     {
@@ -765,6 +765,7 @@ public:
         list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
         list_comp.setOutlineThickness (2);
         addAndMakeVisible(list_comp);
+        list_comp.updateContent();
     }
 
     virtual ~Config_List() override = default;
@@ -829,35 +830,6 @@ public:
             return label;
         } 
     }
-
-#if 0
-    void insertFile(juce::File file)
-    {
-        //can't have the same file twice
-        if (auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; }); result == files.end())
-        {
-            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
-            {
-                /*
-                for (const auto &key : reader->metadataValues.getAllKeys())
-                {
-                DBG(key);
-                }
-                */
-                //DBG(file.getFullPathName());
-                Audio_File new_audio_file = {
-                    .file = file,
-                    .title = file.getFileNameWithoutExtension(),
-                    .loop_bounds = { 0, reader->lengthInSamples }
-                };
-                files.emplace_back(std::move(new_audio_file));
-                list_comp.updateContent();
-                delete reader;
-            }
-        }
-    }
-#endif
-
     
     void listBoxItemClicked (int, const juce::MouseEvent&) override 
     {
@@ -1012,7 +984,9 @@ struct Config_Panel : public juce::Component
                    int &current_config_idx,
                    std::function < void() > onClickBack,
                    std::function < void() > onClickNext) :
-        configs(configs), current_config_idx(current_config_idx)
+        configs(configs), 
+        current_config_idx(current_config_idx),
+        config_list_comp { configs, [&] (int idx) { selectConfig(idx); } }
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -1116,8 +1090,7 @@ struct Config_Panel : public juce::Component
         }
 
         config_list_comp.selectRow(current_config_idx);
-        
-        selectConfig(current_config_idx);
+        //selectConfig(current_config_idx);
     }
 
     void resized()
@@ -1184,7 +1157,7 @@ struct Config_Panel : public juce::Component
 
     std::vector<FrequencyGame_Config> &configs;
     int &current_config_idx;
-    Config_List config_list_comp = { configs, [&] (int idx) { selectConfig(idx); } };
+    Config_List config_list_comp;
     
     GameUI_Header header;
 
@@ -1340,12 +1313,13 @@ class Main_Component : public juce::Component
     Main_Component(juce::AudioFormatManager &formatManager)
     :   player(formatManager)
     {
+        juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+        DBG(app_data.getFullPathName());
+        auto store_directory = app_data.getChildFile("MixTrainer");
+
         //load audio file list
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            assert(app_data.exists() && app_data.isDirectory());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("audio_file_list.txt");
+            auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");
             if (!file_RENAME.existsAsFile())
             {
                 file_RENAME.create();
@@ -1354,7 +1328,7 @@ class Main_Component : public juce::Component
             auto stream = file_RENAME.createInputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/audio_file_list.txt");
+                DBG("couldn't open %appdata%/MixTrainer/audio_file_list.txt");
                 return;
             }
             while (! stream->isExhausted()) // [3]
@@ -1385,10 +1359,7 @@ class Main_Component : public juce::Component
 
         //load config list
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            assert(app_data.exists() && app_data.isDirectory());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.xml");
+            auto file_RENAME = store_directory.getChildFile("configs.xml");
             if (!file_RENAME.existsAsFile())
             {
                 file_RENAME.create();
@@ -1397,7 +1368,7 @@ class Main_Component : public juce::Component
             auto stream = file_RENAME.createInputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/configs.xml");
+                DBG("couldn't open %appdata%/MixTrainer/configs.xml");
                 return;
             }
             juce::String xml_string = stream->readString();
@@ -1407,7 +1378,7 @@ class Main_Component : public juce::Component
             for (int i = 0; i < root_node.getNumChildren(); i++)
             {
                 juce::ValueTree node = root_node.getChild(i);
-                if(node.getType() != id_result)
+                if(node.getType() != id_config)
                     continue;
                 FrequencyGame_Config config = {
                     .title = node.getProperty(id_config_title, ""),
@@ -1434,10 +1405,7 @@ class Main_Component : public juce::Component
         
         //load previous results
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            assert(app_data.exists() && app_data.isDirectory());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("results.xml");
+            auto file_RENAME = store_directory.getChildFile("results.xml");
             if (!file_RENAME.existsAsFile())
             {
                 file_RENAME.create();
@@ -1446,7 +1414,7 @@ class Main_Component : public juce::Component
             auto stream = file_RENAME.createInputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/results.xml");
+                DBG("couldn't open %appdata%/MixTrainer/results.xml");
                 return;
             }
             juce::String xml_string = stream->readString();
@@ -1485,15 +1453,17 @@ class Main_Component : public juce::Component
 
     ~Main_Component()
     {
+        juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
+        DBG(app_data.getFullPathName());
+        assert(app_data.exists() && app_data.isDirectory());
+        auto store_directory = app_data.getChildFile("MixTrainer");
         //save audio file list
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("audio_file_list.txt");
+            auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");;
             auto stream = file_RENAME.createOutputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/audio_file_list.txt");
+                DBG("couldn't open %appdata%/MixTrainer/audio_file_list.txt");
                 return;
             }
             stream->setPosition(0);
@@ -1506,13 +1476,11 @@ class Main_Component : public juce::Component
 
         //save config list
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("configs.xml");
+            auto file_RENAME = store_directory.getChildFile("configs.xml");
             auto stream = file_RENAME.createOutputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/configs.xml");
+                DBG("couldn't open %appdata%/MixTrainer/configs.xml");
                 return;
             }
             stream->setPosition(0);
@@ -1539,13 +1507,11 @@ class Main_Component : public juce::Component
         
         //save previous results
         [&] {
-            juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
-            DBG(app_data.getFullPathName());
-            auto file_RENAME = app_data.getChildFile("MixerTrainer").getChildFile("results.xml");
+            auto file_RENAME = store_directory.getChildFile("results.xml");
             auto stream = file_RENAME.createOutputStream();
             if (!stream->openedOk())
             {
-                DBG("couldn't open %appdata%/MixerTrainer/results.xml");
+                DBG("couldn't open %appdata%/MixTrainer/results.xml");
                 return;
             }
             stream->setPosition(0);
