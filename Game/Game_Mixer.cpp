@@ -34,26 +34,18 @@ void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui)
     game_ui_bottom_update(&ui.bottom, true, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-void mixer_game_post_event(MixerGame_State *state, Event event, std::mutex* mutex)
+void mixer_game_post_event(MixerGame_State *state, MixerGame_IO *io, Event event)
 {
     Effects effects;
     {
-        if(mutex)
-        std::lock_guard lock { *mutex };
+        std::lock_guard lock { io->mutex };
         effects = mixer_game_update(state, event);
     }
-    for(auto &observer : state->observers)
+    for(auto &observer : io->observers)
         observer(effects);
-
-#if 0
-    if (effects.rename)
-    {
-        state->app->renameChannelFromUI(effects.rename->id, effects.rename->new_name);
-    }
-#endif
     if (effects.quit)
     {
-        state->on_quit();
+        io->on_quit();
     }
 }
 
@@ -476,19 +468,18 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
     return effects;
 }
 
-void mixer_game_add_observer(MixerGame_State *state, observer_t &&observer)
+void mixer_game_add_observer(MixerGame_IO *io, observer_t new_observer)
 {
-    state->observers.push_back(std::move(observer));
+    io->observers.push_back(std::move(new_observer));
 }
 
 
-std::unique_ptr < MixerGame_State > mixer_game_init(
+std::unique_ptr < MixerGame_State > mixer_game_state_init(
     std::unordered_map<int, ChannelInfos> &channel_infos,
     MixerGame_Variant variant,
     int listens,
     int timeout_ms,
-    std::vector<double> db_slider_values,
-    std::function<void()> on_quit)
+    std::vector<double> db_slider_values)
 {
     if (variant != MixerGame_Tries)
         assert(listens == -1);
@@ -501,8 +492,13 @@ std::unique_ptr < MixerGame_State > mixer_game_init(
         .listens = listens,
         .timeout_ms = timeout_ms,
         .db_slider_values = db_slider_values,
-        .timestamp_start = -1,
-        .on_quit = std::move(on_quit)
+        .timestamp_start = -1
     };
     return std::make_unique < MixerGame_State > (std::move(state));
+}
+
+
+std::unique_ptr<MixerGame_IO> mixer_game_io_init()
+{
+    return std::make_unique<MixerGame_IO>();
 }

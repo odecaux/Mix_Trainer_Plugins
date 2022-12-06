@@ -1565,7 +1565,7 @@ class Main_Component : public juce::Component
 
     void toMainMenu()
     {
-        state.reset();
+        game_state.reset();
         auto main_menu_panel = std::make_unique < MainMenu_Panel > (
             [this] { toGameConfig(); },
             [this] { toFileSelector(); },
@@ -1583,7 +1583,7 @@ class Main_Component : public juce::Component
 
     void toFileSelector()
     {
-        assert(state == nullptr);
+        assert(game_state == nullptr);
         panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toMainMenu(); } );
         addAndMakeVisible(*panel);
         resized();
@@ -1591,7 +1591,7 @@ class Main_Component : public juce::Component
 
     void toGameConfig()
     {
-        assert(state == nullptr);
+        assert(game_state == nullptr);
         panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { toMainMenu(); }, [&] { toGame(); });
         addAndMakeVisible(*panel);
         resized();
@@ -1599,13 +1599,8 @@ class Main_Component : public juce::Component
     
     void toGame()
     {
-        auto on_quit = [this] { 
-            timer.stopTimer();
-            player.post_command( { .type = Audio_Command_Stop });
-            toMainMenu();
-        };
-        state = frequency_game_state_init(game_configs[current_config_idx], files, std::move(on_quit));
-        if(state == nullptr)
+        game_state = frequency_game_state_init(game_configs[current_config_idx], files);
+        if(game_state == nullptr)
             return;
         removeChildComponent(panel.get());
 
@@ -1614,7 +1609,7 @@ class Main_Component : public juce::Component
             {
                 if (effects.transition->in_transition == GameStep_Begin)
                 {
-                    panel = std::make_unique < FrequencyGame_UI > (state.get());
+                    panel = std::make_unique < FrequencyGame_UI > (game_state.get(), game_io.get());
                     addAndMakeVisible(*panel);
                 }
                 auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
@@ -1637,7 +1632,7 @@ class Main_Component : public juce::Component
             if (effects.ui)
             {
                 auto *game_ui = dynamic_cast<FrequencyGame_UI*>(panel.get());
-                jassert(game_ui);
+                assert(game_ui);
                 frequency_game_ui_update(*game_ui, *effects.ui);
             }
         };
@@ -1645,16 +1640,25 @@ class Main_Component : public juce::Component
         auto debug_observer = [this] (const Effects &effects) {
             juce::ignoreUnused(effects);
         };
+        
+        game_io = frequency_game_io_init();
 
-        frequency_game_add_observer(state.get(), std::move(observer));
-        frequency_game_add_observer(state.get(), std::move(debug_observer));
-
-        frequency_game_post_event(state.get(), Event { .type = Event_Init });
-        frequency_game_post_event(state.get(), Event { .type = Event_Create_UI });
-        timer.callback = [state = state.get()] (juce::int64 timestamp) {
-            frequency_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+        auto on_quit = [this] { 
+            game_io->timer.stopTimer();
+            player.post_command( { .type = Audio_Command_Stop });
+            toMainMenu();
         };
-        timer.startTimerHz(60);
+        game_io->on_quit = std::move(on_quit);
+
+        frequency_game_add_observer(game_io.get(), std::move(observer));
+        frequency_game_add_observer(game_io.get(), std::move(debug_observer));
+
+        frequency_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Init });
+        frequency_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
+        game_io->timer.callback = [state = game_state.get(), io = game_io.get()] (juce::int64 timestamp) {
+            frequency_game_post_event(state, io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+        };
+        game_io->timer.startTimerHz(60);
 
         resized();
     }
@@ -1676,8 +1680,8 @@ class Main_Component : public juce::Component
 
     private :
     FilePlayer player;
-    Timer timer;
-    std::unique_ptr<FrequencyGame_State> state;
+    std::unique_ptr<FrequencyGame_IO> game_io;
+    std::unique_ptr<FrequencyGame_State> game_state;
     std::unique_ptr<juce::Component> panel;
     
 

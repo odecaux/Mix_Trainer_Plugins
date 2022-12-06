@@ -45,9 +45,8 @@ private:
         Stats
     };
     
-    std::mutex mutex;
-    Timer timer;
     std::unique_ptr<MixerGame_State> game_state;
+    std::unique_ptr<MixerGame_IO> game_io;
     MixerGameUI *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
     Settings settings = { 0.0f };

@@ -66,22 +66,16 @@ void Application::toGame(MixerGame_Variant variant)
     assert(editor);
     assert(!game_state);
     
-    auto on_quit = [this] { 
-        timer.stopTimer();
-        game_state.reset();  
-        toMainMenu();
-    };
-
     switch (variant)
     {
         case MixerGame_Normal : {
-            game_state = mixer_game_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
+            game_state = mixer_game_state_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
         } break;
         case MixerGame_Timer : {
-            game_state = mixer_game_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
+            game_state = mixer_game_state_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
         } break;
         case MixerGame_Tries : {
-            game_state = mixer_game_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 }, std::move(on_quit));
+            game_state = mixer_game_state_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
         } break;
     }
 
@@ -99,7 +93,7 @@ void Application::toGame(MixerGame_Variant variant)
                 auto new_game_ui = std::make_unique < MixerGameUI > (
                     channels,
                     game_state->db_slider_values,
-                    &mutex,
+                    game_io.get(),
                     game_state.get()
                 );
                 game_ui = new_game_ui.get();
@@ -128,16 +122,27 @@ void Application::toGame(MixerGame_Variant variant)
         }
     };
 
-    mixer_game_add_observer(game_state.get(), std::move(observer));
-    mixer_game_add_observer(game_state.get(), std::move(debug_observer));
+    assert(!game_io);
+    game_io = mixer_game_io_init();
     
-    timer.callback = [state = game_state.get(), mutex = &this->mutex] (juce::int64 timestamp) {
-        mixer_game_post_event(state, Event {.type = Event_Timer_Tick, .value_i64 = timestamp}, mutex);
+    auto on_quit = [this] { 
+        game_io->timer.stopTimer();
+        game_state.reset();  
+        toMainMenu();
     };
-    timer.startTimerHz(60);
 
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Init }, &mutex);
-    mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI }, &mutex);
+    game_io->on_quit = std::move(on_quit);
+
+    mixer_game_add_observer(game_io.get(), std::move(observer));
+    mixer_game_add_observer(game_io.get(), std::move(debug_observer));
+    
+    game_io->timer.callback = [state = game_state.get(), io = game_io.get()] (juce::int64 timestamp) {
+        mixer_game_post_event(state, io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    };
+    game_io->timer.startTimerHz(60);
+
+    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Init });
+    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
 }
 
 void Application::toStats()
@@ -172,7 +177,7 @@ void Application::onEditorDelete()
     if (type == PanelType::Game)
     {
         assert(game_state);
-        mixer_game_post_event(game_state.get(), Event { .type = Event_Destroy_UI }, &mutex);
+        mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
 }
@@ -203,15 +208,14 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case PanelType::Game :
         {
             assert(game_state); 
-            auto game_ui_temp = std::make_unique<MixerGameUI>(
+            assert(game_io); 
+            panel = std::make_unique<MixerGameUI>(
                 channels,
                 game_state->db_slider_values,
-                &mutex,
+                game_io.get(),
                 game_state.get()
             );
-            game_ui = game_ui_temp.get();
-            mixer_game_post_event(game_state.get(), Event { .type = Event_Create_UI, .value_ptr = game_ui }, &mutex);
-            panel = std::move(game_ui_temp);
+            mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
         } break;
     }
     editor->changePanel(std::move(panel));
@@ -237,7 +241,7 @@ void Application::createChannel(int id)
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event, &mutex);
+        mixer_game_post_event(game_state.get(), game_io.get(), event);
     }
 }
     
@@ -252,7 +256,7 @@ void Application::deleteChannel(int id)
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), event, &mutex);
+        mixer_game_post_event(game_state.get(), game_io.get(), event);
     }
     channels.erase(channel);
 }
@@ -279,7 +283,7 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event(game_state.get(), event, &mutex);
+        mixer_game_post_event(game_state.get(), game_io.get(), event);
     }
 }
     
@@ -297,6 +301,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event(game_state.get(), event, &mutex);
+        mixer_game_post_event(game_state.get(), game_io.get(), event);
     }
 }

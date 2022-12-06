@@ -259,6 +259,14 @@ struct Audio_File
 
 using observer_t = std::function<void(const Effects &)>;
 
+struct FrequencyGame_IO
+{
+    Timer timer;
+    std::mutex update_fn_mutex;
+    std::vector<observer_t> observers;
+    std::function < void() > on_quit;
+};
+
 struct FrequencyGame_State
 {
     GameStep step;
@@ -273,9 +281,6 @@ struct FrequencyGame_State
 
     juce::int64 timestamp_start;
     juce::int64 current_timestamp;
-    std::unique_ptr<std::mutex> update_fn_mutex;
-    std::vector<observer_t> observers;
-    std::function < void() > on_quit;
 };
 
 struct FrequencyGame_UI;
@@ -285,33 +290,34 @@ void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
 void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition);
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui);
 Effects frequency_game_update(FrequencyGame_State *state, Event event);
-void frequency_game_post_event(FrequencyGame_State *state, Event event);
+void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event);
 
 
 struct FrequencyGame_UI : public juce::Component
 {
     
-    FrequencyGame_UI(FrequencyGame_State *state) 
-    : state(state)
+    FrequencyGame_UI(FrequencyGame_State *game_state, FrequencyGame_IO *game_io) : 
+        game_io(game_io),
+        game_state(game_state)
     {
-        bottom.onNextClicked = [state] (Event_Type e){
+        bottom.onNextClicked = [game_state, game_io] (Event_Type e){
             Event event = {
                 .type = e
             };
-            frequency_game_post_event(state, event);
+            frequency_game_post_event(game_state, game_io, event);
         };
-        header.onBackClicked = [state] {
+        header.onBackClicked = [game_state, game_io] {
             Event event = {
                 .type = Event_Click_Back
             };
-            frequency_game_post_event(state, event);
+            frequency_game_post_event(game_state, game_io, event);
         };
-        bottom.onToggleClicked = [state] (bool a){
+        bottom.onToggleClicked = [game_state, game_io] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            frequency_game_post_event(state, event);
+            frequency_game_post_event(game_state, game_io, event);
         };
         addAndMakeVisible(header);
         addAndMakeVisible(bottom);
@@ -338,7 +344,9 @@ struct FrequencyGame_UI : public juce::Component
     std::unique_ptr<FrequencyWidget> frequency_widget;
     std::unique_ptr<FrequencyGame_Results_Panel> results_panel;
     GameUI_Bottom bottom;
-    FrequencyGame_State *state;
+    FrequencyGame_IO *game_io;
+    FrequencyGame_State *game_state;
+    
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyGame_UI)
 };
@@ -348,12 +356,12 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
     if (transition.out_transition == GameStep_Begin)
     {
         ui.frequency_widget = std::make_unique < FrequencyWidget > ();
-        ui.frequency_widget->onClick = [state = ui.state] (int frequency) {
+        ui.frequency_widget->onClick = [state = ui.game_state, io = ui.game_io] (int frequency) {
             Event event = {
                 .type = Event_Click_Frequency,
                 .value_i = frequency
             };
-            frequency_game_post_event(state, event);
+            frequency_game_post_event(state, io, event);
         };
         ui.addAndMakeVisible(*ui.frequency_widget);
         ui.resized();
@@ -381,36 +389,38 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-void frequency_game_post_event(FrequencyGame_State *state, Event event)
+void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event)
 {
     Effects effects;
     {
-        std::lock_guard lock { *state->update_fn_mutex };
+        std::lock_guard lock { io->update_fn_mutex };
         effects = frequency_game_update(state, event);
     }
-    for(auto &observer : state->observers)
+    for(auto &observer : io->observers)
         observer(effects);
 
     if (effects.quit)
     {
-        state->on_quit();
+        io->on_quit();
     }
 }
 
 std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Config config, 
-                                                               std::vector<Audio_File> files,
-                                                               std::function<void()> on_quit)
+                                                               std::vector<Audio_File> files)
 {
     assert(!files.empty());
     auto state = FrequencyGame_State {
         .files = std::move(files),
         .config = config,
-        .timestamp_start = -1,
-        .update_fn_mutex = std::make_unique<std::mutex>(),
-        .on_quit = std::move(on_quit)
+        .timestamp_start = -1
     };
 
     return std::make_unique < FrequencyGame_State > (std::move(state));
+}
+
+std::unique_ptr<FrequencyGame_IO> frequency_game_io_init()
+{
+    return std::make_unique<FrequencyGame_IO>();
 }
 
 Effects frequency_game_update(FrequencyGame_State *state, Event event)
@@ -741,9 +751,9 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     return effects;
 }
 
-void frequency_game_add_observer(FrequencyGame_State *state, observer_t &&observer)
+void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer)
 {
-    state->observers.push_back(std::move(observer));
+    io->observers.push_back(std::move(observer));
 }
 
 void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui)
