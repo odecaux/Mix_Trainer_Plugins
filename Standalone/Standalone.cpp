@@ -1,14 +1,4 @@
-/*
-    ==============================================================================
-
-    This file contains the startup code for a PIP.
-
-    ==============================================================================
-    */
-
 #include "Standalone_UI.h"
-
-
 
 class Application  : public juce::JUCEApplication
 {
@@ -16,14 +6,14 @@ public:
     //==============================================================================
     Application() = default;
 
-    const juce::String getApplicationName() override       { return "Mixer Trainer"; }
+    const juce::String getApplicationName() override       { return "Mix Trainer"; }
     const juce::String getApplicationVersion() override    { return "0.0.1"; }
 
     void initialise (const juce::String&) override
     {
         formatManager.registerBasicFormats();
         auto *main_component = new Main_Component(formatManager);
-        mainWindow = std::make_unique<MainWindow>("Mixer Trainer", main_component, *this);
+        mainWindow = std::make_unique<MainWindow>("Mix Trainer", main_component, *this);
     }
 
     void shutdown() override                         { mainWindow = nullptr; }

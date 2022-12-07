@@ -228,13 +228,16 @@ void Application_Standalone::to_main_menu()
     game_state.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
+        [this] {},
         [this] { to_file_selector(); },
         [this] {}
     );
     if (files.empty())
     {
-        main_menu_panel->game_button.setEnabled(false);
-        main_menu_panel->game_button.setTooltip("Please add audio files");
+        main_menu_panel->frequency_game_button.setEnabled(false);
+        main_menu_panel->frequency_game_button.setTooltip("Please add audio files");
+        main_menu_panel->compressor_game_button.setEnabled(false);
+        main_menu_panel->compressor_game_button.setTooltip("Please add audio files");
     }
     main_component->changePanel(std::move(main_menu_panel));
 }
@@ -266,11 +269,11 @@ void Application_Standalone::to_frequency_game()
             if (effects.transition->in_transition == GameStep_Begin)
             {
                 auto new_game_ui = std::make_unique < FrequencyGame_UI > (game_state.get(), game_io.get());
-                game_ui = new_game_ui.get();
+                frequency_game_ui = new_game_ui.get();
                 main_component->changePanel(std::move(new_game_ui));
             }
-            if(game_ui)
-                frequency_game_ui_transitions(*game_ui, *effects.transition);
+            if(frequency_game_ui)
+                frequency_game_ui_transitions(*frequency_game_ui, *effects.transition);
         }
         if (effects.dsp)
         {
@@ -287,8 +290,8 @@ void Application_Standalone::to_frequency_game()
         }
         if (effects.ui)
         {
-            assert(game_ui);
-            frequency_game_ui_update(*game_ui, *effects.ui);
+            assert(frequency_game_ui);
+            frequency_game_ui_update(*frequency_game_ui, *effects.ui);
         }
     };
 
@@ -317,8 +320,18 @@ void Application_Standalone::to_frequency_game()
 }
 
 
+void Application_Standalone::to_low_end_frequency_game()
+{
+    assert(game_state == nullptr);
+    //main_component->changePanel(std::move(config_panel));
+}
 
-
+void Application_Standalone::to_compressor_game()
+{
+    auto new_game_ui = std::make_unique < CompressorGame_UI > ();
+    compressor_game_ui = new_game_ui.get();
+    main_component->changePanel(std::move(new_game_ui));
+}
 
 //------------------------------------------------------------------------
 FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)

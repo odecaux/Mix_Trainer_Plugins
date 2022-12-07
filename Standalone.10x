@@ -81,6 +81,12 @@
 				<Path>Standalone/FrequencyWidget.h</Path>
 			</File>
 			<File>
+				<Path>Standalone/CompressorGame.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/CompressorGame.cpp</Path>
+			</File>
+			<File>
 				<Path>Standalone/FrequencyGame.h</Path>
 			</File>
 			<File>

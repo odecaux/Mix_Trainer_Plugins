@@ -5,6 +5,7 @@
 #include "../Game/Game.h"
 #include "FrequencyWidget.h"
 #include "FrequencyGame.h"
+#include "CompressorGame.h"
 
 class Main_Component;
 
@@ -1031,16 +1032,24 @@ public :
 class MainMenu_Panel : public juce::Component
 {
 public :
-    MainMenu_Panel(std::function<void()> &&toGame,
+    MainMenu_Panel(std::function<void()> &&toFrequencyGame,
+             std::function<void()> &&toCompressorGame,
              std::function<void()> &&toFileList,
              std::function<void()> &&toStats)
     {
-        game_button.setSize(100, 40);
-        game_button.setButtonText("Game");
-        game_button.onClick = [click = std::move(toGame)] {
+        frequency_game_button.setSize(100, 40);
+        frequency_game_button.setButtonText("Learn EQs");
+        frequency_game_button.onClick = [click = std::move(toFrequencyGame)] {
             click();
         };
-        addAndMakeVisible(game_button);
+        addAndMakeVisible(frequency_game_button);
+        
+        compressor_game_button.setSize(100, 40);
+        compressor_game_button.setButtonText("Learn Compressors");
+        compressor_game_button.onClick = [click = std::move(toCompressorGame)] {
+            click();
+        };
+        addAndMakeVisible(compressor_game_button);
         
         file_list_button.setSize(100, 40);
         file_list_button.setButtonText("Audio Files");
@@ -1067,12 +1076,14 @@ public :
     void resized() override
     {
         auto bounds = getLocalBounds();
-        game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -50));
-        file_list_button.setCentrePosition(bounds.getCentre());
-        stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 50));
+        frequency_game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -75));
+        compressor_game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -25));
+        file_list_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 25));
+        stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 75));
     }
 
-    juce::TextButton game_button;
+    juce::TextButton frequency_game_button;
+    juce::TextButton compressor_game_button;
     juce::TextButton file_list_button;
     juce::TextButton stats_button;
 };

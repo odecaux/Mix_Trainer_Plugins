@@ -32,6 +32,8 @@ class Application_Standalone
     void to_file_selector();
     void to_game_config();
     void to_frequency_game();
+    void to_low_end_frequency_game();
+    void to_compressor_game();
 
 
     private :
@@ -39,7 +41,8 @@ class Application_Standalone
     std::unique_ptr<FrequencyGame_IO> game_io;
     std::unique_ptr<FrequencyGame_State> game_state;
     Main_Component *main_component;
-    FrequencyGame_UI *game_ui;
+    FrequencyGame_UI *frequency_game_ui;
+    CompressorGame_UI *compressor_game_ui;
     
 
     std::vector<Audio_File> files;
