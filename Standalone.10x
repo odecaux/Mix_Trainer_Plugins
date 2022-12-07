@@ -84,13 +84,16 @@
 				<Path>Standalone/FrequencyWidget.h</Path>
 			</File>
 			<File>
-				<Path>Standalone/pch.h</Path>
-			</File>
-			<File>
 				<Path>Standalone/FrequencyGame.h</Path>
 			</File>
 			<File>
 				<Path>Standalone/FrequencyGame.cpp</Path>
+			</File>
+			<File>
+				<Path>Standalone/Application_Standalone.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/Application_Standalone.cpp</Path>
 			</File>
 		</Children>
 	</Workspace>
