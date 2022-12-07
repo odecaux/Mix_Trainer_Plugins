@@ -35,18 +35,18 @@ class DemoThumbnailComp  :
 public:
     DemoThumbnailComp (juce::AudioFormatManager& formatManager,
                        juce::AudioTransportSource& source)
-    : transportSource (source),
-      thumbnail (512, formatManager, thumbnailCache)
+    : transport_source (source),
+      thumbnail (512, formatManager, thumbnail_cache)
     {
         thumbnail.addChangeListener (this);
 
         addAndMakeVisible (scrollbar);
-        scrollbar.setRangeLimits (visibleRange);
+        scrollbar.setRangeLimits (visible_range);
         scrollbar.setAutoHide (false);
         scrollbar.addListener (this);
 
-        currentPositionMarker.setFill (juce::Colours::white.withAlpha (0.85f));
-        addAndMakeVisible (currentPositionMarker);
+        current_position_marker.setFill (juce::Colours::white.withAlpha (0.85f));
+        addAndMakeVisible (current_position_marker);
     }
 
     ~DemoThumbnailComp() override
@@ -87,15 +87,15 @@ public:
 
     void setRange (juce::Range<double> newRange)
     {
-        visibleRange = newRange;
-        scrollbar.setCurrentRange (visibleRange);
+        visible_range = newRange;
+        scrollbar.setCurrentRange (visible_range);
         updateCursorPosition();
         repaint();
     }
 
     void setFollowsTransport (bool shouldFollow)
     {
-        isFollowingTransport = shouldFollow;
+        is_following_transport = shouldFollow;
     }
 
     void paint (juce::Graphics& g) override
@@ -109,7 +109,7 @@ public:
 
             thumbArea.removeFromBottom (scrollbar.getHeight() + 4);
             thumbnail.drawChannels (g, thumbArea.reduced (2),
-                                    visibleRange.getStart(), visibleRange.getEnd(), 1.0f);
+                                    visible_range.getStart(), visible_range.getEnd(), 1.0f);
         }
         else
         {
@@ -137,23 +137,23 @@ public:
     void mouseDrag (const juce::MouseEvent& e) override
     {
         if (canMoveTransport())
-            transportSource.setPosition (juce::jmax (0.0, xToTime ((float) e.x)));
+            transport_source.setPosition (juce::jmax (0.0, xToTime ((float) e.x)));
     }
 
     void mouseUp (const juce::MouseEvent&) override
     {
-        transportSource.start();
+        transport_source.start();
     }
 
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel) override
     {
         if (thumbnail.getTotalLength() > 0.0)
         {
-            auto newStart = visibleRange.getStart() - wheel.deltaX * (visibleRange.getLength()) / 10.0;
-            newStart = juce::jlimit (0.0, juce::jmax (0.0, thumbnail.getTotalLength() - (visibleRange.getLength())), newStart);
+            auto newStart = visible_range.getStart() - wheel.deltaX * (visible_range.getLength()) / 10.0;
+            newStart = juce::jlimit (0.0, juce::jmax (0.0, thumbnail.getTotalLength() - (visible_range.getLength())), newStart);
 
             if (canMoveTransport())
-                setRange ({ newStart, newStart + visibleRange.getLength() });
+                setRange ({ newStart, newStart + visible_range.getLength() });
 
             if (wheel.deltaY != 0.0f)
             {
@@ -166,40 +166,40 @@ public:
     }
 
 private:
-    juce::AudioTransportSource& transportSource;
+    juce::AudioTransportSource& transport_source;
     juce::ScrollBar scrollbar  { false };
 
-    juce::AudioThumbnailCache thumbnailCache  { 5 };
+    juce::AudioThumbnailCache thumbnail_cache  { 5 };
     juce::AudioThumbnail thumbnail;
-    juce::Range<double> visibleRange;
-    bool isFollowingTransport = false;
-    juce::File lastFileDropped;
+    juce::Range<double> visible_range;
+    bool is_following_transport = false;
+    juce::File last_dropped_file;
 
-    juce::DrawableRectangle currentPositionMarker;
+    juce::DrawableRectangle current_position_marker;
 
     float timeToX (const double time) const
     {
-        if (visibleRange.getLength() <= 0)
+        if (visible_range.getLength() <= 0)
             return 0;
 
-        return (float) getWidth() * (float) ((time - visibleRange.getStart()) / visibleRange.getLength());
+        return (float) getWidth() * (float) ((time - visible_range.getStart()) / visible_range.getLength());
     }
 
     double xToTime (const float x) const
     {
-        return (x / (float) getWidth()) * (visibleRange.getLength()) + visibleRange.getStart();
+        return (x / (float) getWidth()) * (visible_range.getLength()) + visible_range.getStart();
     }
 
     bool canMoveTransport() const noexcept
     {
-        return ! (isFollowingTransport && transportSource.isPlaying());
+        return ! (is_following_transport && transport_source.isPlaying());
     }
 
     void scrollBarMoved (juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override
     {
         if (scrollBarThatHasMoved == &scrollbar)
-            if (! (isFollowingTransport && transportSource.isPlaying()))
-                setRange (visibleRange.movedToStartAt (newRangeStart));
+            if (! (is_following_transport && transport_source.isPlaying()))
+                setRange (visible_range.movedToStartAt (newRangeStart));
     }
 
     void timerCallback() override
@@ -207,14 +207,14 @@ private:
         if (canMoveTransport())
             updateCursorPosition();
         else
-            setRange (visibleRange.movedToStartAt (transportSource.getCurrentPosition() - (visibleRange.getLength() / 2.0)));
+            setRange (visible_range.movedToStartAt (transport_source.getCurrentPosition() - (visible_range.getLength() / 2.0)));
     }
 
     void updateCursorPosition()
     {
-        currentPositionMarker.setVisible (transportSource.isPlaying() || isMouseButtonDown());
+        current_position_marker.setVisible (transport_source.isPlaying() || isMouseButtonDown());
 
-        currentPositionMarker.setRectangle (juce::Rectangle<float> (timeToX (transportSource.getCurrentPosition()) - 0.75f, 0,
+        current_position_marker.setRectangle (juce::Rectangle<float> (timeToX (transport_source.getCurrentPosition()) - 0.75f, 0,
                                             1.5f, (float) (getHeight() - scrollbar.getHeight())));
     }
 };
@@ -230,24 +230,24 @@ class AudioFileList :
     public juce::FileDragAndDropTarget
 {
 public:
-    AudioFileList(FilePlayer &player, 
-                  std::vector<Audio_File> &files,
+    AudioFileList(FilePlayer &filePlayer, 
+                  std::vector<Audio_File> &audioFiles,
                   juce::Component *dropSource) : 
-        player(player), 
-        files(files),
-        dropSource(dropSource)
+        player(filePlayer), 
+        files(audioFiles),
+        drop_source_assert(dropSource)
     {
-        fileListComp.setMultipleSelectionEnabled(true);
-        fileListComp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
-        fileListComp.setOutlineThickness (2);
-        addAndMakeVisible(fileListComp);
+        file_list_component.setMultipleSelectionEnabled(true);
+        file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+        file_list_component.setOutlineThickness (2);
+        addAndMakeVisible(file_list_component);
     }
 
     virtual ~AudioFileList() override = default;
 
     void resized() override
     {
-        fileListComp.setBounds(getLocalBounds());
+        file_list_component.setBounds(getLocalBounds());
     }
 
     void paintOverChildren(juce::Graphics& g) override
@@ -283,7 +283,7 @@ public:
 
     bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
     {
-        assert(dragSourceDetails.sourceComponent == dropSource);
+        assert(dragSourceDetails.sourceComponent == drop_source_assert);
         return true;
     }
 
@@ -292,7 +292,7 @@ public:
         //can't have the same file twice
         if (auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; }); result == files.end())
         {
-            if (auto * reader = player.formatManager.createReaderFor(file)) //expensive
+            if (auto * reader = player.format_manager.createReaderFor(file)) //expensive
             {
                 /*
                 for (const auto &key : reader->metadataValues.getAllKeys())
@@ -307,7 +307,7 @@ public:
                     .loop_bounds = { 0, reader->lengthInSamples }
                 };
                 files.emplace_back(std::move(new_audio_file));
-                fileListComp.updateContent();
+                file_list_component.updateContent();
                 delete reader;
             }
         }
@@ -323,8 +323,8 @@ public:
     
     void itemDropped (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override
     {
-        assert(dragSourceDetails.sourceComponent == dropSource);
-        juce::FileTreeComponent *tree = (juce::FileTreeComponent*)dropSource;
+        assert(dragSourceDetails.sourceComponent == drop_source_assert);
+        juce::FileTreeComponent *tree = (juce::FileTreeComponent*)drop_source_assert;
         auto dropped_file_count = tree->getNumSelectedFiles();
         for (auto i = 0; i < dropped_file_count; i++)
         {
@@ -340,23 +340,23 @@ public:
     
     void deleteKeyPressed (int lastRowSelected) override
     {
-        auto num_selected = fileListComp.getNumSelectedRows();
+        auto num_selected = file_list_component.getNumSelectedRows();
         if ( num_selected > 1)
         {
-            auto selected_rows = fileListComp.getSelectedRows();
-            fileListComp.deselectAllRows();
+            auto selected_rows = file_list_component.getSelectedRows();
+            file_list_component.deselectAllRows();
             for (int i = getNumRows(); --i >= 0;)
             {   
                 if(selected_rows.contains(i))
                     files.erase(files.begin() + i);
             }
-            fileListComp.updateContent();
+            file_list_component.updateContent();
         }
         else if (num_selected == 1)
         {
 
             files.erase(files.begin() + lastRowSelected);
-            fileListComp.updateContent();
+            file_list_component.updateContent();
         }
     }
 
@@ -364,7 +364,7 @@ public:
     {
         if (key == key.escapeKey)
         {
-            fileListComp.deselectAllRows();
+            file_list_component.deselectAllRows();
             return true;
         }
         else
@@ -374,12 +374,12 @@ public:
     }
 
     
-    void selectedRowsChanged (int lastRowSelected) override
+    void selectedRowsChanged (int last_row_selected) override
     {
-        if (lastRowSelected != -1)
+        if (last_row_selected != -1)
         {
-            assert(lastRowSelected < files.size());
-            const auto &file = files[lastRowSelected].file;
+            assert(last_row_selected < files.size());
+            const auto &file = files[last_row_selected].file;
             auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
             assert(ret.value_b); //file still exists on drive ?
             player.post_command( { .type = Audio_Command_Play });
@@ -397,9 +397,9 @@ public:
 private:
     FilePlayer &player;
     std::vector<Audio_File> &files;
-    juce::ListBox fileListComp = { {}, this};
+    juce::ListBox file_list_component = { {}, this};
 
-    juce::Component *dropSource;
+    juce::Component *drop_source_assert;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
 };
@@ -416,11 +416,11 @@ class FileSelector_Panel :
 {
 public:
     
-    FileSelector_Panel(FilePlayer &player, 
-                       std::vector<Audio_File> &files,
+    FileSelector_Panel(FilePlayer &filePlayer, 
+                       std::vector<Audio_File> &audioFiles,
                        std::function<void()> onClickBack) 
-    : fileList(player, files, &explorer), 
-      player(player)
+    : file_list_component(filePlayer, audioFiles, &explorer), 
+      player(filePlayer)
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -431,19 +431,19 @@ public:
         }
 
         {
-            collapseExplorer.setToggleState(false, juce::dontSendNotification);
-            collapseExplorer.onStateChange = [&] {
-                auto is_on = collapseExplorer.getToggleState();
+            collapse_explorer_button.setToggleState(false, juce::dontSendNotification);
+            collapse_explorer_button.onStateChange = [&] {
+                auto is_on = collapse_explorer_button.getToggleState();
                 explorer.setVisible(is_on);
                 resized();
             };
-            addAndMakeVisible(collapseExplorer);
+            addAndMakeVisible(collapse_explorer_button);
         }
         {
-            fileExplorerThread.startThread ();
+            explorer_thread.startThread ();
 
-            directoryList.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
-            directoryList.setIgnoresHiddenFiles(true);
+            directory_list.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
+            directory_list.setIgnoresHiddenFiles(true);
 
             explorer.setTitle ("Files");
             explorer.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
@@ -454,7 +454,7 @@ public:
         }
 
         {
-            fileList.file_changed_callback = [&] (juce::File new_file)
+            file_list_component.file_changed_callback = [&] (juce::File new_file)
             {
                 if (new_file != juce::File{})
                     thumbnail.setFile(new_file);
@@ -463,7 +463,7 @@ public:
                 //frequency_bounds_slider.setMinAndMaxValues();
                 //nochekin;
             };
-            addAndMakeVisible(fileList);
+            addAndMakeVisible(file_list_component);
         }
 
         {
@@ -492,17 +492,17 @@ public:
         auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
 
         auto collapse_bounds = sub_header_bounds.removeFromLeft(100);
-        collapseExplorer.setBounds(collapse_bounds);
+        collapse_explorer_button.setBounds(collapse_bounds);
 
-        bool explorer_is_on = collapseExplorer.getToggleState();
+        bool explorer_is_on = collapse_explorer_button.getToggleState();
         if (explorer_is_on)
         {
             explorer.setBounds (left_bounds);
-            fileList.setBounds (right_bounds);
+            file_list_component.setBounds (right_bounds);
         }
         else
         {
-            fileList.setBounds (r);
+            file_list_component.setBounds (r);
         }
         
         frequency_bounds_slider.setBounds(bottom_bounds.removeFromBottom(20).reduced(50, 0));
@@ -511,14 +511,14 @@ public:
 private:
     FilePlayer &player;
     GameUI_Header header;
-    AudioFileList fileList;
+    AudioFileList file_list_component;
     
-    juce::ToggleButton collapseExplorer { "Show file explorer" };
-    juce::TimeSliceThread fileExplorerThread  { "File Explorer thread" };
-    juce::DirectoryContentsList directoryList {nullptr, fileExplorerThread};
-    juce::FileTreeComponent explorer { directoryList };
+    juce::ToggleButton collapse_explorer_button { "Show file explorer" };
+    juce::TimeSliceThread explorer_thread  { "File Explorer thread" };
+    juce::DirectoryContentsList directory_list {nullptr, explorer_thread};
+    juce::FileTreeComponent explorer { directory_list };
 
-    DemoThumbnailComp thumbnail { player.formatManager, player.transportSource };
+    DemoThumbnailComp thumbnail { player.format_manager, player.transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
 
     void selectionChanged() override
@@ -544,28 +544,28 @@ class Config_List :
 {
    
 public:
-    Config_List(std::vector<FrequencyGame_Config> &config,
-                std::function<void(int)> onClick) : 
-        config(config),
-        onClick(std::move(onClick))
+    Config_List(std::vector<FrequencyGame_Config> &gameConfigs,
+                std::function<void(int)> onBackClick) : 
+        configs(gameConfigs),
+        back_button_callback(std::move(onBackClick))
     {
-        list_comp.setMultipleSelectionEnabled(false);
-        list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
-        list_comp.setOutlineThickness (2);
-        addAndMakeVisible(list_comp);
-        list_comp.updateContent();
+        file_list_component.setMultipleSelectionEnabled(false);
+        file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+        file_list_component.setOutlineThickness (2);
+        addAndMakeVisible(file_list_component);
+        file_list_component.updateContent();
     }
 
     virtual ~Config_List() override = default;
 
     void resized() override
     {
-        list_comp.setBounds(getLocalBounds());
+        file_list_component.setBounds(getLocalBounds());
     }
 
     void paintOverChildren(juce::Graphics& g) override
     {
-        if (config.empty())
+        if (configs.empty())
         {
             auto r = getLocalBounds();
             g.setColour(juce::Colours::white);
@@ -573,14 +573,14 @@ public:
         }
     }
 
-    int getNumRows() override { return (int)config.size() + 1; }
+    int getNumRows() override { return (int)configs.size() + 1; }
 
     void paintListBoxItem (int row,
                            juce::Graphics& g,
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowIsSelected && row < config.size())
+        if (rowIsSelected && row < configs.size())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -594,14 +594,14 @@ public:
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
         //unused row
-        if (rowNumber > config.size())
+        if (rowNumber > configs.size())
         {
             if (existingComponentToUpdate != nullptr)
                 delete existingComponentToUpdate;
             return nullptr;
         }
         //"Insert config" row
-        else if (rowNumber == config.size()) 
+        else if (rowNumber == configs.size()) 
         {
             EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
                 dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
@@ -627,44 +627,44 @@ public:
     
     void deleteKeyPressed (int) override
     {
-        auto selected_row = list_comp.getSelectedRow();
+        auto selected_row = file_list_component.getSelectedRow();
         if(selected_row == -1) 
             return;
-        config.erase(config.begin() + selected_row);
+        configs.erase(configs.begin() + selected_row);
         auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
-        list_comp.selectRow(row_to_select);
-        list_comp.updateContent();
+        file_list_component.selectRow(row_to_select);
+        file_list_component.updateContent();
     }
 
     bool keyPressed (const juce::KeyPress &key) override
     {
         if (key != key.escapeKey)
             return false;
-        list_comp.deselectAllRows();
+        file_list_component.deselectAllRows();
         return true;
     }
 
-    void selectedRowsChanged (int lastRowSelected) override
+    void selectedRowsChanged (int last_row_selected) override
     {   
-        if(lastRowSelected != -1 && lastRowSelected != config.size())
-            onClick(lastRowSelected);
+        if(last_row_selected != -1 && last_row_selected != configs.size())
+            back_button_callback(last_row_selected);
     }
 
     void selectRow(int new_row)
     {
-        list_comp.selectRow(new_row);
+        file_list_component.selectRow(new_row);
     }
 
 private:
-    std::vector<FrequencyGame_Config> &config;
-    juce::ListBox list_comp = { {}, this };
-    std::function < void(int) > onClick;
+    std::vector<FrequencyGame_Config> &configs;
+    juce::ListBox file_list_component = { {}, this };
+    std::function < void(int) > back_button_callback;
     
     
     class EditableTextCustomComponent  : public juce::Label
     {
     public:
-        EditableTextCustomComponent (Config_List& list)  : owner (list)
+        EditableTextCustomComponent (Config_List& configListComponent)  : owner (configListComponent)
         {
             // double click to edit the label text; single click handled below
             setEditable (false, true, true);
@@ -673,7 +673,7 @@ private:
         void mouseDown (const juce::MouseEvent& event) override
         {   
             // single click on the label should simply select the row
-            owner.list_comp.selectRowsBasedOnModifierKeys (row, event.mods, false);
+            owner.file_list_component.selectRowsBasedOnModifierKeys (row, event.mods, false);
 
             juce::Label::mouseDown (event);
         }
@@ -687,14 +687,14 @@ private:
         {
             bool restore_text = getText() == "";
 
-            if (row < owner.config.size())
+            if (row < owner.configs.size())
             {
                 if (restore_text)
                 {
-                    setText(owner.config[row].title, juce::dontSendNotification);
+                    setText(owner.configs[row].title, juce::dontSendNotification);
                     return;
                 }
-                owner.config[row].title = getText();
+                owner.configs[row].title = getText();
             }
             else //
             {
@@ -704,9 +704,9 @@ private:
                     setText("Insert new config", juce::dontSendNotification);
                     return;
                 }
-                owner.config.push_back(frequency_game_config_default(getText()));
-                owner.onClick(row);
-                owner.list_comp.updateContent();
+                owner.configs.push_back(frequency_game_config_default(getText()));
+                owner.back_button_callback(row);
+                owner.file_list_component.updateContent();
             }
         }
 
@@ -714,10 +714,10 @@ private:
         void setRow (const int newRow)
         {
             row = newRow;
-            if (row < owner.config.size())
+            if (row < owner.configs.size())
             {
                 setJustificationType(juce::Justification::left);
-                setText (owner.config[newRow].title, juce::dontSendNotification);
+                setText (owner.configs[newRow].title, juce::dontSendNotification);
                 setColour(juce::Label::textColourId, juce::Colours::white);
             }
             else
@@ -757,15 +757,15 @@ struct Config_Panel : public juce::Component
     {
     public:
         Scroller(std::function<void(juce::Rectangle<int>)> onResize) 
-        : onResizeCallback(std::move(onResize))
+        : on_resized_callback(std::move(onResize))
         {}
 
         void resized() override
         {
-            onResizeCallback(getLocalBounds());
+            on_resized_callback(getLocalBounds());
         }
     private:
-        std::function < void(juce::Rectangle<int>) > onResizeCallback;
+        std::function < void(juce::Rectangle<int>) > on_resized_callback;
     };
 
     Config_Panel(std::vector<FrequencyGame_Config> &configs,
@@ -981,8 +981,8 @@ class Demo_Panel  :
     public juce::Component
 {
 public:
-    Demo_Panel(FilePlayer &player) :
-        player(player)
+    Demo_Panel(FilePlayer &audioFilePlayer) :
+        player(audioFilePlayer)
     {
 #if 0
             followTransportButton.onClick = [this] { thumbnail->setFollowsTransport (true); };  

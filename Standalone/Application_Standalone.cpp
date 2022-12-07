@@ -142,7 +142,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         game_configs = { frequency_game_config_default("Default") };
     }
 
-    toMainMenu();
+    to_main_menu();
 }
 
 Application_Standalone::~Application_Standalone()
@@ -223,12 +223,12 @@ Application_Standalone::~Application_Standalone()
     }();
 }
 
-void Application_Standalone::toMainMenu()
+void Application_Standalone::to_main_menu()
 {
     game_state.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
-        [this] { toGameConfig(); },
-        [this] { toFileSelector(); },
+        [this] { to_game_config(); },
+        [this] { to_file_selector(); },
         [this] {}
     );
     if (files.empty())
@@ -239,21 +239,21 @@ void Application_Standalone::toMainMenu()
     main_component->changePanel(std::move(main_menu_panel));
 }
 
-void Application_Standalone::toFileSelector()
+void Application_Standalone::to_file_selector()
 {
     assert(game_state == nullptr);
-    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, files, [&] { toMainMenu(); } );
+    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, files, [&] { to_main_menu(); } );
     main_component->changePanel(std::move(file_selector_panel));
 }
 
-void Application_Standalone::toGameConfig()
+void Application_Standalone::to_game_config()
 {
     assert(game_state == nullptr);
-    auto config_panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { toMainMenu(); }, [&] { toGame(); });
+    auto config_panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { to_main_menu(); }, [&] { to_frequency_game(); });
     main_component->changePanel(std::move(config_panel));
 }
 
-void Application_Standalone::toGame()
+void Application_Standalone::to_frequency_game()
 {
     game_state = frequency_game_state_init(game_configs[current_config_idx], files);
     if(game_state == nullptr)
@@ -301,7 +301,7 @@ void Application_Standalone::toGame()
     auto on_quit = [this] { 
         game_io->timer.stopTimer();
         player.post_command( { .type = Audio_Command_Stop });
-        toMainMenu();
+        to_main_menu();
     };
     game_io->on_quit = std::move(on_quit);
 
@@ -322,33 +322,33 @@ void Application_Standalone::toGame()
 
 //------------------------------------------------------------------------
 FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)
-:   formatManager(formatManager),
-    dsp_callback(&transportSource)
+:   format_manager(formatManager),
+    dsp_callback(&transport_source)
 {
     // audio setup
-    readAheadThread.startThread ();
+    read_ahead_thread.startThread ();
 
-    audioDeviceManager.initialise (0, 2, nullptr, true, {}, nullptr);
+    device_manager.initialise (0, 2, nullptr, true, {}, nullptr);
     
     dsp_callback.push_new_dsp_state(ChannelDSP_on());
-    audioSourcePlayer.setSource (&dsp_callback);
-    audioDeviceManager.addAudioCallback (&audioSourcePlayer);
+    source_player.setSource (&dsp_callback);
+    device_manager.addAudioCallback (&source_player);
 }
 
 FilePlayer::~FilePlayer()
 {
-    transportSource  .setSource (nullptr);
-    audioSourcePlayer.setSource (nullptr);
+    transport_source  .setSource (nullptr);
+    source_player.setSource (nullptr);
 
-    audioDeviceManager.removeAudioCallback (&audioSourcePlayer);
+    device_manager.removeAudioCallback (&source_player);
 }
 
-bool FilePlayer::loadFileIntoTransport (const juce::File& audio_file)
+bool FilePlayer::load_file_into_transport (const juce::File& audio_file)
 {
     // unload the previous file source and delete it..
-    transportSource.stop();
-    transportSource.setSource (nullptr);
-    currentAudioFileSource.reset();
+    transport_source.stop();
+    transport_source.setSource (nullptr);
+    current_reader_source.reset();
 
     const auto source = makeInputSource (audio_file);
 
@@ -360,19 +360,19 @@ bool FilePlayer::loadFileIntoTransport (const juce::File& audio_file)
     if (stream == nullptr)
         return false;
 
-    auto reader = juce::rawToUniquePtr (formatManager.createReaderFor (std::move (stream)));
+    auto reader = juce::rawToUniquePtr (format_manager.createReaderFor (std::move (stream)));
 
     if (reader == nullptr)
         return false;
 
-    currentAudioFileSource = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
+    current_reader_source = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
 
     // ..and plug it into our transport source
-    transportSource.setSource (currentAudioFileSource.get(),
+    transport_source.setSource (current_reader_source.get(),
                             32768,                   // tells it to buffer this many samples ahead
-                            &readAheadThread,                 // this is the background thread to use for reading-ahead
-                            currentAudioFileSource->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
-    transportSource.setLooping(true);
+                            &read_ahead_thread,                 // this is the background thread to use for reading-ahead
+                            current_reader_source->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
+    transport_source.setLooping(true);
     return true;
 }
 
@@ -383,31 +383,31 @@ Return_Value FilePlayer::post_command(Audio_Command command)
         case Audio_Command_Play :
         {
             DBG("Play");
-            transportSource.start();
+            transport_source.start();
             transport_state.step = Transport_Playing;
         } break;
         case Audio_Command_Pause :
         {
             DBG("Pause");
-            transportSource.stop();
+            transport_source.stop();
             transport_state.step = Transport_Paused;
         } break;
         case Audio_Command_Stop :
         {
             DBG("Stop");
-            transportSource.stop();
-            transportSource.setPosition(0);
+            transport_source.stop();
+            transport_source.setPosition(0);
             transport_state.step = Transport_Stopped;
         } break;
         case Audio_Command_Seek :
         {
             DBG("Seek : "<<command.value_f);
-            transportSource.setPosition(command.value_f);
+            transport_source.setPosition(command.value_f);
         } break;
         case Audio_Command_Load :
         {
             DBG("Load : "<<command.value_file.getFileName());
-            bool success = loadFileIntoTransport(command.value_file);
+            bool success = load_file_into_transport(command.value_file);
             transport_state.step = Transport_Stopped;
             return { .value_b = success };
         } break;
