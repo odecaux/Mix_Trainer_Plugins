@@ -117,8 +117,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         {
             assert(old_step == GameStep_Question);
             auto clicked_freq = event.value_i;
-            auto clicked_ratio = hzToRatio(clicked_freq);
-            auto target_ratio = hzToRatio(state->target_frequency);
+            auto clicked_ratio = normalize_frequency(clicked_freq);
+            auto target_ratio = normalize_frequency(state->target_frequency);
             auto distance = std::abs(clicked_ratio - target_ratio);
             if (distance < state->correct_answer_window)
             {
@@ -280,7 +280,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         }break;
         case GameStep_Question : {
             step = GameStep_Question;
-            state->target_frequency = ratioToHz(juce::Random::getSystemRandom().nextFloat());
+            state->target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
     
             state->current_file_idx = juce::Random::getSystemRandom().nextInt((int)state->files.size());
             effects.player = Effect_Player {
@@ -354,6 +354,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             case GameStep_EndResults :
             {
             } break;
+            case GameStep_None :
+            {
+                jassertfalse;
+            } break;
         }
         effects.dsp = Effect_DSP { dsp };
     }
@@ -411,6 +415,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Quit";
                 effect_ui.button_event = Event_Click_Quit;
+            } break;
+            case GameStep_None :
+            {
+                jassertfalse;
             } break;
         }
 

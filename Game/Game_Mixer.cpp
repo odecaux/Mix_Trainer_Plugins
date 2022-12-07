@@ -72,14 +72,6 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             in_transition = GameStep_Begin;
         } break;
-        case Event_Click_Track : 
-        {
-            jassertfalse;
-        } break;
-        case Event_Toggle_Track : 
-        {
-            jassertfalse;
-        } break;
         case Event_Slider : 
         {
             state->edited_slider_pos[event.id] = event.value_i;
@@ -195,10 +187,6 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             effects.quit = true;
         } break;
-        case Event_Click_Quit : 
-        {
-            jassertfalse;
-        } break;
         case Event_Channel_Create : 
         {
             auto [edited, edited_result] = state->edited_slider_pos.emplace(event.id, true);
@@ -235,16 +223,20 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             effects.rename = Effect_Rename { event.id, event.value_str };
         } break;
-        case Event_Change_Frequency_Range : 
-        {
-            jassertfalse;
-        } break;
         case Event_Create_UI :
         {
             update_ui = true;
         } break;
         case Event_Destroy_UI :
         {
+        } break;
+        case Event_Click_Quit : 
+        case Event_Click_Track : 
+        case Event_Click_Frequency :
+        case Event_Toggle_Track : 
+        case Event_Change_Frequency_Range : 
+        {
+            jassertfalse;
         } break;
     }
     
@@ -312,8 +304,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             state->can_still_listen = true;
             for (auto& [_, channel] : state->channel_infos)
             {
-                state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % state->db_slider_values.size();//;
-                state->edited_slider_pos[channel.id] = (int)state->db_slider_values.size() - 2;//true;
+                state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % static_cast<int>(state->db_slider_values.size());
+                state->edited_slider_pos[channel.id] = static_cast<int>(state->db_slider_values.size()) - 2;
             }
             assert(state->target_slider_pos.size() == state->channel_infos.size());
             assert(state->edited_slider_pos.size() == state->channel_infos.size());
@@ -358,7 +350,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         std::transform(edit_or_target->begin(), edit_or_target->end(), 
                        std::inserter(dsp, dsp.end()), 
                        [state](const auto &a) -> std::pair<int, Channel_DSP_State> {
-                       double gain = slider_pos_to_gain(a.second, state->db_slider_values);
+                       double gain = slider_pos_to_gain(static_cast<size_t>(a.second), state->db_slider_values);
                        return { a.first, ChannelDSP_gain(gain) };
         });
         effects.dsp = Effect_DSP { std::move(dsp) };
@@ -457,7 +449,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 effects.ui->button_text = "Next";
                 effects.ui->button_event = Event_Click_Next;
             } break;
-            default:
+            case GameStep_None :
+            case GameStep_EndResults :
+            default :
             {
                 jassertfalse;
             } break;

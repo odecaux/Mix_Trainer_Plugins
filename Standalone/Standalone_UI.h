@@ -417,11 +417,11 @@ class FileSelector_Panel :
 {
 public:
     
-    FileSelector_Panel(FilePlayer &filePlayer, 
+    FileSelector_Panel(FilePlayer &filePlayer,
                        std::vector<Audio_File> &audioFiles,
-                       std::function<void()> onClickBack) 
-    : file_list_component(filePlayer, audioFiles, &explorer), 
-      player(filePlayer)
+                       std::function < void() > onClickBack)
+    :  player(filePlayer),
+       file_list_component(filePlayer, audioFiles, &explorer)
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -769,13 +769,13 @@ struct Config_Panel : public juce::Component
         std::function < void(juce::Rectangle<int>) > on_resized_callback;
     };
 
-    Config_Panel(std::vector<FrequencyGame_Config> &configs,
-                   int &current_config_idx,
-                   std::function < void() > onClickBack,
-                   std::function < void() > onClickNext) :
-        configs(configs), 
-        current_config_idx(current_config_idx),
-        config_list_comp { configs, [&] (int idx) { selectConfig(idx); } }
+    Config_Panel(std::vector<FrequencyGame_Config> &gameConfigs,
+                 int &currentConfigIdx,
+                 std::function < void() > onClickBack,
+                 std::function < void() > onClickNext)
+    :        configs(gameConfigs),
+             current_config_idx(currentConfigIdx),
+             config_list_comp { configs, [&] (int idx) { selectConfig(idx); } }
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -904,17 +904,17 @@ struct Config_Panel : public juce::Component
     {
         assert(new_config_idx < configs.size());
         current_config_idx = new_config_idx;
-        auto &current_config = configs[current_config_idx];
+        auto &current_config = configs[static_cast<size_t>(current_config_idx)];
         float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
         
-        question_timeout_ms.setValue((double)current_config.question_timeout_ms);
+        question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
         question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
         question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
         
-        result_timeout_ms.setValue((double)current_config.result_timeout_ms);
+        result_timeout_ms.setValue(static_cast<double>(current_config.result_timeout_ms));
         result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
         result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
     }

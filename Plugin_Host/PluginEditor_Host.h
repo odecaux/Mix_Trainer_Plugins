@@ -14,10 +14,10 @@ class EditorHost : public juce::AudioProcessorEditor
 {
 public:
     
-    EditorHost(ProcessorHost& p, std::function<void()> &&onEditorClose) :
-        AudioProcessorEditor(p),
-        audio_processor(p),
-        onEditorClose(std::move(onEditorClose))
+    EditorHost(ProcessorHost& p, std::function < void() > && onEditorClose)
+    :    AudioProcessorEditor(p),
+         audio_processor(p),
+         editor_close_callback(std::move(onEditorClose))
     {
         setResizable(true, false);
         setSize(960, 540);
@@ -25,7 +25,7 @@ public:
     ~EditorHost() override
     {
         removeChildComponent(current_panel.get());
-        onEditorClose();
+        editor_close_callback();
     }
     
     void paint(juce::Graphics & g) override
@@ -54,7 +54,7 @@ public:
 public:
     std::unique_ptr<juce::Component> current_panel;
     ProcessorHost &audio_processor;
-    std::function < void() > onEditorClose;
+    std::function < void() > editor_close_callback;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorHost)
 };

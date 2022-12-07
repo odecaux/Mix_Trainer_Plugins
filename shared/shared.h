@@ -9,18 +9,6 @@
 #undef NDEBUG
 #include <assert.h>
 
-static float denormalize_frequency(float value)
-{
-    float a = powf(value, 2.0f);
-    float b = a * (20000.0f - 20.0f);
-    return b + 20.0f;
-}
-
-static float normalize_frequency(float frequency)
-{
-    return std::sqrt((frequency - 20.0f) / (20000.0f - 20.0f));
-}
-
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
 struct Timer: public juce::Timer
@@ -348,6 +336,17 @@ struct Return_Value
     bool value_b;
 };
 
+static float denormalize_slider_frequency(float value)
+{
+    float a = powf(value, 2.0f);
+    float b = a * (20000.0f - 20.0f);
+    return b + 20.0f;
+}
+
+static float normalize_slider_frequency(float frequency)
+{
+    return std::sqrt((frequency - 20.0f) / (20000.0f - 20.0f));
+}
 
 struct Frequency_Bounds_Widget : juce::Component
 {
@@ -376,8 +375,8 @@ public:
         frequencyRangeSlider.onValueChange = [this, update_labels]{
             float minValue = (float)frequencyRangeSlider.getMinValue();
             float maxValue = (float)frequencyRangeSlider.getMaxValue();
-            float new_min_frequency = denormalize_frequency(minValue);
-            float new_max_frequency = denormalize_frequency(maxValue);
+            float new_min_frequency = denormalize_slider_frequency(minValue);
+            float new_max_frequency = denormalize_slider_frequency(maxValue);
             update_labels((int)new_min_frequency, (int) new_max_frequency);
             if(on_mix_max_changed)
                 on_mix_max_changed(new_min_frequency, new_max_frequency, false);
@@ -386,8 +385,8 @@ public:
         frequencyRangeSlider.onDragEnd = [this, update_labels]{
             float minValue = (float)frequencyRangeSlider.getMinValue();
             float maxValue = (float)frequencyRangeSlider.getMaxValue();
-            float new_min_frequency = denormalize_frequency(minValue);
-            float new_max_frequency = denormalize_frequency(maxValue);
+            float new_min_frequency = denormalize_slider_frequency(minValue);
+            float new_max_frequency = denormalize_slider_frequency(maxValue);
             update_labels((int)new_min_frequency, (int) new_max_frequency);
             if(on_mix_max_changed)
                 on_mix_max_changed(new_min_frequency, new_max_frequency, true);
@@ -398,8 +397,8 @@ public:
     void setMinAndMaxValues(float min_frequency, float max_frequency)
     {
         frequencyRangeSlider.setMinAndMaxValues(
-            normalize_frequency(min_frequency), 
-            normalize_frequency(max_frequency)
+            normalize_slider_frequency(min_frequency), 
+            normalize_slider_frequency(max_frequency)
         );
     }
 

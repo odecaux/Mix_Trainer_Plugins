@@ -126,23 +126,23 @@ void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
 struct FrequencyGame_UI : public juce::Component
 {
     
-    FrequencyGame_UI(FrequencyGame_State *game_state, FrequencyGame_IO *game_io) : 
-        game_io(game_io),
-        game_state(game_state)
+    FrequencyGame_UI(FrequencyGame_State *gameState, FrequencyGame_IO *gameIO) : 
+        game_io(gameIO),
+    game_state(gameState)
     {
-        bottom.onNextClicked = [game_state, game_io] (Event_Type e){
+        bottom.onNextClicked = [this] (Event_Type e){
             Event event = {
                 .type = e
             };
             frequency_game_post_event(game_state, game_io, event);
         };
-        header.onBackClicked = [game_state, game_io] {
+        header.onBackClicked = [this] {
             Event event = {
                 .type = Event_Click_Back
             };
             frequency_game_post_event(game_state, game_io, event);
         };
-        bottom.onToggleClicked = [game_state, game_io] (bool a){
+        bottom.onToggleClicked = [this] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a

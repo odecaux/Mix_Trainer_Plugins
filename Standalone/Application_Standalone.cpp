@@ -14,8 +14,8 @@ static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
-Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *main_component)
-:   player(formatManager), main_component(main_component)
+Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *mainComponent)
+:   player(formatManager), main_component(mainComponent)
 {
     juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
     DBG(app_data.getFullPathName());
@@ -228,9 +228,9 @@ void Application_Standalone::to_main_menu()
     game_state.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
-        [this] {},
+        [] {},
         [this] { to_file_selector(); },
-        [this] {}
+        [] {}
     );
     if (files.empty())
     {
@@ -258,7 +258,7 @@ void Application_Standalone::to_game_config()
 
 void Application_Standalone::to_frequency_game()
 {
-    game_state = frequency_game_state_init(game_configs[current_config_idx], files);
+    game_state = frequency_game_state_init(game_configs[static_cast<size_t>(current_config_idx)], files);
     if(game_state == nullptr)
         return;
     main_component->changePanel(nullptr);
