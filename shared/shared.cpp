@@ -29,6 +29,39 @@ Channel_DSP_State ChannelDSP_gain(double gain)
     return state;
 }
 
+juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
+{
+    switch (type) {
+        case Filter_None:
+            return new juce::dsp::IIR::Coefficients<float> (1, 0, 1, 0);
+        case Filter_Low_Pass:
+            return juce::dsp::IIR::Coefficients<float>::makeLowPass (sample_rate, frequency, quality);
+        case Filter_LowPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderLowPass (sample_rate, frequency);
+        case Filter_LowShelf:
+            return juce::dsp::IIR::Coefficients<float>::makeLowShelf (sample_rate, frequency, quality, gain);
+        case Filter_BandPass:
+            return juce::dsp::IIR::Coefficients<float>::makeBandPass (sample_rate, frequency, quality);
+        case Filter_AllPass:
+            return juce::dsp::IIR::Coefficients<float>::makeAllPass (sample_rate, frequency, quality);
+        case Filter_AllPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass (sample_rate, frequency);
+        case Filter_Notch:
+            return juce::dsp::IIR::Coefficients<float>::makeNotch (sample_rate, frequency, quality);
+        case Filter_Peak:
+            return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sample_rate, frequency, quality, gain);
+        case Filter_HighShelf:
+            return juce::dsp::IIR::Coefficients<float>::makeHighShelf (sample_rate, frequency, quality, gain);
+        case Filter_HighPass1st:
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderHighPass (sample_rate, frequency);
+        case Filter_HighPass:
+            return juce::dsp::IIR::Coefficients<float>::makeHighPass (sample_rate, frequency, quality);
+        case Filter_LastID:
+        default:
+            return nullptr;
+    }
+}
+
 bool equal_double(double a, double b, double theta)
 {
     return std::abs(a - b) < theta;

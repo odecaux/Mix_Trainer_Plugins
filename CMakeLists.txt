@@ -135,6 +135,7 @@ target_sources(MixTrainer_Standalone
     PRIVATE
         Standalone/Standalone.cpp
         Game/Game.cpp
+        Standalone/FrequencyGame.cpp
         shared/shared.cpp)
 
 if(MSVC)

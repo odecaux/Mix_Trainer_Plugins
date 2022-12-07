@@ -1,14 +1,21 @@
 Priority 1 :
 
-ajouter preview et bounds au file selector panel
 
 Priority 2 :
 
-files : active, desactivate
-File explorer
+
 
 Priority 3 :
+File explorer
+files : active, desactivate
 
+ajouter preview et bounds au file selector panel
+    pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/
+    pcq on va pas afficher les bounds, etc pour un fichier de l'explorer, mais par contre on aimerait l'entendre ?
+
+    workaround : 
+        quand on clique dans l'explorer ça grise la séléction de l'audio file, 
+        
 Les freq bounds d'un fichier audio influent sur le score
 Hierarchical FSM ?
 

@@ -4,6 +4,7 @@
 #include "../shared/shared.h"
 #include "../Game/Game.h"
 #include "FrequencyWidget.h"
+#include "FrequencyGame.h"
 
 inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
 {
@@ -17,112 +18,6 @@ inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::File& fil
 {
     return std::make_unique<juce::FileInputSource> (file);
 }
-
-juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
-{
-    switch (type) {
-        case Filter_None:
-            return new juce::dsp::IIR::Coefficients<float> (1, 0, 1, 0);
-        case Filter_Low_Pass:
-            return juce::dsp::IIR::Coefficients<float>::makeLowPass (sample_rate, frequency, quality);
-        case Filter_LowPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderLowPass (sample_rate, frequency);
-        case Filter_LowShelf:
-            return juce::dsp::IIR::Coefficients<float>::makeLowShelf (sample_rate, frequency, quality, gain);
-        case Filter_BandPass:
-            return juce::dsp::IIR::Coefficients<float>::makeBandPass (sample_rate, frequency, quality);
-        case Filter_AllPass:
-            return juce::dsp::IIR::Coefficients<float>::makeAllPass (sample_rate, frequency, quality);
-        case Filter_AllPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass (sample_rate, frequency);
-        case Filter_Notch:
-            return juce::dsp::IIR::Coefficients<float>::makeNotch (sample_rate, frequency, quality);
-        case Filter_Peak:
-            return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sample_rate, frequency, quality, gain);
-        case Filter_HighShelf:
-            return juce::dsp::IIR::Coefficients<float>::makeHighShelf (sample_rate, frequency, quality, gain);
-        case Filter_HighPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderHighPass (sample_rate, frequency);
-        case Filter_HighPass:
-            return juce::dsp::IIR::Coefficients<float>::makeHighPass (sample_rate, frequency, quality);
-        case Filter_LastID:
-        default:
-            return nullptr;
-    }
-}
-
-
-//------------------------------------------------------------------------
-struct Channel_DSP_Callback : public juce::AudioSource
-{
-    Channel_DSP_Callback(juce::AudioSource* inputSource) : input_source(inputSource)
-    {
-    }
-    
-    virtual ~Channel_DSP_Callback() override = default;
-
-    void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override
-    {
-        assert(bufferToFill.buffer != nullptr);
-        input_source->getNextAudioBlock (bufferToFill);
-
-        juce::ScopedNoDenormals noDenormals;
-
-        juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
-        juce::dsp::ProcessContextReplacing<float> context (block);
-        {
-            juce::ScopedLock processLock (lock);
-            dsp_chain.process (context);
-        }
-    }
-    
-    void prepareToPlay (int blockSize, double sampleRate) override
-    {
-        sample_rate = sampleRate;
-        input_source->prepareToPlay (blockSize, sampleRate);
-        dsp_chain.prepare ({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
-        updateDspChain();
-    }
-
-    void releaseResources() override 
-    {
-        input_source->releaseResources();
-    };
-
-    void push_new_dsp_state(Channel_DSP_State new_state)
-    {
-        state = new_state;
-        if(sample_rate != -1.0)
-            updateDspChain();
-    }
-
-    Channel_DSP_State state;
-
-    using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
-    using Gain       = juce::dsp::Gain<float>;
-    juce::dsp::ProcessorChain<FilterBand, Gain> dsp_chain;
-    double sample_rate = -1.0;
-    juce::CriticalSection lock;
-    juce::AudioSource *input_source;
-
-private:
-    void updateDspChain()
-    {
-        for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
-            auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
-            assert(new_coefficients);
-            // minimise lock scope, get<0>() needs to be a  compile time constant
-            {
-                juce::ScopedLock processLock (lock);
-                if (i == 0)
-                    *dsp_chain.get<0>().state = *new_coefficients;
-            }
-        }
-        //gain
-        dsp_chain.get<1>().setGainLinear ((float)state.gain);
-    }
-};
-
 
 //------------------------------------------------------------------------
 struct FilePlayer {
@@ -751,7 +646,6 @@ private:
     void fileDoubleClicked (const juce::File&) override                       {}
     void browserRootChanged (const juce::File&) override                      {}
 
-    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileSelector_Panel)
 };
 

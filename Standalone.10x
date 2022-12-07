@@ -86,6 +86,12 @@
 			<File>
 				<Path>Standalone/pch.h</Path>
 			</File>
+			<File>
+				<Path>Standalone/FrequencyGame.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/FrequencyGame.cpp</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>
