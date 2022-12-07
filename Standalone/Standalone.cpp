@@ -6,11 +6,11 @@
     ==============================================================================
     */
 
-#include "Standalone.h"
+#include "Standalone_UI.h"
 
 
 
-class Application    : public juce::JUCEApplication
+class Application  : public juce::JUCEApplication
 {
 public:
     //==============================================================================
