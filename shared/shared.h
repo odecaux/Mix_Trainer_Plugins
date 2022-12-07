@@ -103,7 +103,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
     void releaseResources() override 
     {
         input_source->releaseResources();
-    };
+    }
 
     void push_new_dsp_state(Channel_DSP_State new_state)
     {
@@ -156,8 +156,8 @@ double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values);
 class DecibelSlider : public juce::Slider
 {
 public:
-    explicit DecibelSlider(const std::vector < double > &db_values)
-    : db_values(db_values)
+    explicit DecibelSlider(const std::vector < double > &dBValues)
+    : db_values(dBValues)
     {
     }
     
@@ -276,8 +276,8 @@ private:
 class FaderRowComponent : public juce::Component
 {
 public:
-    FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& faders)
-    : faders(faders)
+    FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& mixerFaders)
+    : faders(mixerFaders)
     {
     }
     

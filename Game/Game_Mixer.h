@@ -81,18 +81,18 @@ void mixer_game_add_observer(MixerGame_IO *io, observer_t new_observer);
 
 struct MixerGameUI : public juce::Component
 {
-    MixerGameUI(const std::unordered_map<int, ChannelInfos>& channel_infos,
-                const std::vector<double> &db_slider_values,
-                MixerGame_IO *io,
-                MixerGame_State *state) 
+    MixerGameUI(const std::unordered_map<int, ChannelInfos>& channelInfo,
+                const std::vector<double> &SliderValuesdB,
+                MixerGame_IO *gameIO,
+                MixerGame_State *gameState) 
         :
         fader_row(faders),
-        db_slider_values(db_slider_values),
-        io(io),
-        state(state)
+        db_slider_values(SliderValuesdB),
+        io(gameIO),
+        state(gameState)
     {
         auto f = 
-            [&, io = this->io] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
+            [state = state, io = io, &fader_row = fader_row] (const auto &a) -> std::pair<int, std::unique_ptr<FaderComponent>> {
             const int id = a.first;
             
             auto onFaderMoved = [state, id, io] (int new_pos){
@@ -123,27 +123,27 @@ struct MixerGameUI : public juce::Component
             return { id, std::move(new_fader)};
         };
         
-        std::transform(channel_infos.begin(), channel_infos.end(), 
+        std::transform(channelInfo.begin(), channelInfo.end(), 
                        std::inserter(faders, faders.end()), 
                        f);
         fader_row.adjustWidth();
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
 
-        bottom.onNextClicked = [state, io] (Event_Type e){
+        bottom.onNextClicked = [state = state, io = io] (Event_Type e){
             Event event = {
                 .type = e
             };
             
             mixer_game_post_event(state, io, event);
         };
-        header.onBackClicked = [state, io] {
+        header.onBackClicked = [state = state, io = io] {
             Event event = {
                 .type = Event_Click_Back
             };
             mixer_game_post_event(state, io, event);
         };
-        bottom.onToggleClicked = [state, io] (bool a){
+        bottom.onToggleClicked = [state = state, io = io] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
@@ -183,7 +183,7 @@ struct MixerGameUI : public juce::Component
             assert(assertChannel == faders.end());
         }
 
-        auto onFaderMoved = [state = this->state, id, io = this->io] (int new_pos){
+        auto onFaderMoved = [state = state, id, io = io] (int new_pos){
             Event event = {
                 .type = Event_Slider,
                 .id = id,
@@ -192,7 +192,7 @@ struct MixerGameUI : public juce::Component
             mixer_game_post_event(state, io, event);
         };
             
-        auto onEdited = [state = this->state, id, io = this->io](const juce::String & new_name){ 
+        auto onEdited = [state = state, id, io = io](const juce::String & new_name){ 
             Event event = {
                 .type = Event_Channel_Rename_From_UI,
                 .id = id,

@@ -73,13 +73,13 @@ class SettingsMenu : public juce::Component
 {
 public :
     SettingsMenu(std::function < void() > && onBackButtonClick,
-                 Settings &settings) :
-        onBackButtonClick(std::move(onBackButtonClick)),
-        settings(settings)
+                 Settings &mixerGameSettings) :
+        back_button_callback(std::move(onBackButtonClick)),
+        settings(mixerGameSettings)
     {
         back_button.setButtonText("back");
         back_button.onClick = [this] {
-            this->onBackButtonClick();
+            back_button_callback();
         };
         addAndMakeVisible(back_button);
 
@@ -89,7 +89,7 @@ public :
         addAndMakeVisible(slider);
         slider.onValueChange = [this] {
             double new_value = slider.getValue();
-            this->settings.difficulty = (float) new_value;
+            settings.difficulty = (float) new_value;
         };
     }
     
@@ -105,8 +105,8 @@ public :
             
         auto top_bounds = r.withHeight(top_height);
             
-        auto backButtonBounds = top_bounds.withWidth(90);
-        back_button.setBounds(backButtonBounds);
+        auto back_button_bounds = top_bounds.withWidth(90);
+        back_button.setBounds(back_button_bounds);
 
         slider.setCentrePosition(r.getCentre());
     }
@@ -114,7 +114,7 @@ public :
 private :
     juce::TextButton back_button;
     juce::Slider slider;
-    std::function < void() > onBackButtonClick;
+    std::function < void() > back_button_callback;
     Settings &settings;
 };
 
@@ -123,13 +123,13 @@ class StatsMenu : public juce::Component
 {
 public :
     StatsMenu(std::function < void() > && onBackButtonClick,
-              Stats stats) :
-        onBackButtonClick(std::move(onBackButtonClick)),
-        stats(stats)
+              Stats mixerGameStats) :
+        back_button_callback(std::move(onBackButtonClick)),
+        stats(mixerGameStats)
     {
         back_button.setButtonText("back");
         back_button.onClick = [this] {
-            this->onBackButtonClick();
+            back_button_callback();
         };
         addAndMakeVisible(back_button);
 
@@ -161,6 +161,6 @@ private :
     juce::TextButton back_button;
     juce::Slider slider;
     juce::Label test_stat_label;
-    std::function < void() > onBackButtonClick;
+    std::function < void() > back_button_callback;
     Stats stats;
 };

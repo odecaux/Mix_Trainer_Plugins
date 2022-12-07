@@ -8,10 +8,10 @@
 #include "../Plugin_Host/Processor_Host.h"
 #include "../Plugin_Host/PluginEditor_Host.h"
 
-Application::Application(ProcessorHost &host) :
+Application::Application(ProcessorHost &processorHost) :
     game_ui(nullptr),
     type(PanelType::MainMenu),
-    host(host), 
+    host(processorHost), 
     editor(nullptr)
 {
     //NOTE useless
