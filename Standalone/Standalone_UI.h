@@ -224,17 +224,15 @@ private:
 
 
 //------------------------------------------------------------------------
-class AudioFileList : 
+class Audio_Files_ListBox : 
     public juce::Component,
     public juce::ListBoxModel,
     public juce::DragAndDropTarget,
     public juce::FileDragAndDropTarget
 {
 public:
-    AudioFileList(FilePlayer &filePlayer, 
-                  std::vector<Audio_File> &audioFiles,
-                  juce::Component *dropSource) : 
-        player(filePlayer), 
+    Audio_Files_ListBox(std::vector<Audio_File> &audioFiles,
+                  juce::Component *dropSource) :
         files(audioFiles),
         drop_source_assert(dropSource)
     {
@@ -244,7 +242,7 @@ public:
         addAndMakeVisible(file_list_component);
     }
 
-    virtual ~AudioFileList() override = default;
+    virtual ~Audio_Files_ListBox() override = default;
 
     void resized() override
     {
@@ -287,38 +285,13 @@ public:
         assert(dragSourceDetails.sourceComponent == drop_source_assert);
         return true;
     }
-
-    void insertFile(juce::File file)
-    {
-        //can't have the same file twice
-        if (auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; }); result == files.end())
-        {
-            if (auto * reader = player.format_manager.createReaderFor(file)) //expensive
-            {
-                /*
-                for (const auto &key : reader->metadataValues.getAllKeys())
-                {
-                DBG(key);
-                }
-                */
-                //DBG(file.getFullPathName());
-                Audio_File new_audio_file = {
-                    .file = file,
-                    .title = file.getFileNameWithoutExtension(),
-                    .loop_bounds = { 0, reader->lengthInSamples }
-                };
-                files.emplace_back(std::move(new_audio_file));
-                file_list_component.updateContent();
-                delete reader;
-            }
-        }
-    }
     
-    void filesDropped (const juce::StringArray& dropped_files, int, int) override
+    void filesDropped (const juce::StringArray& dropped_files_names, int, int) override
     {
-        for (const auto &file : dropped_files)
+        for (const auto &filename : dropped_files_names)
         {
-            insertFile(juce::File(file));
+            if (insert_file_callback(juce::File(filename)))
+                file_list_component.updateContent();
         }
     }
     
@@ -330,7 +303,9 @@ public:
         for (auto i = 0; i < dropped_file_count; i++)
         {
             juce::File file = tree->getSelectedFile(i);
-            insertFile(file);
+            
+            if(insert_file_callback(file))
+                file_list_component.updateContent();
         }
     }
 
@@ -339,26 +314,20 @@ public:
 
     void listBoxItemDoubleClicked (int, const juce::MouseEvent &) override {}
     
-    void deleteKeyPressed (int lastRowSelected) override
+    void deleteKeyPressed (int) override
     {
         auto num_selected = file_list_component.getNumSelectedRows();
-        if ( num_selected > 1)
+        if(num_selected == 0)
+            return;
+        
+        if (num_selected > 1)
         {
-            auto selected_rows = file_list_component.getSelectedRows();
             file_list_component.deselectAllRows();
-            for (int i = getNumRows(); --i >= 0;)
-            {   
-                if(selected_rows.contains(i))
-                    files.erase(files.begin() + i);
-            }
-            file_list_component.updateContent();
         }
-        else if (num_selected == 1)
-        {
-
-            files.erase(files.begin() + lastRowSelected);
-            file_list_component.updateContent();
-        }
+        
+        const auto &selected_rows = file_list_component.getSelectedRows();
+        remove_files_callback(selected_rows);
+        file_list_component.updateContent();
     }
 
     bool keyPressed (const juce::KeyPress &key) override
@@ -381,28 +350,24 @@ public:
         {
             assert(last_row_selected < files.size());
             const auto &file = files[last_row_selected].file;
-            auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = file });
-            assert(ret.value_b); //file still exists on drive ?
-            player.post_command( { .type = Audio_Command_Play });
-
-            file_changed_callback(file);
+            selected_file_changed_callback(file);
         }
         else
         {
-            player.post_command( { .type = Audio_Command_Stop });
-            file_changed_callback({});
+            selected_file_changed_callback({});
         }
     }
-    std::function < void(juce::File) > file_changed_callback;
+    std::function < bool(juce::File file) > insert_file_callback;
+    std::function < void(const juce::SparseSet<int>&) > remove_files_callback;
+    std::function< void(juce::File) > selected_file_changed_callback;
 
 private:
-    FilePlayer &player;
     std::vector<Audio_File> &files;
     juce::ListBox file_list_component = { {}, this};
 
     juce::Component *drop_source_assert;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AudioFileList)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_Files_ListBox)
 };
 
 
@@ -418,10 +383,10 @@ class FileSelector_Panel :
 public:
     
     FileSelector_Panel(FilePlayer &filePlayer,
-                       std::vector<Audio_File> &audioFiles,
+                       Audio_File_List &audio_file_list,
                        std::function < void() > onClickBack)
     :  player(filePlayer),
-       file_list_component(filePlayer, audioFiles, &explorer)
+       file_list_component(audio_file_list.files, &explorer)
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -455,14 +420,30 @@ public:
         }
 
         {
-            file_list_component.file_changed_callback = [&] (juce::File new_file)
+            file_list_component.selected_file_changed_callback = [&] (juce::File new_file)
             {
                 if (new_file != juce::File{})
+                {
+                    auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = new_file });
+                    assert(ret.value_b); //file still exists on drive ?
+                    player.post_command( { .type = Audio_Command_Play });
                     thumbnail.setFile(new_file);
+                }
                 else
+                {
+                    player.post_command( { .type = Audio_Command_Stop });
                     thumbnail.removeFile();
+                }
                 //frequency_bounds_slider.setMinAndMaxValues();
                 //nochekin;
+            };
+            file_list_component.insert_file_callback = [&audio_file_list] (auto new_file)
+            {
+                return audio_file_list.insert_file(new_file);
+            };
+            file_list_component.remove_files_callback = [&audio_file_list] (const auto &files_to_remove)
+            {
+                audio_file_list.remove_files(files_to_remove);
             };
             addAndMakeVisible(file_list_component);
         }
@@ -512,7 +493,7 @@ public:
 private:
     FilePlayer &player;
     GameUI_Header header;
-    AudioFileList file_list_component;
+    Audio_Files_ListBox file_list_component;
     
     juce::ToggleButton collapse_explorer_button { "Show file explorer" };
     juce::TimeSliceThread explorer_thread  { "File Explorer thread" };

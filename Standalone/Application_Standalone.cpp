@@ -15,7 +15,9 @@ static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
 Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *mainComponent)
-:   player(formatManager), main_component(mainComponent)
+:   player(formatManager),
+    audio_file_list { formatManager },
+    main_component(mainComponent)
 {
     juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
     DBG(app_data.getFullPathName());
@@ -35,29 +37,12 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             DBG("couldn't open %appdata%/MixTrainer/audio_file_list.txt");
             return;
         }
-        while (! stream->isExhausted()) // [3]
+        //TODO performance : this loop is O^2/2
+        while (! stream->isExhausted())
         {
             auto line = stream->readNextLine();
             auto audio_file_path = juce::File(line);
-            if (!audio_file_path.existsAsFile())
-            {
-                DBG(line << " does not exist");
-                continue;
-            }
-            auto * reader = formatManager.createReaderFor(audio_file_path);
-            if (!reader)
-            {
-                DBG("invalid audio file " << line);
-                continue;
-            }
-            
-            Audio_File new_audio_file = {
-                .file = audio_file_path,
-                .title = audio_file_path.getFileNameWithoutExtension(),
-                .loop_bounds = { 0, reader->lengthInSamples }
-            };
-            files.emplace_back(std::move(new_audio_file));
-            delete reader;
+            audio_file_list.insert_file(audio_file_path);
         }
     }();
 
@@ -162,7 +147,7 @@ Application_Standalone::~Application_Standalone()
         }
         stream->setPosition(0);
         stream->truncate();
-        for (const Audio_File &audio_file : files)
+        for (const Audio_File &audio_file : audio_file_list.files)
         {
             *stream << audio_file.file.getFullPathName() << juce::newLine;
         }
@@ -232,7 +217,7 @@ void Application_Standalone::to_main_menu()
         [this] { to_file_selector(); },
         [] {}
     );
-    if (files.empty())
+    if (audio_file_list.files.empty())
     {
         main_menu_panel->frequency_game_button.setEnabled(false);
         main_menu_panel->frequency_game_button.setTooltip("Please add audio files");
@@ -245,7 +230,7 @@ void Application_Standalone::to_main_menu()
 void Application_Standalone::to_file_selector()
 {
     assert(game_state == nullptr);
-    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, files, [&] { to_main_menu(); } );
+    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list, [&] { to_main_menu(); } );
     main_component->changePanel(std::move(file_selector_panel));
 }
 
@@ -258,7 +243,7 @@ void Application_Standalone::to_game_config()
 
 void Application_Standalone::to_frequency_game()
 {
-    game_state = frequency_game_state_init(game_configs[current_config_idx], files);
+    game_state = frequency_game_state_init(game_configs[current_config_idx], audio_file_list.files);
     if(game_state == nullptr)
         return;
     main_component->changePanel(nullptr);
