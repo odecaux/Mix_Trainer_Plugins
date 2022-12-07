@@ -268,11 +268,11 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber < files.size())
+        if (rowNumber < static_cast<int>(files.size()))
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(files[rowNumber].title, bounds.reduced(2), juce::Justification::centredLeft);
+            g.drawText(files[static_cast<size_t>(rowNumber)].title, bounds.reduced(2), juce::Justification::centredLeft);
             if (rowIsSelected)
             {
                 g.drawRect(bounds);
@@ -770,7 +770,7 @@ struct Config_Panel : public juce::Component
     };
 
     Config_Panel(std::vector<FrequencyGame_Config> &gameConfigs,
-                 int &currentConfigIdx,
+                 size_t &currentConfigIdx,
                  std::function < void() > onClickBack,
                  std::function < void() > onClickNext)
     :        configs(gameConfigs),
@@ -878,7 +878,7 @@ struct Config_Panel : public juce::Component
             addAndMakeVisible(nextButton);
         }
 
-        config_list_comp.selectRow(current_config_idx);
+        config_list_comp.selectRow(static_cast<int>(current_config_idx));
         //selectConfig(current_config_idx);
     }
 
@@ -900,11 +900,11 @@ struct Config_Panel : public juce::Component
         nextButton.setBounds(button_bounds);
     }
 
-    void selectConfig(int new_config_idx)
+    void selectConfig(size_t new_config_idx)
     {
         assert(new_config_idx < configs.size());
         current_config_idx = new_config_idx;
-        auto &current_config = configs[static_cast<size_t>(current_config_idx)];
+        auto &current_config = configs[current_config_idx];
         float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
         eq_quality.setValue(current_config.eq_quality);
@@ -945,7 +945,7 @@ struct Config_Panel : public juce::Component
     }
 
     std::vector<FrequencyGame_Config> &configs;
-    int &current_config_idx;
+    size_t &current_config_idx;
     Config_List config_list_comp;
     
     GameUI_Header header;

@@ -258,7 +258,7 @@ void Application_Standalone::to_game_config()
 
 void Application_Standalone::to_frequency_game()
 {
-    game_state = frequency_game_state_init(game_configs[static_cast<size_t>(current_config_idx)], files);
+    game_state = frequency_game_state_init(game_configs[current_config_idx], files);
     if(game_state == nullptr)
         return;
     main_component->changePanel(nullptr);
@@ -295,7 +295,7 @@ void Application_Standalone::to_frequency_game()
         }
     };
 
-    auto debug_observer = [this] (const Effects &effects) {
+    auto debug_observer = [] (const Effects &effects) {
         juce::ignoreUnused(effects);
     };
     

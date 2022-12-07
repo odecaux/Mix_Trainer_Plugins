@@ -48,5 +48,5 @@ class Application_Standalone
     std::vector<Audio_File> files;
     std::vector<FrequencyGame_Config> game_configs = {};
     std::vector<FrequencyGame_Results> game_results_history = {};
-    int current_config_idx = 0;
+    size_t current_config_idx = 0;
 };

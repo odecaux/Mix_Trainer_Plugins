@@ -6,12 +6,12 @@ static int totalSections = 9;
 static int denormalize_frequency(float ratio) 
 {
     float exponent = 0.5f + ratio * static_cast<float>(totalSections - 1);
-    return static_cast<int>(static_cast<float>(min_f) * std::powf(2, exponent));
+    return static_cast<int>(static_cast<float>(min_f) * powf(2, exponent));
 }
 
 static float normalize_frequency(int hz) 
 {
-    float a = std::logf(static_cast<float>(hz) / min_f) / std::logf(2.0f);
+    float a = logf(static_cast<float>(hz) / min_f) / logf(2.0f);
     float ratio = (a - 0.5f) / static_cast<float>(totalSections - 1);
     return ratio;
 }
@@ -20,7 +20,7 @@ static float frequency_to_x(int frequency, juce::Rectangle<int> bounds)
 {
     //float ratio_x = std::powf((frequency - min_f) / (max_f - min_f), 1.0f / power);
     float ratio_x = normalize_frequency(frequency);
-    return ratio_x * bounds.getWidth() + static_cast<float>(bounds.getX());
+    return ratio_x * static_cast<float>(bounds.getWidth()) + static_cast<float>(bounds.getX());
 }
 
 static float normalize_position(juce::Point<int> position, juce::Rectangle<int> bounds)
