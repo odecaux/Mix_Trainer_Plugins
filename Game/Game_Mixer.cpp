@@ -41,6 +41,7 @@ void mixer_game_post_event(MixerGame_State *state, MixerGame_IO *io, Event event
         std::lock_guard lock { io->mutex };
         effects = mixer_game_update(state, event);
     }
+    assert(effects.error == 0);
     for(auto &observer : io->observers)
         observer(effects);
     if (effects.quit)
@@ -58,6 +59,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
     bool update_ui = false;
 
     Effects effects = { 
+        .error = 0,
+        .transition = std::nullopt, 
         .dsp = std::nullopt, 
         .ui = std::nullopt, 
         .rename = std::nullopt, 
@@ -81,16 +84,16 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             if (step == GameStep_Question)
             {
-                assert(state->variant != MixerGame_Timer);
-                assert(state->can_still_listen);
+                if(state->variant == MixerGame_Timer) return { .error = 1 };
+                if (!state->can_still_listen) returb { .error = 1 };
                 if (state->mix == Mix_User)
                 {
-                    assert(event.value_b);
+                    if(!event.value_b) return { .error = 1 };
                     state->mix = Mix_Target;
                 }
                 else if (state->mix == Mix_Target)
                 {
-                    assert(!event.value_b);
+                    if(event.value_b) return { .error = 1 };
                     switch (state->variant)
                     {
                         case MixerGame_Normal : 
@@ -117,12 +120,12 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             {
                 if (state->mix == Mix_User)
                 {
-                    assert(event.value_b);
+                    if(!event.value_b) return { .error = 1 };
                     state->mix = Mix_Target;
                 }
                 else if (state->mix == Mix_Target)
                 {
-                    assert(!event.value_b);
+                    if(event.value_b) return { .error = 1 };
                     state->mix = Mix_User;
                 }
                 else jassertfalse;
@@ -133,9 +136,9 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         } break;
         case Event_Click_Begin : 
         {
-            assert(step == GameStep_Begin);
-            assert(state->mix == Mix_Hidden);
-            assert(state->target_slider_pos.size() == 0);
+            if(step != GameStep_Begin) return { .error = 1 };
+            if(state->mix != Mix_Hidden) return { .error = 1 };
+            if(state->target_slider_pos.size() != 0) return { .error = 1 };
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
@@ -154,17 +157,17 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             }
             else
             {
-                assert(state->timestamp_start == -1);
+                if(state->timestamp_start != -1) return { .error = 1 };
             }
         } break;
         case Event_Click_Done_Listening : 
         {
-            assert(step == GameStep_Question && state->variant == MixerGame_Timer);
+            if(step != GameStep_Question || state->variant != MixerGame_Timer) return { .error = 1 };
             done_listening = true;
         } break;
         case Event_Click_Answer : 
         {
-            assert(step == GameStep_Question);
+            if(step != GameStep_Question) return { .error = 1 };
 
             int points_awarded = 0;
             for (auto& [id, edited] : state->edited_slider_pos)
@@ -191,10 +194,10 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             auto [edited, edited_result] = state->edited_slider_pos.emplace(event.id, true);
             juce::ignoreUnused(edited);
-            assert(edited_result);
+            if(!edited_result) return { .error = 1 };
             juce::ignoreUnused(edited);
             auto [target, target_result] = state->target_slider_pos.emplace(event.id, true);
-            assert(target_result);
+            if(!target_result) return { .error = 1 };
             update_ui = true;
             update_audio = true;
         } break;
@@ -202,13 +205,13 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
         {
             {
                 const auto channel_to_remove = state->edited_slider_pos.find(event.id);
-                assert(channel_to_remove != state->edited_slider_pos.end());
+                if(channel_to_remove == state->edited_slider_pos.end()) return { .error = 1 };
                 state->edited_slider_pos.erase(channel_to_remove);
             }
         
             {
                 const auto channel_to_remove = state->target_slider_pos.find(event.id);
-                assert(channel_to_remove != state->target_slider_pos.end());
+                if(channel_to_remove == state->target_slider_pos.end()) return { .error = 1 };
                 state->target_slider_pos.erase(channel_to_remove);
             }
             
@@ -242,8 +245,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
     
     if (done_listening)
     {
-        assert(step == GameStep_Question);
-        assert(state->mix == Mix_Target);
+        if(step != GameStep_Question) return { .error = 1 };
+        if(state->mix != Mix_Target) return { .error = 1 };
         state->mix = Mix_User;
         state->timestamp_start = -1;
 
@@ -307,8 +310,8 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                 state->target_slider_pos[channel.id] = juce::Random::getSystemRandom().nextInt() % static_cast<int>(state->db_slider_values.size());
                 state->edited_slider_pos[channel.id] = static_cast<int>(state->db_slider_values.size()) - 2;
             }
-            assert(state->target_slider_pos.size() == state->channel_infos.size());
-            assert(state->edited_slider_pos.size() == state->channel_infos.size());
+            if(state->target_slider_pos.size() != state->channel_infos.size()) return { .error = 1 };
+            if(state->edited_slider_pos.size() != state->channel_infos.size()) return { .error = 1 };
             
             switch (state->variant)
             {
@@ -430,7 +433,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
                     case MixerGame_Tries : {
                         if (state->mix == Mix_Target)
                         {
-                            assert(state->can_still_listen);
+                            if(!state->can_still_listen) return { .error = 1 };
                             effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state->remaining_listens);
                         }
                         else if (state->mix == Mix_User)

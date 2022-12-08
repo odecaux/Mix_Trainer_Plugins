@@ -67,6 +67,7 @@ void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io,
         std::lock_guard lock { io->update_fn_mutex };
         effects = frequency_game_update(state, event);
     }
+    assert(effects.error == 0);
     for(auto &observer : io->observers)
         observer(effects);
 
@@ -104,6 +105,8 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     bool update_ui = false;
 
     Effects effects = { 
+        .error = 0,
+        .transition = std::nullopt,
         .dsp = std::nullopt, 
         .player = std::nullopt, 
         .ui = std::nullopt, 
@@ -119,7 +122,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         } break;
         case Event_Click_Frequency :
         {
-            assert(old_step == GameStep_Question);
+            if (old_step != GameStep_Question) return { .error = 1 };
             auto clicked_freq = event.value_i;
             auto clicked_ratio = normalize_frequency(clicked_freq);
             auto target_ratio = normalize_frequency(state->target_frequency);
@@ -144,7 +147,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
         case Event_Toggle_Input_Target :
         {
 #if 0
-            assert(old_step != GameStep_Begin);
+            if (old_step != GameStep_Begin) return { .error = 1 };
             if(event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
@@ -193,18 +196,19 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             }
             else
             {
-                assert(state->timestamp_start == -1);
+                
+                if (state->timestamp_start != -1) return { .error = 1 };
             }
         } break;
         case Event_Click_Begin :
         {
-            assert(old_step == GameStep_Begin);
+            if (old_step != GameStep_Begin) return { .error = 1 };
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
         case Event_Click_Next :
         {
-            assert(old_step == GameStep_Result);
+            if (old_step != GameStep_Result) return { .error = 1 };
             out_transition = GameStep_Result;
             in_transition = GameStep_Question;
         } break;
@@ -298,8 +302,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             {
                 state->timestamp_start = state->current_timestamp;
             }
-            else 
-                assert(state->timestamp_start == -1);
+            else
+            {
+                if (state->timestamp_start != -1) return { .error = 1 };
+            }
             update_audio = true;
             update_ui = true;
         }break;
@@ -310,8 +316,10 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
             {
                 state->timestamp_start = state->current_timestamp;
             }
-            else 
-                assert(state->timestamp_start == -1);
+            else
+            {
+                if (state->timestamp_start != -1) return { .error = 1 };
+            }
             update_audio = true;
             update_ui = true;
         }break;

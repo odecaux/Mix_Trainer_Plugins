@@ -54,6 +54,7 @@ struct Effect_Player {
 };
 
 struct Effects {
+    int error;
     std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP > dsp;
     std::optional < Effect_Player > player;
