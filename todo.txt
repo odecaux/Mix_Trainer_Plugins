@@ -37,7 +37,7 @@ when should the timestamp be initialized ?
 Refactor pour que j'ai une application standalone avec des fenêtre pour tt les child_plugin
 message : bypass_all
 Trouver un nom : game_tracks, internal_tracks ? 
-séparer les deux
+séparer les deux 
 1)  les gam_tracks sont crées dans un tableau, on un nom et un id
     la liste est envoyée à tous les plugins
     les plugins peuvent choisir leur game_track et l'envoient au host
