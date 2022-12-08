@@ -128,6 +128,7 @@ void Application::toGame(MixerGame_Variant variant)
     auto on_quit = [this] { 
         game_io->timer.stopTimer();
         game_state.reset();  
+        game_io.reset();  
         toMainMenu();
     };
 
