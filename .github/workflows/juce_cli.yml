@@ -3,6 +3,8 @@ name: CLI
 on:
   workflow_dispatch: # lets you run a build from the UI
   push:
+    branches:
+      - master
 
 # When pushing new commits, cancel any running builds on that branch
 concurrency:
