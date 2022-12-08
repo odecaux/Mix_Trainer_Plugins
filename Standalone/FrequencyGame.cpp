@@ -12,6 +12,10 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
         .eq_gain = 4.0f,
         .eq_quality = 0.7f,
         .initial_correct_answer_window = 0.15f,
+        .prelisten_type = PreListen_None,
+        .prelisten_timeout_ms = 1000,
+        .question_timeout_enabled = false,
+        .question_timeout_ms = 1000,
         .result_timeout_enabled = true,
         .result_timeout_ms = 1000
     };

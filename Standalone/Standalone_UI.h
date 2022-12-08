@@ -767,8 +767,6 @@ struct Config_Panel : public juce::Component
         }
         
         addAndMakeVisible(config_list_comp);
-        
-        FrequencyGame_Config initial_config = configs[current_config_idx];
 
         eq_gain.setTextValueSuffix (" dB");
         eq_gain.onValueChange = [&] {
@@ -783,10 +781,36 @@ struct Config_Panel : public juce::Component
             configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
         };
 
+
+        prelisten_type.setEditableText(false);
+        prelisten_type.setJustificationType(juce::Justification::left);
+        prelisten_type.addItem("None", PreListen_None + 1);
+        prelisten_type.addItem("Timeout", PreListen_Timeout + 1);
+        prelisten_type.addItem("Free", PreListen_Free  + 1);
+         
+        prelisten_type.onChange = [&] { 
+            PreListen_Type new_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
+            configs[current_config_idx].prelisten_type = new_type;
+            prelisten_timeout_ms.setEnabled(new_type == PreListen_Timeout);
+        };
+
+        scroller.addAndMakeVisible(prelisten_type);
+        scroller.addAndMakeVisible(prelisten_type_label);
+        scroller.addAndMakeVisible(prelisten_timeout_ms);
+
+        prelisten_timeout_ms.setTextValueSuffix(" ms");
+        prelisten_timeout_ms.onValueChange = [&] {
+            configs[current_config_idx].prelisten_timeout_ms =(int) prelisten_timeout_ms.getValue();
+        };
+        prelisten_timeout_ms.setNumDecimalPlacesToDisplay(0);
         
-        question_timeout_ms.setTextValueSuffix (" ms");
+        prelisten_timeout_ms.setScrollWheelEnabled(false);
+        prelisten_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+        prelisten_timeout_ms.setRange({1000, 4000}, 500);
+
+        question_timeout_ms.setTextValueSuffix(" ms");
         question_timeout_ms.onValueChange = [&] {
-            configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
+            configs[current_config_idx].question_timeout_ms =(int) question_timeout_ms.getValue();
         };
         question_timeout_ms.setNumDecimalPlacesToDisplay(0);
         
@@ -796,7 +820,7 @@ struct Config_Panel : public juce::Component
             question_timeout_ms.setEnabled(new_toggle_state);
         };
 
-        result_timeout_ms.setTextValueSuffix (" ms");
+        result_timeout_ms.setTextValueSuffix(" ms");
         result_timeout_ms.onValueChange = [&] {
             configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
         };
@@ -847,7 +871,7 @@ struct Config_Panel : public juce::Component
             scroller.addAndMakeVisible(toggle);
         }
 
-        scroller.setSize(0, 5 * 60);
+        scroller.setSize(0, 6 * 60);
         viewport.setScrollBarsShown(true, false);
         viewport.setViewedComponent(&scroller, false);
         addAndMakeVisible(viewport);
@@ -885,12 +909,16 @@ struct Config_Panel : public juce::Component
     {
         assert(new_config_idx < configs.size());
         current_config_idx = new_config_idx;
-        auto &current_config = configs[current_config_idx];
+        FrequencyGame_Config &current_config = configs[current_config_idx];
         float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
         
+        prelisten_timeout_ms.setValue(static_cast<double>(current_config.prelisten_timeout_ms));
+        prelisten_timeout_ms.setEnabled(current_config.prelisten_type == PreListen_Timeout);
+        prelisten_type.setSelectedId(current_config.prelisten_type + 1);
+
         question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
         question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
         question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
@@ -903,7 +931,7 @@ struct Config_Panel : public juce::Component
     void onResizeScroller(juce::Rectangle<int> scroller_bounds)
     {
         auto height = scroller_bounds.getHeight();
-        auto param_height = height / 5;
+        auto param_height = height / 6;
 
         auto same_bounds = [&] {
             return scroller_bounds.removeFromTop(param_height / 2);
@@ -914,9 +942,14 @@ struct Config_Panel : public juce::Component
         
         eq_quality_label.setBounds(same_bounds());
         eq_quality.setBounds(same_bounds());
-        
+
         initial_correct_answer_window_label.setBounds(same_bounds());
         initial_correct_answer_window.setBounds(same_bounds());
+        
+        auto prelisten_top_bounds = same_bounds();
+        prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
+        prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
+        prelisten_timeout_ms.setBounds(same_bounds());
 
         question_timeout_enabled.setBounds(same_bounds());
         question_timeout_ms.setBounds(same_bounds());
@@ -940,6 +973,10 @@ struct Config_Panel : public juce::Component
     juce::Slider initial_correct_answer_window;
     juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
     
+    juce::ComboBox prelisten_type;
+    juce::Label prelisten_type_label { {}, "Pre-Listen : " };
+    juce::Slider prelisten_timeout_ms;
+
     juce::ToggleButton question_timeout_enabled { "Question timeout" };
     juce::Slider question_timeout_ms;
 

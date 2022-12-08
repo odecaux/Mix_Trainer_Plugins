@@ -4,8 +4,13 @@ static const juce::Identifier id_config_title = "title";
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
 static const juce::Identifier id_config_window = "window";
+
+static const juce::Identifier id_config_prelisten_type = "prelisten_type";
+static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
+
 static const juce::Identifier id_config_question_timeout_enabled = "question_timeout_enabled";
 static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
+
 static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
 static const juce::Identifier id_config_result_timeout_ms = "result_timeout_ms";
 
@@ -74,8 +79,13 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 .eq_gain = node.getProperty(id_config_gain, -1.0f),
                 .eq_quality = node.getProperty(id_config_quality, -1.0f),
                 .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
+
+                .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
+                .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
+
                 .question_timeout_enabled = node.getProperty(id_config_question_timeout_enabled, false),
                 .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
+
                 .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
                 .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
             };
@@ -172,8 +182,13 @@ Application_Standalone::~Application_Standalone()
                 { id_config_gain, config.eq_gain },
                 { id_config_quality, config.eq_quality },
                 { id_config_window, config.initial_correct_answer_window },
+
+                { id_config_prelisten_type, config.prelisten_type },
+                { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
+
                 { id_config_question_timeout_enabled, config.question_timeout_enabled },
                 { id_config_question_timeout_ms, config.question_timeout_ms },
+
                 { id_config_result_timeout_enabled, config.result_timeout_enabled },
                 { id_config_result_timeout_ms, config.result_timeout_ms },
             }};

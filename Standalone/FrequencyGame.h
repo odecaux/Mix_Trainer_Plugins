@@ -62,12 +62,21 @@ struct Effects {
     bool quit;
 };
 
+enum PreListen_Type
+{
+   PreListen_None = 0,
+   PreListen_Timeout = 1,
+   PreListen_Free = 2
+};
+
 struct FrequencyGame_Config
 {
     juce::String title;
     float eq_gain;
     float eq_quality;
     float initial_correct_answer_window;
+    PreListen_Type prelisten_type;
+    int prelisten_timeout_ms;
     bool question_timeout_enabled;
     int question_timeout_ms;
     bool result_timeout_enabled;
