@@ -85,7 +85,7 @@ Effects mixer_game_update(MixerGame_State *state, Event event)
             if (step == GameStep_Question)
             {
                 if(state->variant == MixerGame_Timer) return { .error = 1 };
-                if (!state->can_still_listen) returb { .error = 1 };
+                if (!state->can_still_listen) return { .error = 1 };
                 if (state->mix == Mix_User)
                 {
                     if(!event.value_b) return { .error = 1 };
