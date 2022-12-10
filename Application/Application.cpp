@@ -64,23 +64,24 @@ void Application::toGame(MixerGame_Variant variant)
     assert(type == PanelType::MainMenu);
     type = PanelType::Game;
     assert(editor);
-    assert(!game_state);
+    assert(!game_io);
     
-    switch (variant)
-    {
-        case MixerGame_Normal : {
-            game_state = mixer_game_state_init(channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-        case MixerGame_Timer : {
-            game_state = mixer_game_state_init(channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-        case MixerGame_Tries : {
-            game_state = mixer_game_state_init(channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-    }
-
-    if(game_state == nullptr)
-        return;
+    MixerGame_State new_game_state = [&] {
+        switch (variant)
+        {
+            case MixerGame_Normal : {
+                return mixer_game_state_init(channels, MixerGame_Normal, -1, -1, db_slider_values);
+            } break;
+            case MixerGame_Timer : {
+                return mixer_game_state_init(channels, MixerGame_Timer, -1, 2000, db_slider_values);
+            } break;
+            case MixerGame_Tries : {
+                return mixer_game_state_init(channels, MixerGame_Tries, 5, -1, db_slider_values);
+            } break;
+        }
+        assert(false);
+        return MixerGame_State{};
+    }();
 
     editor->changePanel(nullptr);
 
@@ -92,9 +93,8 @@ void Application::toGame(MixerGame_Variant variant)
             {
                 auto new_game_ui = std::make_unique < MixerGameUI > (
                     channels,
-                    game_state->db_slider_values,
-                    game_io.get(),
-                    game_state.get()
+                    db_slider_values,
+                    game_io.get()
                 );
                 game_ui = new_game_ui.get();
                 editor->changePanel(std::move(new_game_ui));
@@ -123,11 +123,10 @@ void Application::toGame(MixerGame_Variant variant)
     };
 
     assert(!game_io);
-    game_io = mixer_game_io_init();
+    game_io = mixer_game_io_init(new_game_state);
     
     auto on_quit = [this] { 
         game_io->timer.stopTimer();
-        game_state.reset();  
         game_io.reset();  
         toMainMenu();
     };
@@ -137,13 +136,13 @@ void Application::toGame(MixerGame_Variant variant)
     mixer_game_add_observer(game_io.get(), std::move(observer));
     mixer_game_add_observer(game_io.get(), std::move(debug_observer));
     
-    game_io->timer.callback = [state = game_state.get(), io = game_io.get()] (juce::int64 timestamp) {
-        mixer_game_post_event(state, io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    game_io->timer.callback = [io = game_io.get()] (juce::int64 timestamp) {
+        mixer_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
     game_io->timer.startTimerHz(60);
 
-    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Init });
-    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
+    mixer_game_post_event(game_io.get(), Event { .type = Event_Init });
+    mixer_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
 }
 
 void Application::toStats()
@@ -177,8 +176,7 @@ void Application::onEditorDelete()
     editor = nullptr;
     if (type == PanelType::Game)
     {
-        assert(game_state);
-        mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Destroy_UI });
+        mixer_game_post_event(game_io.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
 }
@@ -208,15 +206,13 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case PanelType::Game :
         {
-            assert(game_state); 
             assert(game_io); 
             panel = std::make_unique<MixerGameUI>(
                 channels,
-                game_state->db_slider_values,
-                game_io.get(),
-                game_state.get()
+                db_slider_values,
+                game_io.get()
             );
-            mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
+            mixer_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
         } break;
     }
     editor->changePanel(std::move(panel));
@@ -236,13 +232,13 @@ void Application::createChannel(int id)
     
     channels[id] = ChannelInfos { .id = id };
 
-    if (game_state) {
+    if (game_io) {
         assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Create,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), game_io.get(), event);
+        mixer_game_post_event(game_io.get(), event);
     }
 }
     
@@ -251,13 +247,13 @@ void Application::deleteChannel(int id)
     auto channel = channels.find(id);
     assert(channel != channels.end());
 
-    if (game_state) {
+    if (game_io) {
         assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Delete,
             .id = id
         };
-        mixer_game_post_event(game_state.get(), game_io.get(), event);
+        mixer_game_post_event(game_io.get(), event);
     }
     channels.erase(channel);
 }
@@ -266,7 +262,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 {
     channels[id].name = new_name;
     
-    if (game_state) {
+    if (game_io) {
         assert(type == PanelType::Game);
     }
     host.broadcastRenameTrack(id, new_name);
@@ -277,14 +273,14 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
     auto &channel = channels[id];
     channel.name = new_name;
         
-    if (game_state) {
+    if (game_io) {
         assert(type == PanelType::Game);
         Event event = {
             .type = Event_Channel_Rename_From_Track,
             .id = id,
             .value_js = new_name //copy
         };
-        mixer_game_post_event(game_state.get(), game_io.get(), event);
+        mixer_game_post_event(game_io.get(), event);
     }
 }
     
@@ -294,7 +290,7 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
     channel.min_freq = new_min;
     channel.max_freq = new_max;
 
-    if (game_state) {
+    if (game_io) {
         assert(type == PanelType::Game);
         Event event = {
             .type = Event_Change_Frequency_Range,
@@ -302,6 +298,6 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
             .value_f = new_min,
             .value_f_2 = new_max
         };
-        mixer_game_post_event(game_state.get(), game_io.get(), event);
+        mixer_game_post_event(game_io.get(), event);
     }
 }

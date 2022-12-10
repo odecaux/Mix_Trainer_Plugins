@@ -45,7 +45,7 @@ private:
         Stats
     };
     
-    std::unique_ptr<MixerGame_State> game_state;
+    std::vector<double> db_slider_values { -100.0, -12.0, -9.0, -6.0, -3.0 };
     std::unique_ptr<MixerGame_IO> game_io;
     MixerGameUI *game_ui;
     std::unordered_map<int, ChannelInfos> channels;
