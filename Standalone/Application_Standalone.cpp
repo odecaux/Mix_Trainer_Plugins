@@ -225,7 +225,7 @@ Application_Standalone::~Application_Standalone()
 
 void Application_Standalone::to_main_menu()
 {
-    game_state.reset();
+    game_io.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
         [] {},
@@ -244,23 +244,20 @@ void Application_Standalone::to_main_menu()
 
 void Application_Standalone::to_file_selector()
 {
-    assert(game_state == nullptr);
+    assert(game_io == nullptr);
     auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list, [&] { to_main_menu(); } );
     main_component->changePanel(std::move(file_selector_panel));
 }
 
 void Application_Standalone::to_game_config()
 {
-    assert(game_state == nullptr);
+    assert(game_io == nullptr);
     auto config_panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { to_main_menu(); }, [&] { to_frequency_game(); });
     main_component->changePanel(std::move(config_panel));
 }
 
 void Application_Standalone::to_frequency_game()
 {
-    game_state = frequency_game_state_init(game_configs[current_config_idx], audio_file_list.files);
-    if(game_state == nullptr)
-        return;
     main_component->changePanel(nullptr);
 
     auto observer = [this] (const Effects &effects) { 
@@ -268,7 +265,7 @@ void Application_Standalone::to_frequency_game()
         {
             if (effects.transition->in_transition == GameStep_Begin)
             {
-                auto new_game_ui = std::make_unique < FrequencyGame_UI > (game_state.get(), game_io.get());
+                auto new_game_ui = std::make_unique < FrequencyGame_UI > (game_io.get());
                 frequency_game_ui = new_game_ui.get();
                 main_component->changePanel(std::move(new_game_ui));
             }
@@ -299,7 +296,8 @@ void Application_Standalone::to_frequency_game()
         juce::ignoreUnused(effects);
     };
     
-    game_io = frequency_game_io_init();
+    auto new_game_state = frequency_game_state_init(game_configs[current_config_idx], audio_file_list.files);
+    game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
         game_io->timer.stopTimer();
@@ -311,10 +309,10 @@ void Application_Standalone::to_frequency_game()
     frequency_game_add_observer(game_io.get(), std::move(observer));
     frequency_game_add_observer(game_io.get(), std::move(debug_observer));
 
-    frequency_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Init });
-    frequency_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
-    game_io->timer.callback = [state = game_state.get(), io = game_io.get()] (juce::int64 timestamp) {
-        frequency_game_post_event(state, io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    frequency_game_post_event(game_io.get(), Event { .type = Event_Init });
+    frequency_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
+    game_io->timer.callback = [io = game_io.get()] (juce::int64 timestamp) {
+        frequency_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
     game_io->timer.startTimerHz(60);
 }
@@ -322,7 +320,7 @@ void Application_Standalone::to_frequency_game()
 
 void Application_Standalone::to_low_end_frequency_game()
 {
-    assert(game_state == nullptr);
+    assert(game_io == nullptr);
     //main_component->changePanel(std::move(config_panel));
 }
 

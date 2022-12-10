@@ -52,7 +52,6 @@ void mixer_game_post_event(MixerGame_IO *io, Event event)
 
 Effects mixer_game_update(MixerGame_State state, Event event)
 {
-    GameStep step = state.step;
     GameStep in_transition = GameStep_None;
     GameStep out_transition = GameStep_None;
     bool update_audio = false;

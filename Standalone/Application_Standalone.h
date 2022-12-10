@@ -83,7 +83,6 @@ class Application_Standalone
     FilePlayer player;
     Audio_File_List audio_file_list;
     std::unique_ptr<FrequencyGame_IO> game_io;
-    std::unique_ptr<FrequencyGame_State> game_state;
     Main_Component *main_component;
     FrequencyGame_UI *frequency_game_ui;
     CompressorGame_UI *compressor_game_ui;
