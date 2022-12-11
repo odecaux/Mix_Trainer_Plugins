@@ -362,10 +362,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             case GameStep_Result :
             {
 #if 0
-                dsp.bands[0].type = Filter_Peak;
-                dsp.bands[0].compressor = (float)state.target_compressor;
-                dsp.bands[0].gain = state.config.eq_gain;
-                dsp.bands[0].quality = state.config.eq_quality;
+                dsp.eq_bands[0].type = Filter_Peak;
+                dsp.eq_bands[0].compressor = (float)state.target_compressor;
+                dsp.eq_bands[0].gain = state.config.eq_gain;
+                dsp.eq_bands[0].quality = state.config.eq_quality;
 #endif
             } break;
             case GameStep_EndResults :

@@ -6,7 +6,7 @@ Channel_DSP_State ChannelDSP_on()
     Channel_DSP_State state = {
         .gain = 1.0,
     };
-    assert(state.bands[0].type == Filter_None);
+    assert(state.eq_bands[0].type == Filter_None);
     return state;
 }
 
@@ -15,7 +15,7 @@ Channel_DSP_State ChannelDSP_off()
     Channel_DSP_State state = {
         .gain = 0.0,
     };
-    assert(state.bands[0].type == Filter_None);
+    assert(state.eq_bands[0].type == Filter_None);
     return state;
 }
 
@@ -25,37 +25,47 @@ Channel_DSP_State ChannelDSP_gain(double gain)
     Channel_DSP_State state = {
         .gain = gain,
     };
-    assert(state.bands[0].type == Filter_None);
+    assert(state.eq_bands[0].type == Filter_None);
     return state;
 }
 
-juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain)
+DSP_EQ_Band eq_band_peak(float frequency, float quality, float gain)
 {
-    switch (type) {
+    return {
+        .type = Filter_Peak,
+        .frequency = frequency,
+        .quality = quality,
+        .gain = gain
+    };
+}
+
+juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_EQ_Band band, double sample_rate)
+{
+    switch (band.type) {
         case Filter_None:
             return new juce::dsp::IIR::Coefficients<float> (1, 0, 1, 0);
         case Filter_Low_Pass:
-            return juce::dsp::IIR::Coefficients<float>::makeLowPass (sample_rate, frequency, quality);
+            return juce::dsp::IIR::Coefficients<float>::makeLowPass (sample_rate, band.frequency, band.quality);
         case Filter_LowPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderLowPass (sample_rate, frequency);
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderLowPass (sample_rate, band.frequency);
         case Filter_LowShelf:
-            return juce::dsp::IIR::Coefficients<float>::makeLowShelf (sample_rate, frequency, quality, gain);
+            return juce::dsp::IIR::Coefficients<float>::makeLowShelf (sample_rate, band.frequency, band.quality, band.gain);
         case Filter_BandPass:
-            return juce::dsp::IIR::Coefficients<float>::makeBandPass (sample_rate, frequency, quality);
+            return juce::dsp::IIR::Coefficients<float>::makeBandPass (sample_rate, band.frequency, band.quality);
         case Filter_AllPass:
-            return juce::dsp::IIR::Coefficients<float>::makeAllPass (sample_rate, frequency, quality);
+            return juce::dsp::IIR::Coefficients<float>::makeAllPass (sample_rate, band.frequency, band.quality);
         case Filter_AllPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass (sample_rate, frequency);
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderAllPass (sample_rate, band.frequency);
         case Filter_Notch:
-            return juce::dsp::IIR::Coefficients<float>::makeNotch (sample_rate, frequency, quality);
+            return juce::dsp::IIR::Coefficients<float>::makeNotch (sample_rate, band.frequency, band.quality);
         case Filter_Peak:
-            return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sample_rate, frequency, quality, gain);
+            return juce::dsp::IIR::Coefficients<float>::makePeakFilter (sample_rate, band.frequency, band.quality, band.gain);
         case Filter_HighShelf:
-            return juce::dsp::IIR::Coefficients<float>::makeHighShelf (sample_rate, frequency, quality, gain);
+            return juce::dsp::IIR::Coefficients<float>::makeHighShelf (sample_rate, band.frequency, band.quality, band.gain);
         case Filter_HighPass1st:
-            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderHighPass (sample_rate, frequency);
+            return juce::dsp::IIR::Coefficients<float>::makeFirstOrderHighPass (sample_rate, band.frequency);
         case Filter_HighPass:
-            return juce::dsp::IIR::Coefficients<float>::makeHighPass (sample_rate, frequency, quality);
+            return juce::dsp::IIR::Coefficients<float>::makeHighPass (sample_rate, band.frequency, band.quality);
         case Filter_LastID:
         default:
             return nullptr;

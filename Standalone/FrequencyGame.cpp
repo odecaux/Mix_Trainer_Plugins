@@ -359,10 +359,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             case GameStep_Question :
             case GameStep_Result :
             {
-                dsp.bands[0].type = Filter_Peak;
-                dsp.bands[0].frequency = (float)state.target_frequency;
-                dsp.bands[0].gain = state.config.eq_gain;
-                dsp.bands[0].quality = state.config.eq_quality;
+                dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, state.config.eq_gain);
             } break;
             case GameStep_EndResults :
             {

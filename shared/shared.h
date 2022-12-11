@@ -43,10 +43,19 @@ struct DSP_EQ_Band {
     float gain;
 };
 
+struct Compressor_DSP_State {
+    bool is_on;
+    float ratio;
+    float threshold_gain;
+    float attack;
+    float release;
+    float makeup_gain;
+};
 
-struct Channel_DSP_State{
+struct Channel_DSP_State {
     double gain;
-    DSP_EQ_Band bands[1];
+    DSP_EQ_Band eq_bands[1];
+    Compressor_DSP_State comp;
 };
 
 
@@ -62,9 +71,10 @@ struct Audio_File
 Channel_DSP_State ChannelDSP_on();
 Channel_DSP_State ChannelDSP_off();
 Channel_DSP_State ChannelDSP_gain(double gain);
+DSP_EQ_Band eq_band_peak(float frequency, float quality, float gain);
 
 
-juce::dsp::IIR::Coefficients < float > ::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain);
+juce::dsp::IIR::Coefficients < float > ::Ptr make_coefficients(DSP_EQ_Band band, double sample_rate);
 
 //------------------------------------------------------------------------
 struct Channel_DSP_Callback : public juce::AudioSource
@@ -114,7 +124,8 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
     using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     using Gain       = juce::dsp::Gain<float>;
-    juce::dsp::ProcessorChain<FilterBand, Gain> dsp_chain;
+    using Compressor = juce::dsp::Compressor<float>;
+    juce::dsp::ProcessorChain<FilterBand, Compressor, Gain, Gain> dsp_chain;
     double sample_rate = -1.0;
     juce::CriticalSection lock;
     juce::AudioSource *input_source;
@@ -123,17 +134,26 @@ private:
     void updateDspChain()
     {
         for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
-            auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
+            auto new_coefficients = make_coefficients(state.eq_bands[i], sample_rate);
             assert(new_coefficients);
-            // minimise lock scope, get<0>() needs to be a  compile time constant
             {
                 juce::ScopedLock processLock (lock);
                 if (i == 0)
                     *dsp_chain.get<0>().state = *new_coefficients;
             }
         }
+        //compressor 
+        dsp_chain.setBypassed<1>(!state.comp.is_on);
+        dsp_chain.get<1>().setThreshold(state.comp.threshold_gain);
+        dsp_chain.get<1>().setRatio(state.comp.ratio);
+        dsp_chain.get<1>().setAttack(state.comp.attack);
+        dsp_chain.get<1>().setRelease(state.comp.release);
+        //makeup gain
+        dsp_chain.setBypassed<2>(!state.comp.is_on);
+        dsp_chain.get<2>().setGainLinear ((float)state.gain);
+
         //gain
-        dsp_chain.get<1>().setGainLinear ((float)state.gain);
+        dsp_chain.get<3>().setGainLinear ((float)state.gain);
     }
 };
 
