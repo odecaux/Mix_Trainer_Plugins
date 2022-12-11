@@ -14,6 +14,24 @@ enum Mix {
     Mix_Target,
     Mix_Hidden
 };
+enum PreListen_Type
+{
+    PreListen_None = 0,
+    PreListen_Timeout = 1,
+    PreListen_Free = 2
+};
+struct Effect_Transition {
+    GameStep in_transition;
+    GameStep out_transition;
+};
+
+struct Effect_DSP_Single_Track {
+    Channel_DSP_State dsp_state;
+};
+
+struct Effect_Player {
+    std::vector<Audio_Command> commands;
+};
 
 FaderStep gameStepToFaderStep(GameStep game_step, Mix mix);
 

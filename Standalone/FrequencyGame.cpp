@@ -27,12 +27,12 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
     if (transition.out_transition == GameStep_Begin)
     {
         ui.frequency_widget = std::make_unique < FrequencyWidget > ();
-        ui.frequency_widget->onClick = [io = ui.game_io] (int frequency) {
+        ui.frequency_widget->onClick = [state = ui.game_state, io = ui.game_io] (int frequency) {
             Event event = {
                 .type = Event_Click_Frequency,
                 .value_i = frequency
             };
-            frequency_game_post_event(io, event);
+            frequency_game_post_event(state, io, event);
         };
         ui.addAndMakeVisible(*ui.frequency_widget);
         ui.resized();
@@ -46,7 +46,7 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
     }
 }
 
-void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
+void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui)
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     if (ui.frequency_widget)
@@ -60,14 +60,14 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-void frequency_game_post_event(FrequencyGame_IO *io, Event event)
+void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event)
 {
-    Effects effects = frequency_game_update(io->game_state, event);
-    assert(effects.error == 0);
+    Frequency_Game_Effects effects;
     {
         std::lock_guard lock { io->update_fn_mutex };
-        io->game_state = effects.new_state;
+        effects = frequency_game_update(state, event);
     }
+    assert(effects.error == 0);
     for(auto &observer : io->observers)
         observer(effects);
 
@@ -77,7 +77,7 @@ void frequency_game_post_event(FrequencyGame_IO *io, Event event)
     }
 }
 
-FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, 
+std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Config config, 
                                                                std::vector<Audio_File> files)
 {
     assert(!files.empty());
@@ -86,24 +86,25 @@ FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config,
         .config = config,
         .timestamp_start = -1
     };
-    return state;
+
+    return std::make_unique < FrequencyGame_State > (std::move(state));
 }
 
-std::unique_ptr<FrequencyGame_IO> frequency_game_io_init(FrequencyGame_State state)
+std::unique_ptr<FrequencyGame_IO> frequency_game_io_init()
 {
-    auto io = std::make_unique<FrequencyGame_IO>();
-    io->game_state = state;
-    return io;
+    return std::make_unique<FrequencyGame_IO>();
 }
 
-Effects frequency_game_update(FrequencyGame_State state, Event event)
+Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event event)
 {
+    GameStep old_step = state->step;
+    GameStep step = old_step;
     GameStep in_transition = GameStep_None;
     GameStep out_transition = GameStep_None;
     bool update_audio = false;
     bool update_ui = false;
 
-    Effects effects = { 
+    Frequency_Game_Effects effects = { 
         .error = 0,
         .transition = std::nullopt,
         .dsp = std::nullopt, 
@@ -121,23 +122,23 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         } break;
         case Event_Click_Frequency :
         {
-            if (state.step != GameStep_Question) return { .error = 1 };
+            if (old_step != GameStep_Question) return { .error = 1 };
             auto clicked_freq = event.value_i;
             auto clicked_ratio = normalize_frequency(clicked_freq);
-            auto target_ratio = normalize_frequency(state.target_frequency);
+            auto target_ratio = normalize_frequency(state->target_frequency);
             auto distance = std::abs(clicked_ratio - target_ratio);
-            if (distance < state.correct_answer_window)
+            if (distance < state->correct_answer_window)
             {
                 int points_scored = int((1.0f - distance) * 100.0f);
-                state.score += points_scored;
-                state.correct_answer_window *= 0.95f;
+                state->score += points_scored;
+                state->correct_answer_window *= 0.95f;
             }
             else
             {
-                state.lives--;
+                state->lives--;
             }
             
-            if(state.lives > 0)
+            if(state->lives > 0)
                 in_transition = GameStep_Result;
             else
                 in_transition = GameStep_EndResults;
@@ -146,7 +147,7 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         case Event_Toggle_Input_Target :
         {
 #if 0
-            if (state.step != GameStep_Begin) return { .error = 1 };
+            if (old_step != GameStep_Begin) return { .error = 1 };
             if(event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
@@ -169,25 +170,25 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         } break;
         case Event_Timer_Tick :
         {
-            state.current_timestamp = event.value_i64;
-            if (state.step == GameStep_Question && state.config.question_timeout_enabled)
+            state->current_timestamp = event.value_i64;
+            if (step == GameStep_Question && state->config.question_timeout_enabled)
             {
-                if (state.current_timestamp >=
-                    state.timestamp_start + state.config.question_timeout_ms)
+                if (state->current_timestamp >=
+                    state->timestamp_start + state->config.question_timeout_ms)
                 {
-                    state.lives--;
+                    state->lives--;
             
                     out_transition = GameStep_Question;
-                    if(state.lives > 0)
+                    if(state->lives > 0)
                         in_transition = GameStep_Result;
                     else
                         in_transition = GameStep_EndResults;
                 }
             }
-            else if (state.step == GameStep_Result && state.config.result_timeout_enabled)
+            else if (step == GameStep_Result && state->config.result_timeout_enabled)
             {
-                if (state.current_timestamp >=
-                    state.timestamp_start + state.config.result_timeout_ms)
+                if (state->current_timestamp >=
+                    state->timestamp_start + state->config.result_timeout_ms)
                 {
                     out_transition = GameStep_Result;
                     in_transition = GameStep_Question;
@@ -196,18 +197,18 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
             else
             {
                 
-                if (state.timestamp_start != -1) return { .error = 1 };
+                if (state->timestamp_start != -1) return { .error = 1 };
             }
         } break;
         case Event_Click_Begin :
         {
-            if (state.step != GameStep_Begin) return { .error = 1 };
+            if (old_step != GameStep_Begin) return { .error = 1 };
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
         case Event_Click_Next :
         {
-            if (state.step != GameStep_Result) return { .error = 1 };
+            if (old_step != GameStep_Result) return { .error = 1 };
             out_transition = GameStep_Result;
             in_transition = GameStep_Question;
         } break;
@@ -259,11 +260,11 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         } break;
         case GameStep_Question :
         {
-            state.timestamp_start = -1;
+            state->timestamp_start = -1;
         } break;
         case GameStep_Result :
         {
-            state.timestamp_start = -1;
+            state->timestamp_start = -1;
         } break;
         case GameStep_EndResults :
         {
@@ -277,64 +278,64 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         {
         }break;
         case GameStep_Begin : {
-            state.step = GameStep_Begin;
-            state.score = 0;
-            state.lives = 5;
-            state.correct_answer_window = state.config.initial_correct_answer_window;
-            state.current_file_idx = -1;
+            step = GameStep_Begin;
+            state->score = 0;
+            state->lives = 5;
+            state->correct_answer_window = state->config.initial_correct_answer_window;
+            state->current_file_idx = -1;
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Question : {
-            state.step = GameStep_Question;
-            state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
+            step = GameStep_Question;
+            state->target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
     
-            state.current_file_idx = juce::Random::getSystemRandom().nextInt((int)state.files.size());
+            state->current_file_idx = juce::Random::getSystemRandom().nextInt((int)state->files.size());
             effects.player = Effect_Player {
                 .commands = { 
-                    { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },
+                    { .type = Audio_Command_Load, .value_file = state->files[static_cast<size_t>(state->current_file_idx)].file },
                     { .type = Audio_Command_Play },
                 }
             };
             
-            if (state.config.question_timeout_enabled)
+            if (state->config.question_timeout_enabled)
             {
-                state.timestamp_start = state.current_timestamp;
+                state->timestamp_start = state->current_timestamp;
             }
             else
             {
-                if (state.timestamp_start != -1) return { .error = 1 };
+                if (state->timestamp_start != -1) return { .error = 1 };
             }
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Result : 
         {
-            state.step = GameStep_Result;
-            if (state.config.result_timeout_enabled)
+            step = GameStep_Result;
+            if (state->config.result_timeout_enabled)
             {
-                state.timestamp_start = state.current_timestamp;
+                state->timestamp_start = state->current_timestamp;
             }
             else
             {
-                if (state.timestamp_start != -1) return { .error = 1 };
+                if (state->timestamp_start != -1) return { .error = 1 };
             }
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_EndResults : 
         {
-            state.step = GameStep_EndResults;
+            step = GameStep_EndResults;
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Stop },
                 }
             };
-            state.results = {
-                .score = state.score,
+            state->results = {
+                .score = state->score,
                 .analytics = juce::Random::getSystemRandom().nextFloat()
             };
-            effects.results = state.results;
+            effects.results = state->results;
             update_audio = true;
             update_ui = true;
         }break;
@@ -344,12 +345,12 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
     {
         Channel_DSP_State dsp = ChannelDSP_on();
         
-        float compensation_gain = state.config.eq_gain > 1.0f ? 
-            1.0f / state.config.eq_gain :
+        float compensation_gain = state->config.eq_gain > 1.0f ? 
+            1.0f / state->config.eq_gain :
             1.0f;
         dsp.gain = compensation_gain;
 
-        switch (state.step)
+        switch (step)
         {
             case GameStep_Begin :
             {
@@ -358,9 +359,9 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
             case GameStep_Result :
             {
                 dsp.bands[0].type = Filter_Peak;
-                dsp.bands[0].frequency = (float)state.target_frequency;
-                dsp.bands[0].gain = state.config.eq_gain;
-                dsp.bands[0].quality = state.config.eq_quality;
+                dsp.bands[0].frequency = (float)state->target_frequency;
+                dsp.bands[0].gain = state->config.eq_gain;
+                dsp.bands[0].quality = state->config.eq_quality;
             } break;
             case GameStep_EndResults :
             {
@@ -370,13 +371,13 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
                 jassertfalse;
             } break;
         }
-        effects.dsp = Effect_DSP { dsp };
+        effects.dsp = Effect_DSP_Single_Track { dsp };
     }
 
     if (update_ui)
     {
-        Effect_UI effect_ui;
-        switch (state.step)
+        Frequency_Game_Effect_UI effect_ui;
+        switch (step)
         {
             case GameStep_Begin :
             {
@@ -390,21 +391,21 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
                 effect_ui.freq_widget.display_target = false;
                 effect_ui.freq_widget.is_cursor_locked = false;
                 effect_ui.freq_widget.display_window = true;
-                effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
+                effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = false;
             } break;
             case GameStep_Result :
             {
                 effect_ui.freq_widget.display_target = true;
-                effect_ui.freq_widget.target_frequency = state.target_frequency;
+                effect_ui.freq_widget.target_frequency = state->target_frequency;
                 if (event.type == Event_Click_Frequency)
                 {
                     effect_ui.freq_widget.is_cursor_locked = true;
                     effect_ui.freq_widget.locked_cursor_frequency = event.value_i;
                     effect_ui.freq_widget.display_window = true;
-                    effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
+                    effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
                 } 
                 else if (event.type == Event_Timer_Tick)
                 {
@@ -414,14 +415,14 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
                 else 
                     jassertfalse;
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Next";
                 effect_ui.button_event = Event_Click_Next;
             } break;
             case GameStep_EndResults :
             {
-                effect_ui.results.score = state.score;
+                effect_ui.results.score = state->score;
                 effect_ui.header_text = "Results";
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Quit";
@@ -434,19 +435,20 @@ Effects frequency_game_update(FrequencyGame_State state, Event event)
         }
 
         effect_ui.mix = Mix_Hidden;
-        effect_ui.score = state.score;
+        effect_ui.score = state->score;
         effects.ui = effect_ui;
     }
-    effects.new_state = state;
+
+    state->step = step;
     return effects;
 }
 
-void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer)
+void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer)
 {
     io->observers.push_back(std::move(observer));
 }
 
-void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui)
+void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui)
 {
     widget->display_target = new_ui.freq_widget.display_target;
     widget->target_frequency = new_ui.freq_widget.target_frequency;
