@@ -63,12 +63,13 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
-void compressor_game_post_event(CompressorGame_State *state, CompressorGame_IO *io, Event event)
+void compressor_game_post_event(CompressorGame_IO *io, Event event)
 {
-    Compressor_Game_Effects effects;
+    Compressor_Game_Effects effects = compressor_game_update(io->game_state, event);
+    assert(effects.error == 0);
     {
         std::lock_guard lock { io->update_fn_mutex };
-        effects = compressor_game_update(state, event);
+        io->game_state = effects.new_state;
     }
     assert(effects.error == 0);
     for(auto &observer : io->observers)
@@ -98,10 +99,8 @@ std::unique_ptr<CompressorGame_IO> compressor_game_io_init()
     return std::make_unique<CompressorGame_IO>();
 }
 
-Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Event event)
+Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event event)
 {
-    GameStep old_step = state->step;
-    GameStep step = old_step;
     GameStep in_transition = GameStep_None;
     GameStep out_transition = GameStep_None;
     bool update_audio = false;
@@ -126,23 +125,23 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
 #if 0
         case Event_Click_Frequency :
         {
-            if (old_step != GameStep_Question) return { .error = 1 };
+            if (state.step != GameStep_Question) return { .error = 1 };
             auto clicked_freq = event.value_i;
             auto clicked_ratio = normalize_compressor(clicked_freq);
-            auto target_ratio = normalize_compressor(state->target_compressor);
+            auto target_ratio = normalize_compressor(state.target_compressor);
             auto distance = std::abs(clicked_ratio - target_ratio);
-            if (distance < state->correct_answer_window)
+            if (distance < state.correct_answer_window)
             {
                 int points_scored = int((1.0f - distance) * 100.0f);
-                state->score += points_scored;
-                state->correct_answer_window *= 0.95f;
+                state.score += points_scored;
+                state.correct_answer_window *= 0.95f;
             }
             else
             {
-                state->lives--;
+                state.lives--;
             }
             
-            if(state->lives > 0)
+            if(state.lives > 0)
                 in_transition = GameStep_Result;
             else
                 in_transition = GameStep_EndResults;
@@ -152,7 +151,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
         case Event_Toggle_Input_Target :
         {
 #if 0
-            if (old_step != GameStep_Begin) return { .error = 1 };
+            if (state.step != GameStep_Begin) return { .error = 1 };
             if(event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
@@ -175,25 +174,25 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
         } break;
         case Event_Timer_Tick :
         {
-            state->current_timestamp = event.value_i64;
-            if (step == GameStep_Question && state->config.question_timeout_enabled)
+            state.current_timestamp = event.value_i64;
+            if (state.step == GameStep_Question && state.config.question_timeout_enabled)
             {
-                if (state->current_timestamp >=
-                    state->timestamp_start + state->config.question_timeout_ms)
+                if (state.current_timestamp >=
+                    state.timestamp_start + state.config.question_timeout_ms)
                 {
-                    state->lives--;
+                    state.lives--;
             
                     out_transition = GameStep_Question;
-                    if(state->lives > 0)
+                    if(state.lives > 0)
                         in_transition = GameStep_Result;
                     else
                         in_transition = GameStep_EndResults;
                 }
             }
-            else if (step == GameStep_Result && state->config.result_timeout_enabled)
+            else if (state.step == GameStep_Result && state.config.result_timeout_enabled)
             {
-                if (state->current_timestamp >=
-                    state->timestamp_start + state->config.result_timeout_ms)
+                if (state.current_timestamp >=
+                    state.timestamp_start + state.config.result_timeout_ms)
                 {
                     out_transition = GameStep_Result;
                     in_transition = GameStep_Question;
@@ -202,18 +201,18 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
             else
             {
                 
-                if (state->timestamp_start != -1) return { .error = 1 };
+                if (state.timestamp_start != -1) return { .error = 1 };
             }
         } break;
         case Event_Click_Begin :
         {
-            if (old_step != GameStep_Begin) return { .error = 1 };
+            if (state.step != GameStep_Begin) return { .error = 1 };
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
         case Event_Click_Next :
         {
-            if (old_step != GameStep_Result) return { .error = 1 };
+            if (state.step != GameStep_Result) return { .error = 1 };
             out_transition = GameStep_Result;
             in_transition = GameStep_Question;
         } break;
@@ -260,11 +259,11 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
         } break;
         case GameStep_Question :
         {
-            state->timestamp_start = -1;
+            state.timestamp_start = -1;
         } break;
         case GameStep_Result :
         {
-            state->timestamp_start = -1;
+            state.timestamp_start = -1;
         } break;
         case GameStep_EndResults :
         {
@@ -278,67 +277,67 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
         {
         }break;
         case GameStep_Begin : {
-            step = GameStep_Begin;
-            state->score = 0;
-            state->lives = 5;
+            state.step = GameStep_Begin;
+            state.score = 0;
+            state.lives = 5;
 #if 0
-            state->correct_answer_window = state->config.initial_correct_answer_window;
+            state.correct_answer_window = state.config.initial_correct_answer_window;
 #endif
-            state->current_file_idx = -1;
+            state.current_file_idx = -1;
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Question : {
-            step = GameStep_Question;
+            state.step = GameStep_Question;
 #if 0
-            state->target_compressor = denormalize_compressor(juce::Random::getSystemRandom().nextFloat());
+            state.target_compressor = denormalize_compressor(juce::Random::getSystemRandom().nextFloat());
 #endif
-            state->current_file_idx = juce::Random::getSystemRandom().nextInt((int)state->files.size());
+            state.current_file_idx = juce::Random::getSystemRandom().nextInt((int)state.files.size());
             effects.player = Effect_Player {
                 .commands = { 
-                    { .type = Audio_Command_Load, .value_file = state->files[static_cast<size_t>(state->current_file_idx)].file },
+                    { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },
                     { .type = Audio_Command_Play },
                 }
             };
             
-            if (state->config.question_timeout_enabled)
+            if (state.config.question_timeout_enabled)
             {
-                state->timestamp_start = state->current_timestamp;
+                state.timestamp_start = state.current_timestamp;
             }
             else
             {
-                if (state->timestamp_start != -1) return { .error = 1 };
+                if (state.timestamp_start != -1) return { .error = 1 };
             }
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Result : 
         {
-            step = GameStep_Result;
-            if (state->config.result_timeout_enabled)
+            state.step = GameStep_Result;
+            if (state.config.result_timeout_enabled)
             {
-                state->timestamp_start = state->current_timestamp;
+                state.timestamp_start = state.current_timestamp;
             }
             else
             {
-                if (state->timestamp_start != -1) return { .error = 1 };
+                if (state.timestamp_start != -1) return { .error = 1 };
             }
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_EndResults : 
         {
-            step = GameStep_EndResults;
+            state.step = GameStep_EndResults;
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Stop },
                 }
             };
-            state->results = {
-                .score = state->score,
+            state.results = {
+                .score = state.score,
                 .analytics = juce::Random::getSystemRandom().nextFloat()
             };
-            effects.results = state->results;
+            effects.results = state.results;
             update_audio = true;
             update_ui = true;
         }break;
@@ -348,12 +347,12 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
     {
         Channel_DSP_State dsp = ChannelDSP_on();
 #if 0
-        float compensation_gain = state->config.eq_gain > 1.0f ? 
-            1.0f / state->config.eq_gain :
+        float compensation_gain = state.config.eq_gain > 1.0f ? 
+            1.0f / state.config.eq_gain :
             1.0f;
         dsp.gain = compensation_gain;
 #endif
-        switch (step)
+        switch (state.step)
         {
             case GameStep_Begin :
             {
@@ -363,9 +362,9 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
             {
 #if 0
                 dsp.bands[0].type = Filter_Peak;
-                dsp.bands[0].compressor = (float)state->target_compressor;
-                dsp.bands[0].gain = state->config.eq_gain;
-                dsp.bands[0].quality = state->config.eq_quality;
+                dsp.bands[0].compressor = (float)state.target_compressor;
+                dsp.bands[0].gain = state.config.eq_gain;
+                dsp.bands[0].quality = state.config.eq_quality;
 #endif
             } break;
             case GameStep_EndResults :
@@ -382,7 +381,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
     if (update_ui)
     {
         Compressor_Game_Effect_UI effect_ui;
-        switch (step)
+        switch (state.step)
         {
             case GameStep_Begin :
             {
@@ -397,23 +396,23 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
                 effect_ui.freq_widget.display_target = false;
                 effect_ui.freq_widget.is_cursor_locked = false;
                 effect_ui.freq_widget.display_window = true;
-                effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
+                effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
 #endif
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
                 effect_ui.display_button = false;
             } break;
             case GameStep_Result :
             {
 #if 0
                 effect_ui.freq_widget.display_target = true;
-                effect_ui.freq_widget.target_compressor = state->target_compressor;
+                effect_ui.freq_widget.target_compressor = state.target_compressor;
                 if (event.type == Event_Click_Compressor)
                 {
                     effect_ui.freq_widget.is_cursor_locked = true;
                     effect_ui.freq_widget.locked_cursor_compressor = event.value_i;
                     effect_ui.freq_widget.display_window = true;
-                    effect_ui.freq_widget.correct_answer_window = state->correct_answer_window;
+                    effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
                 } 
                 else if (event.type == Event_Timer_Tick)
                 {
@@ -424,14 +423,14 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
                     jassertfalse;
 #endif
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state->lives);
+                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Next";
                 effect_ui.button_event = Event_Click_Next;
             } break;
             case GameStep_EndResults :
             {
-                effect_ui.results.score = state->score;
+                effect_ui.results.score = state.score;
                 effect_ui.header_text = "Results";
                 effect_ui.display_button = true;
                 effect_ui.button_text = "Quit";
@@ -444,11 +443,11 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Even
         }
 
         effect_ui.mix = Mix_Hidden;
-        effect_ui.score = state->score;
+        effect_ui.score = state.score;
         effects.ui = effect_ui;
     }
 
-    state->step = step;
+    effects.new_state = state;
     return effects;
 }
 

@@ -42,15 +42,6 @@ struct Frequency_Game_Effect_UI {
 };
 
 
-struct Frequency_Game_Effects {
-    int error;
-    std::optional < Effect_Transition> transition;
-    std::optional < Effect_DSP_Single_Track > dsp;
-    std::optional < Effect_Player > player;
-    std::optional < Frequency_Game_Effect_UI > ui;
-    std::optional < FrequencyGame_Results > results;
-    bool quit;
-};
 
 
 struct FrequencyGame_Config
@@ -70,17 +61,6 @@ struct FrequencyGame_Config
     bool result_timeout_enabled;
     int result_timeout_ms;
 };
-
-using frequency_game_observer_t = std::function<void(const Frequency_Game_Effects&)>;
-
-struct FrequencyGame_IO
-{
-    Timer timer;
-    std::mutex update_fn_mutex;
-    std::vector<frequency_game_observer_t> observers;
-    std::function < void() > on_quit;
-};
-
 struct FrequencyGame_State
 {
     GameStep step;
@@ -99,16 +79,39 @@ struct FrequencyGame_State
     juce::int64 current_timestamp;
 };
 
+struct Frequency_Game_Effects {
+    int error;
+    std::optional < Effect_Transition> transition;
+    std::optional < Effect_DSP_Single_Track > dsp;
+    std::optional < Effect_Player > player;
+    std::optional < Frequency_Game_Effect_UI > ui;
+    std::optional < FrequencyGame_Results > results;
+    bool quit;
+    FrequencyGame_State new_state;
+};
+
+using frequency_game_observer_t = std::function<void(const Frequency_Game_Effects&)>;
+
+struct FrequencyGame_IO
+{
+    FrequencyGame_State game_state;
+    Timer timer;
+    std::mutex update_fn_mutex;
+    std::vector<frequency_game_observer_t> observers;
+    std::function < void() > on_quit;
+};
+
+
 struct FrequencyGame_UI;
 
 
 FrequencyGame_Config frequency_game_config_default(juce::String name);
-std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> files);
-std::unique_ptr<FrequencyGame_IO> frequency_game_io_init();
+FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> files);
+std::unique_ptr<FrequencyGame_IO> frequency_game_io_init(FrequencyGame_State);
 void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer);
 
-void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event);
-Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event event);
+void frequency_game_post_event(FrequencyGame_IO *io, Event event);
+Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event event);
 void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition);
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui);
 void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui);
@@ -116,28 +119,27 @@ void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effec
 struct FrequencyGame_UI : public juce::Component
 {
     
-    FrequencyGame_UI(FrequencyGame_State *gameState, FrequencyGame_IO *gameIO) : 
-        game_io(gameIO),
-    game_state(gameState)
+    FrequencyGame_UI(FrequencyGame_IO *gameIO) : 
+        game_io(gameIO)
     {
         bottom.onNextClicked = [this] (Event_Type e){
             Event event = {
                 .type = e
             };
-            frequency_game_post_event(game_state, game_io, event);
+            frequency_game_post_event(game_io, event);
         };
         header.onBackClicked = [this] {
             Event event = {
                 .type = Event_Click_Back
             };
-            frequency_game_post_event(game_state, game_io, event);
+            frequency_game_post_event(game_io, event);
         };
         bottom.onToggleClicked = [this] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            frequency_game_post_event(game_state, game_io, event);
+            frequency_game_post_event(game_io, event);
         };
         addAndMakeVisible(header);
         addAndMakeVisible(bottom);
@@ -165,7 +167,6 @@ struct FrequencyGame_UI : public juce::Component
     std::unique_ptr<FrequencyGame_Results_Panel> results_panel;
     GameUI_Bottom bottom;
     FrequencyGame_IO *game_io;
-    FrequencyGame_State *game_state;
     
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FrequencyGame_UI)

@@ -42,15 +42,6 @@ struct Compressor_Game_Effect_UI {
     Event_Type button_event;
 };
 
-struct Compressor_Game_Effects {
-    int error;
-    std::optional < Effect_Transition> transition;
-    std::optional < Effect_DSP_Single_Track > dsp;
-    std::optional < Effect_Player > player;
-    std::optional < Compressor_Game_Effect_UI > ui;
-    std::optional < CompressorGame_Results > results;
-    bool quit;
-};
 struct CompressorGame_Config
 {
     juce::String title;
@@ -66,15 +57,6 @@ struct CompressorGame_Config
     int result_timeout_ms;
 };
 
-using compressor_game_observer_t = std::function<void(const Compressor_Game_Effects&)>;
-
-struct CompressorGame_IO
-{
-    Timer timer;
-    std::mutex update_fn_mutex;
-    std::vector<compressor_game_observer_t> observers;
-    std::function < void() > on_quit;
-};
 
 struct CompressorGame_State
 {
@@ -94,16 +76,37 @@ struct CompressorGame_State
     juce::int64 current_timestamp;
 };
 
-struct CompressorGame_UI;
+struct Compressor_Game_Effects {
+    int error;
+    std::optional < Effect_Transition> transition;
+    std::optional < Effect_DSP_Single_Track > dsp;
+    std::optional < Effect_Player > player;
+    std::optional < Compressor_Game_Effect_UI > ui;
+    std::optional < CompressorGame_Results > results;
+    bool quit;
+    CompressorGame_State new_state;
+};
 
+using compressor_game_observer_t = std::function<void(const Compressor_Game_Effects&)>;
+
+struct CompressorGame_IO
+{
+    CompressorGame_State game_state;
+    Timer timer;
+    std::mutex update_fn_mutex;
+    std::vector<compressor_game_observer_t> observers;
+    std::function < void() > on_quit;
+};
+
+struct CompressorGame_UI;
 
 CompressorGame_Config compressor_game_config_default(juce::String name);
 std::unique_ptr<CompressorGame_State> compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
 std::unique_ptr<CompressorGame_IO> compressor_game_io_init();
 void compressor_game_add_observer(CompressorGame_IO *io, compressor_game_observer_t observer);
 
-void compressor_game_post_event(CompressorGame_State *state, CompressorGame_IO *io, Event event);
-Compressor_Game_Effects compressor_game_update(CompressorGame_State *state, Event event);
+void compressor_game_post_event(CompressorGame_IO *io, Event event);
+Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event event);
 void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition);
 void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui);
 #if 0
