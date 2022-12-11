@@ -263,7 +263,7 @@ void Application_Standalone::to_frequency_game()
         return;
     main_component->changePanel(nullptr);
 
-    auto observer = [this] (const Effects &effects) { 
+    auto observer = [this] (const Frequency_Game_Effects &effects) { 
         if (effects.transition)
         {
             if (effects.transition->in_transition == GameStep_Begin)
@@ -295,7 +295,7 @@ void Application_Standalone::to_frequency_game()
         }
     };
 
-    auto debug_observer = [] (const Effects &effects) {
+    auto debug_observer = [] (const Frequency_Game_Effects &effects) {
         juce::ignoreUnused(effects);
     };
     

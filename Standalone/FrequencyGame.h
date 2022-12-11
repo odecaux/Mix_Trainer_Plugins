@@ -31,7 +31,7 @@ struct Effect_DSP {
     Channel_DSP_State dsp_state;
 };
 
-struct Effect_UI {
+struct Frequency_Game_Effect_UI {
     struct {
         bool display_target;
         int target_frequency;
@@ -53,12 +53,12 @@ struct Effect_Player {
     std::vector<Audio_Command> commands;
 };
 
-struct Effects {
+struct Frequency_Game_Effects {
     int error;
     std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP > dsp;
     std::optional < Effect_Player > player;
-    std::optional < Effect_UI > ui;
+    std::optional < Frequency_Game_Effect_UI > ui;
     std::optional < FrequencyGame_Results > results;
     bool quit;
 };
@@ -93,7 +93,7 @@ struct Audio_File
     juce::Range<int> freq_bounds;
 };
 
-using observer_t = std::function<void(const Effects &)>;
+using observer_t = std::function<void(const Frequency_Game_Effects&)>;
 
 struct FrequencyGame_IO
 {
@@ -128,10 +128,10 @@ std::unique_ptr<FrequencyGame_IO> frequency_game_io_init();
 void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer);
 
 void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event);
-Effects frequency_game_update(FrequencyGame_State *state, Event event);
+Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event event);
 void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition);
-void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui);
-void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui);
+void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui);
+void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui);
 
 struct FrequencyGame_UI : public juce::Component
 {

@@ -46,7 +46,7 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
     }
 }
 
-void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
+void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui)
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     if (ui.frequency_widget)
@@ -62,7 +62,7 @@ void frequency_game_ui_update(FrequencyGame_UI &ui, const Effect_UI &new_ui)
 
 void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event)
 {
-    Effects effects;
+    Frequency_Game_Effects effects;
     {
         std::lock_guard lock { io->update_fn_mutex };
         effects = frequency_game_update(state, event);
@@ -95,7 +95,7 @@ std::unique_ptr<FrequencyGame_IO> frequency_game_io_init()
     return std::make_unique<FrequencyGame_IO>();
 }
 
-Effects frequency_game_update(FrequencyGame_State *state, Event event)
+Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event event)
 {
     GameStep old_step = state->step;
     GameStep step = old_step;
@@ -104,7 +104,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
     bool update_audio = false;
     bool update_ui = false;
 
-    Effects effects = { 
+    Frequency_Game_Effects effects = { 
         .error = 0,
         .transition = std::nullopt,
         .dsp = std::nullopt, 
@@ -376,7 +376,7 @@ Effects frequency_game_update(FrequencyGame_State *state, Event event)
 
     if (update_ui)
     {
-        Effect_UI effect_ui;
+        Frequency_Game_Effect_UI effect_ui;
         switch (step)
         {
             case GameStep_Begin :
@@ -448,7 +448,7 @@ void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer)
     io->observers.push_back(std::move(observer));
 }
 
-void frequency_widget_update(FrequencyWidget *widget, const Effect_UI &new_ui)
+void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui)
 {
     widget->display_target = new_ui.freq_widget.display_target;
     widget->target_frequency = new_ui.freq_widget.target_frequency;
