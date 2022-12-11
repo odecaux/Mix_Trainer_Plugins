@@ -53,7 +53,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
 
     //load config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("configs.xml");
+        auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
         if (!file_RENAME.existsAsFile())
         {
             file_RENAME.create();
@@ -62,7 +62,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         auto stream = file_RENAME.createInputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/configs.xml");
+            DBG("couldn't open %appdata%/MixTrainer/frequency_game_configs.xml");
             return;
         }
         juce::String xml_string = stream->readString();
@@ -89,22 +89,22 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
                 .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
             };
-            game_configs.push_back(config);
+            frequency_game_configs.push_back(config);
         }
     }();
     
-    if (game_configs.empty())
+    if (frequency_game_configs.empty())
     {
-        game_configs = { 
+        frequency_game_configs = { 
             frequency_game_config_default("Default")
         };
     }
-    jassert(!game_configs.empty());
+    jassert(!frequency_game_configs.empty());
 
     
     //load previous results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("results.xml");
+        auto file_RENAME = store_directory.getChildFile("frequency_game_results.xml");
         if (!file_RENAME.existsAsFile())
         {
             file_RENAME.create();
@@ -113,7 +113,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         auto stream = file_RENAME.createInputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/results.xml");
+            DBG("couldn't open %appdata%/MixTrainer/frequency_game_results.xml");
             return;
         }
         juce::String xml_string = stream->readString();
@@ -128,13 +128,100 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             FrequencyGame_Results result = {
                 .score = node.getProperty(id_result_score, "")
             };
-            game_results_history.push_back(result);
+            frequency_game_results_history.push_back(result);
         }
     }();
 
-    if (game_configs.empty())
+    
+    //load config list
+    [&] {
+        auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
+        if (!file_RENAME.existsAsFile())
+        {
+            file_RENAME.create();
+            return;
+        }
+        auto stream = file_RENAME.createInputStream();
+        if (!stream->openedOk())
+        {
+            DBG("couldn't open %appdata%/MixTrainer/compressor_game_configs.xml");
+            return;
+        }
+        juce::String xml_string = stream->readString();
+        juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+        if(root_node.getType() != id_config_root)
+            return;
+        for (int i = 0; i < root_node.getNumChildren(); i++)
+        {
+            juce::ValueTree node = root_node.getChild(i);
+            if(node.getType() != id_config)
+                continue;
+            CompressorGame_Config config = {
+                .title = node.getProperty(id_config_title, ""),
+#if 0
+                .eq_gain = node.getProperty(id_config_gain, -1.0f),
+                .eq_quality = node.getProperty(id_config_quality, -1.0f),
+                .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
+#endif
+                .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
+                .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
+
+                .question_timeout_enabled = node.getProperty(id_config_question_timeout_enabled, false),
+                .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
+
+                .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
+                .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
+            };
+            compressor_game_configs.push_back(config);
+        }
+    }();
+    
+    if (compressor_game_configs.empty())
     {
-        game_configs = { frequency_game_config_default("Default") };
+        compressor_game_configs = { 
+            compressor_game_config_default("Default")
+        };
+    }
+    jassert(!compressor_game_configs.empty());
+
+    
+    //load previous results
+    [&] {
+        auto file_RENAME = store_directory.getChildFile("compressor_game_results.xml");
+        if (!file_RENAME.existsAsFile())
+        {
+            file_RENAME.create();
+            return;
+        }
+        auto stream = file_RENAME.createInputStream();
+        if (!stream->openedOk())
+        {
+            DBG("couldn't open %appdata%/MixTrainer/compressor_game_results.xml");
+            return;
+        }
+        juce::String xml_string = stream->readString();
+        juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+        if(root_node.getType() != id_results_root)
+            return;
+        for (int i = 0; i < root_node.getNumChildren(); i++)
+        {
+            juce::ValueTree node = root_node.getChild(i);
+            if(node.getType() != id_result)
+                continue;
+            CompressorGame_Results result = {
+                .score = node.getProperty(id_result_score, "")
+            };
+            compressor_game_results_history.push_back(result);
+        }
+    }();
+
+    if (frequency_game_configs.empty())
+    {
+        frequency_game_configs = { frequency_game_config_default("Default") };
+    }
+    if (compressor_game_configs.empty())
+    {
+        compressor_game_configs = { compressor_game_config_default("Default") };
     }
 
     to_main_menu();
@@ -165,17 +252,17 @@ Application_Standalone::~Application_Standalone()
 
     //save config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("configs.xml");
+        auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
         auto stream = file_RENAME.createOutputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/configs.xml");
+            DBG("couldn't open %appdata%/MixTrainer/frequency_game_configs.xml");
             return;
         }
         stream->setPosition(0);
         stream->truncate();
         juce::ValueTree root_node { id_config_root };
-        for (const FrequencyGame_Config& config : game_configs)
+        for (const FrequencyGame_Config& config : frequency_game_configs)
         {
             juce::ValueTree node = { id_config, {
                 { id_config_title,  config.title },
@@ -201,17 +288,79 @@ Application_Standalone::~Application_Standalone()
     
     //save previous results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("results.xml");
+        auto file_RENAME = store_directory.getChildFile("frequency_game_results.xml");
         auto stream = file_RENAME.createOutputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/results.xml");
+            DBG("couldn't open %appdata%/MixTrainer/frequency_game_results.xml");
             return;
         }
         stream->setPosition(0);
         stream->truncate();
         juce::ValueTree root_node { id_results_root };
-        for (const FrequencyGame_Results& result : game_results_history)
+        for (const FrequencyGame_Results& result : frequency_game_results_history)
+        {
+            juce::ValueTree node = { id_result, {
+                { id_result_score,  result.score }
+            }};
+            root_node.addChild(node, -1, nullptr);
+        }
+        auto xml_string = root_node.toXmlString();
+        *stream << xml_string;
+    }();
+
+
+    
+    //save config list
+    [&] {
+        auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
+        auto stream = file_RENAME.createOutputStream();
+        if (!stream->openedOk())
+        {
+            DBG("couldn't open %appdata%/MixTrainer/compressor_game_configs.xml");
+            return;
+        }
+        stream->setPosition(0);
+        stream->truncate();
+        juce::ValueTree root_node { id_config_root };
+        for (const CompressorGame_Config& config : compressor_game_configs)
+        {
+            juce::ValueTree node = { id_config, {
+                { id_config_title,  config.title },
+#if 0
+                { id_config_gain, config.eq_gain },
+                { id_config_quality, config.eq_quality },
+                { id_config_window, config.initial_correct_answer_window },
+#endif
+                { id_config_prelisten_type, config.prelisten_type },
+                { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
+
+                { id_config_question_timeout_enabled, config.question_timeout_enabled },
+                { id_config_question_timeout_ms, config.question_timeout_ms },
+
+                { id_config_result_timeout_enabled, config.result_timeout_enabled },
+                { id_config_result_timeout_ms, config.result_timeout_ms },
+            }};
+            root_node.addChild(node, -1, nullptr);
+        }
+        auto xml_string = root_node.toXmlString();
+        *stream << xml_string;
+    }();
+
+    
+    //save previous results
+    [&] {
+        auto file_RENAME = store_directory.getChildFile("compressor_game_results.xml");
+        auto stream = file_RENAME.createOutputStream();
+        if (!stream->openedOk())
+        {
+            DBG("couldn't open %appdata%/MixTrainer/compressor_game_results.xml");
+            return;
+        }
+        stream->setPosition(0);
+        stream->truncate();
+        juce::ValueTree root_node { id_results_root };
+        for (const CompressorGame_Results& result : compressor_game_results_history)
         {
             juce::ValueTree node = { id_result, {
                 { id_result_score,  result.score }
@@ -225,7 +374,7 @@ Application_Standalone::~Application_Standalone()
 
 void Application_Standalone::to_main_menu()
 {
-    game_io.reset();
+    frequency_game_io.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
         [] {},
@@ -244,15 +393,17 @@ void Application_Standalone::to_main_menu()
 
 void Application_Standalone::to_file_selector()
 {
-    assert(game_io == nullptr);
+    assert(frequency_game_io == nullptr);
+    assert(compressor_game_io == nullptr);
     auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list, [&] { to_main_menu(); } );
     main_component->changePanel(std::move(file_selector_panel));
 }
 
 void Application_Standalone::to_game_config()
 {
-    assert(game_io == nullptr);
-    auto config_panel = std::make_unique < Config_Panel > (game_configs, current_config_idx, [&] { to_main_menu(); }, [&] { to_frequency_game(); });
+    assert(frequency_game_io == nullptr);
+    assert(compressor_game_io == nullptr);
+    auto config_panel = std::make_unique < Config_Panel > (frequency_game_configs, current_config_idx, [&] { to_main_menu(); }, [&] { to_frequency_game(); });
     main_component->changePanel(std::move(config_panel));
 }
 
@@ -265,7 +416,7 @@ void Application_Standalone::to_frequency_game()
         {
             if (effects.transition->in_transition == GameStep_Begin)
             {
-                auto new_game_ui = std::make_unique < FrequencyGame_UI > (game_io.get());
+                auto new_game_ui = std::make_unique < FrequencyGame_UI > (frequency_game_io.get());
                 frequency_game_ui = new_game_ui.get();
                 main_component->changePanel(std::move(new_game_ui));
             }
@@ -283,7 +434,7 @@ void Application_Standalone::to_frequency_game()
         }
         if (effects.results)
         {
-            game_results_history.push_back(*effects.results);
+            frequency_game_results_history.push_back(*effects.results);
         }
         if (effects.ui)
         {
@@ -296,39 +447,95 @@ void Application_Standalone::to_frequency_game()
         juce::ignoreUnused(effects);
     };
     
-    auto new_game_state = frequency_game_state_init(game_configs[current_config_idx], audio_file_list.files);
-    game_io = frequency_game_io_init(new_game_state);
+    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_config_idx], audio_file_list.files);
+    frequency_game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
-        game_io->timer.stopTimer();
+        frequency_game_io->timer.stopTimer();
         player.post_command( { .type = Audio_Command_Stop });
         to_main_menu();
     };
-    game_io->on_quit = std::move(on_quit);
+    frequency_game_io->on_quit = std::move(on_quit);
 
-    frequency_game_add_observer(game_io.get(), std::move(observer));
-    frequency_game_add_observer(game_io.get(), std::move(debug_observer));
+    frequency_game_add_observer(frequency_game_io.get(), std::move(observer));
+    frequency_game_add_observer(frequency_game_io.get(), std::move(debug_observer));
 
-    frequency_game_post_event(game_io.get(), Event { .type = Event_Init });
-    frequency_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
-    game_io->timer.callback = [io = game_io.get()] (juce::int64 timestamp) {
+    frequency_game_post_event(frequency_game_io.get(), Event { .type = Event_Init });
+    frequency_game_post_event(frequency_game_io.get(), Event { .type = Event_Create_UI });
+    frequency_game_io->timer.callback = [io = frequency_game_io.get()] (juce::int64 timestamp) {
         frequency_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
-    game_io->timer.startTimerHz(60);
+    frequency_game_io->timer.startTimerHz(60);
 }
 
 
 void Application_Standalone::to_low_end_frequency_game()
 {
-    assert(game_io == nullptr);
+    assert(frequency_game_io == nullptr);
+    assert(compressor_game_io == nullptr);
     //main_component->changePanel(std::move(config_panel));
 }
 
 void Application_Standalone::to_compressor_game()
 {
-    auto new_game_ui = std::make_unique < CompressorGame_UI > ();
-    compressor_game_ui = new_game_ui.get();
-    main_component->changePanel(std::move(new_game_ui));
+    main_component->changePanel(nullptr);
+
+    auto observer = [this] (const Compressor_Game_Effects &effects) { 
+        if (effects.transition)
+        {
+            if (effects.transition->in_transition == GameStep_Begin)
+            {
+                auto new_game_ui = std::make_unique < CompressorGame_UI > (compressor_game_io.get());
+                compressor_game_ui = new_game_ui.get();
+                main_component->changePanel(std::move(new_game_ui));
+            }
+            if(compressor_game_ui)
+                compressor_game_ui_transitions(*compressor_game_ui, *effects.transition);
+        }
+        if (effects.dsp)
+        {
+            player.push_new_dsp_state(effects.dsp->dsp_state);
+        }
+        if (effects.player)
+        {
+            for (const auto& command : effects.player->commands)
+                player.post_command(command);
+        }
+        if (effects.results)
+        {
+            compressor_game_results_history.push_back(*effects.results);
+        }
+        if (effects.ui)
+        {
+            assert(compressor_game_ui);
+            compressor_game_ui_update(*compressor_game_ui, *effects.ui);
+        }
+    };
+
+    auto debug_observer = [] (const Compressor_Game_Effects &effects) {
+        juce::ignoreUnused(effects);
+    };
+    
+    assert(false);
+    auto new_game_state = compressor_game_state_init({}/*game_configs[current_config_idx]*/, audio_file_list.files);
+    compressor_game_io = compressor_game_io_init(new_game_state);
+
+    auto on_quit = [this] { 
+        compressor_game_io->timer.stopTimer();
+        player.post_command( { .type = Audio_Command_Stop });
+        to_main_menu();
+    };
+    compressor_game_io->on_quit = std::move(on_quit);
+
+    compressor_game_add_observer(compressor_game_io.get(), std::move(observer));
+    compressor_game_add_observer(compressor_game_io.get(), std::move(debug_observer));
+
+    compressor_game_post_event(compressor_game_io.get(), Event { .type = Event_Init });
+    compressor_game_post_event(compressor_game_io.get(), Event { .type = Event_Create_UI });
+    compressor_game_io->timer.callback = [io = compressor_game_io.get()] (juce::int64 timestamp) {
+        compressor_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    };
+    compressor_game_io->timer.startTimerHz(60);
 }
 
 //------------------------------------------------------------------------

@@ -82,12 +82,15 @@ class Application_Standalone
     private :
     FilePlayer player;
     Audio_File_List audio_file_list;
-    std::unique_ptr<FrequencyGame_IO> game_io;
+    std::unique_ptr<FrequencyGame_IO> frequency_game_io;
+    std::unique_ptr<CompressorGame_IO> compressor_game_io;
     Main_Component *main_component;
     FrequencyGame_UI *frequency_game_ui;
     CompressorGame_UI *compressor_game_ui;
     
-    std::vector<FrequencyGame_Config> game_configs = {};
-    std::vector<FrequencyGame_Results> game_results_history = {};
+    std::vector<FrequencyGame_Config> frequency_game_configs = {};
+    std::vector<FrequencyGame_Results> frequency_game_results_history = {};
+    std::vector<CompressorGame_Config> compressor_game_configs = {};
+    std::vector<CompressorGame_Results> compressor_game_results_history = {};
     size_t current_config_idx = 0;
 };

@@ -81,8 +81,8 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event)
     }
 }
 
-std::unique_ptr<CompressorGame_State> compressor_game_state_init(CompressorGame_Config config, 
-                                                               std::vector<Audio_File> files)
+CompressorGame_State compressor_game_state_init(CompressorGame_Config config, 
+                                                std::vector<Audio_File> files)
 {
     assert(!files.empty());
     auto state = CompressorGame_State {
@@ -90,13 +90,14 @@ std::unique_ptr<CompressorGame_State> compressor_game_state_init(CompressorGame_
         .config = config,
         .timestamp_start = -1
     };
-
-    return std::make_unique < CompressorGame_State > (std::move(state));
+    return state;
 }
 
-std::unique_ptr<CompressorGame_IO> compressor_game_io_init()
+std::unique_ptr<CompressorGame_IO> compressor_game_io_init(CompressorGame_State state)
 {
-    return std::make_unique<CompressorGame_IO>();
+    auto io = std::make_unique<CompressorGame_IO>();
+    io->game_state = state;
+    return io;
 }
 
 Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event event)

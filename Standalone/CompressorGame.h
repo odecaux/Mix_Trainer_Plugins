@@ -101,8 +101,8 @@ struct CompressorGame_IO
 struct CompressorGame_UI;
 
 CompressorGame_Config compressor_game_config_default(juce::String name);
-std::unique_ptr<CompressorGame_State> compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
-std::unique_ptr<CompressorGame_IO> compressor_game_io_init();
+CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
+std::unique_ptr<CompressorGame_IO> compressor_game_io_init(CompressorGame_State state);
 void compressor_game_add_observer(CompressorGame_IO *io, compressor_game_observer_t observer);
 
 void compressor_game_post_event(CompressorGame_IO *io, Event event);
@@ -115,39 +115,28 @@ void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Ef
 struct CompressorGame_UI : public juce::Component
 {
     
-    CompressorGame_UI(
-#if 0
-        CompressorGame_State *game_state, 
-        CompressorGame_IO *game_io
-#endif
-    ) 
-#if 0
-    : 
-        game_io(game_io),
-        game_state(game_state)
-#endif
+    CompressorGame_UI(CompressorGame_IO *game_io)
+    : game_io(game_io)
     {
-#if 0
-        bottom.onNextClicked = [game_state, game_io] (Event_Type e){
+        bottom.onNextClicked = [game_io] (Event_Type e){
             Event event = {
                 .type = e
             };
-            compressor_game_post_event(game_state, game_io, event);
+            compressor_game_post_event(game_io, event);
         };
-        header.onBackClicked = [game_state, game_io] {
+        header.onBackClicked = [game_io] {
             Event event = {
                 .type = Event_Click_Back
             };
-            //compressor_game_post_event(game_state, game_io, event);
+            compressor_game_post_event(game_io, event);
         };
-        bottom.onToggleClicked = [game_state, game_io] (bool a){
+        bottom.onToggleClicked = [game_io] (bool a){
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            compressor_game_post_event(game_state, game_io, event);
+            compressor_game_post_event(game_io, event);
         };
-#endif
         addAndMakeVisible(header);
         addAndMakeVisible(bottom);
     }
@@ -177,10 +166,7 @@ struct CompressorGame_UI : public juce::Component
     std::unique_ptr<CompressorGame_Results_Panel> results_panel;
 #endif
     GameUI_Bottom bottom;
-#if 0
     CompressorGame_IO *game_io;
-    CompressorGame_State *game_state;
-#endif
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CompressorGame_UI)
 };
