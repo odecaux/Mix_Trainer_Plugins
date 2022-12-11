@@ -49,6 +49,16 @@ struct Channel_DSP_State{
     DSP_EQ_Band bands[1];
 };
 
+
+struct Audio_File
+{
+    juce::File file;
+    juce::String title;
+    juce::Range<juce::int64> loop_bounds;
+    juce::Range<int> freq_bounds;
+    float max_gain;
+};
+
 Channel_DSP_State ChannelDSP_on();
 Channel_DSP_State ChannelDSP_off();
 Channel_DSP_State ChannelDSP_gain(double gain);

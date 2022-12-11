@@ -371,7 +371,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event e
                 jassertfalse;
             } break;
         }
-        effects.dsp = Effect_DSP { dsp };
+        effects.dsp = Effect_DSP_Single_Track { dsp };
     }
 
     if (update_ui)
@@ -443,7 +443,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event e
     return effects;
 }
 
-void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer)
+void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer)
 {
     io->observers.push_back(std::move(observer));
 }

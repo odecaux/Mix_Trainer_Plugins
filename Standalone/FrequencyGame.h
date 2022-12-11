@@ -22,14 +22,6 @@ struct FrequencyGame_Results
     //temps moyen ? distance moyenne ? stats ?
 };
 
-struct Effect_Transition {
-    GameStep in_transition;
-    GameStep out_transition;
-};
-
-struct Effect_DSP {
-    Channel_DSP_State dsp_state;
-};
 
 struct Frequency_Game_Effect_UI {
     struct {
@@ -49,57 +41,43 @@ struct Frequency_Game_Effect_UI {
     Event_Type button_event;
 };
 
-struct Effect_Player {
-    std::vector<Audio_Command> commands;
-};
 
 struct Frequency_Game_Effects {
     int error;
     std::optional < Effect_Transition> transition;
-    std::optional < Effect_DSP > dsp;
+    std::optional < Effect_DSP_Single_Track > dsp;
     std::optional < Effect_Player > player;
     std::optional < Frequency_Game_Effect_UI > ui;
     std::optional < FrequencyGame_Results > results;
     bool quit;
 };
 
-enum PreListen_Type
-{
-   PreListen_None = 0,
-   PreListen_Timeout = 1,
-   PreListen_Free = 2
-};
 
 struct FrequencyGame_Config
 {
     juce::String title;
+    //frequency
     float eq_gain;
     float eq_quality;
     float initial_correct_answer_window;
+    //
     PreListen_Type prelisten_type;
     int prelisten_timeout_ms;
+
     bool question_timeout_enabled;
     int question_timeout_ms;
+
     bool result_timeout_enabled;
     int result_timeout_ms;
 };
 
-
-struct Audio_File
-{
-    juce::File file;
-    juce::String title;
-    juce::Range<juce::int64> loop_bounds;
-    juce::Range<int> freq_bounds;
-};
-
-using observer_t = std::function<void(const Frequency_Game_Effects&)>;
+using frequency_game_observer_t = std::function<void(const Frequency_Game_Effects&)>;
 
 struct FrequencyGame_IO
 {
     Timer timer;
     std::mutex update_fn_mutex;
-    std::vector<observer_t> observers;
+    std::vector<frequency_game_observer_t> observers;
     std::function < void() > on_quit;
 };
 
@@ -108,8 +86,10 @@ struct FrequencyGame_State
     GameStep step;
     int score;
     int lives;
+    //frequency
     int target_frequency;
     float correct_answer_window;
+    //
     int current_file_idx;
     std::vector<Audio_File> files;
     FrequencyGame_Config config;
@@ -125,7 +105,7 @@ struct FrequencyGame_UI;
 FrequencyGame_Config frequency_game_config_default(juce::String name);
 std::unique_ptr<FrequencyGame_State> frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> files);
 std::unique_ptr<FrequencyGame_IO> frequency_game_io_init();
-void frequency_game_add_observer(FrequencyGame_IO *io, observer_t observer);
+void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer);
 
 void frequency_game_post_event(FrequencyGame_State *state, FrequencyGame_IO *io, Event event);
 Frequency_Game_Effects frequency_game_update(FrequencyGame_State *state, Event event);
