@@ -23,79 +23,97 @@ struct CompressorGame_Results
 };
 
 struct Compressor_Game_Effect_UI {
-    struct {
-#if 0
-        bool display_target;
-        int target_compressor;
-        bool is_cursor_locked;
-        int locked_cursor_compressor;
-        bool display_window;
-        float correct_answer_window;
-#endif
-    } comp_widget;
     CompressorGame_Results results;
     juce::String header_text;
     int score;
+    struct {
+        int threshold_pos;
+        int ratio_pos;
+        int attack_pos;
+        int release_pos;
+        
+        std::vector < float > threshold_values_db;
+        std::vector < float > ratio_values;
+        std::vector < float > attack_values;
+        std::vector < float > release_values;
+    } comp_widget;
+    FaderStep fader_step;
     Mix mix;
     bool display_button;
     juce::String button_text;
     Event_Type button_event;
 };
 
+enum Compressor_Game_Variant
+{
+    Compressor_Game_Normal,
+    Compressor_Game_Tries,
+    Compressor_Game_Timer
+};
+
 struct CompressorGame_Config
 {
     juce::String title;
     //compressor
+    std::vector < float > threshold_values_db;
+    std::vector < float > ratio_values;
+    std::vector < float > attack_values;
+    std::vector < float > release_values;
     //
-    PreListen_Type prelisten_type;
-    int prelisten_timeout_ms;
-
-    bool question_timeout_enabled;
-    int question_timeout_ms;
-
-    bool result_timeout_enabled;
-    int result_timeout_ms;
+    Compressor_Game_Variant variant;
+    int listens;
+    int timeout_ms;
 };
 
 
 struct CompressorGame_State
 {
     GameStep step;
+    Mix mix;
     int score;
     int lives;
     //compressor
-    int target_compressor;
-    float correct_answer_window;
+    int target_threshold_pos;
+    int target_ratio_pos;
+    int target_attack_pos;
+    int target_release_pos;
+
+    int input_threshold_pos;
+    int input_ratio_pos;
+    int input_attack_pos;
+    int input_release_pos;
     //
     int current_file_idx;
     std::vector<Audio_File> files;
     CompressorGame_Config config;
     CompressorGame_Results results;
-
+    
+    int remaining_listens;
+    bool can_still_listen;
     juce::int64 timestamp_start;
     juce::int64 current_timestamp;
 };
 
 struct Compressor_Game_Effects {
     int error;
+    CompressorGame_State new_state;
     std::optional < Effect_Transition> transition;
     std::optional < Effect_DSP_Single_Track > dsp;
     std::optional < Effect_Player > player;
     std::optional < Compressor_Game_Effect_UI > ui;
     std::optional < CompressorGame_Results > results;
     bool quit;
-    CompressorGame_State new_state;
 };
 
 using compressor_game_observer_t = std::function<void(const Compressor_Game_Effects&)>;
 
 struct CompressorGame_IO
 {
-    CompressorGame_State game_state;
     Timer timer;
     std::mutex update_fn_mutex;
     std::vector<compressor_game_observer_t> observers;
     std::function < void() > on_quit;
+    CompressorGame_State game_state;
 };
 
 struct CompressorGame_UI;
@@ -112,32 +130,88 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
 #if 0
 void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Effect_UI &new_ui);
 #endif
+
+
 struct CompressorGame_UI : public juce::Component
 {
     
-    CompressorGame_UI(CompressorGame_IO *game_io)
-    : game_io(game_io)
+    CompressorGame_UI(CompressorGame_IO *gameIO) : game_io(gameIO)
     {
-        bottom.onNextClicked = [game_io] (Event_Type e){
+        bottom.onNextClicked = [io = this->game_io] (Event_Type e) {
             Event event = {
                 .type = e
             };
-            compressor_game_post_event(game_io, event);
+            compressor_game_post_event(io, event);
         };
-        header.onBackClicked = [game_io] {
+        header.onBackClicked = [io = this->game_io] {
             Event event = {
                 .type = Event_Click_Back
             };
-            compressor_game_post_event(game_io, event);
+            compressor_game_post_event(io, event);
         };
-        bottom.onToggleClicked = [game_io] (bool a){
+        bottom.onToggleClicked = [io = this->game_io] (bool a) {
             Event event = {
                 .type = Event_Toggle_Input_Target,
                 .value_b = a
             };
-            compressor_game_post_event(game_io, event);
+            compressor_game_post_event(io, event);
         };
         addAndMakeVisible(header);
+        
+        auto setup_slider = [&] (juce::Slider &slider, juce::Label &label, juce::String name, std::function<void(int)> onEdit) {
+            label.setText(name, juce::NotificationType::dontSendNotification);
+        
+            slider.setSliderStyle(juce::Slider::Rotary);
+            slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, slider.getTextBoxWidth(), 40);
+            slider.setScrollWheelEnabled(true);
+        
+            slider.onValueChange = [&slider, onEdit = std::move(onEdit)] {
+                onEdit((int)slider.getValue());
+            };
+            addAndMakeVisible(slider);
+        };
+        
+        auto onThresholdMoved = [io = this->game_io] (int new_pos) {
+            Event event = {
+                .type = Event_Slider,
+                .id = 0,
+                .value_i = new_pos
+            };
+            compressor_game_post_event(io, event);
+        };
+
+        setup_slider(threshold_slider, threshold_label, "Threshold", std::move(onThresholdMoved));
+        
+        auto onRatioMoved = [io = this->game_io] (int new_pos) {
+            Event event = {
+                .type = Event_Slider,
+                .id = 1,
+                .value_i = new_pos
+            };
+            compressor_game_post_event(io, event);
+        };
+        setup_slider(ratio_slider, ratio_label, "Ratio", std::move(onRatioMoved));
+        
+        auto onAttackMoved = [io = this->game_io] (int new_pos) {
+            Event event = {
+                .type = Event_Slider,
+                .id = 2,
+                .value_i = new_pos
+            };
+            compressor_game_post_event(io, event);
+        };
+        setup_slider(attack_slider, attack_label, "Attack", std::move(onAttackMoved));
+        
+        auto onReleaseMoved = [io = this->game_io] (int new_pos) {
+            Event event = {
+                .type = Event_Slider,
+                .id = 3,
+                .value_i = new_pos
+            };
+            compressor_game_post_event(io, event);
+        };
+        setup_slider(release_slider, release_label, "Release", std::move(onReleaseMoved));
+
         addAndMakeVisible(bottom);
     }
 
@@ -165,6 +239,21 @@ struct CompressorGame_UI : public juce::Component
     std::unique_ptr<CompressorWidget> compressor_widget;
     std::unique_ptr<CompressorGame_Results_Panel> results_panel;
 #endif
+    TextSlider threshold_slider;
+    TextSlider ratio_slider;
+    TextSlider attack_slider;
+    TextSlider release_slider;
+    
+    juce::Label threshold_label;
+    juce::Label ratio_label;
+    juce::Label attack_label;
+    juce::Label release_label;
+
+    std::vector < float > threshold_values;
+    std::vector < float > ratio_values;
+    std::vector < float > attack_values;
+    std::vector < float > release_values;
+
     GameUI_Bottom bottom;
     CompressorGame_IO *game_io;
 private:

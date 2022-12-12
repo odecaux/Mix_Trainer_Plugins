@@ -157,20 +157,6 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             if(node.getType() != id_config)
                 continue;
             CompressorGame_Config config = {
-                .title = node.getProperty(id_config_title, ""),
-#if 0
-                .eq_gain = node.getProperty(id_config_gain, -1.0f),
-                .eq_quality = node.getProperty(id_config_quality, -1.0f),
-                .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
-#endif
-                .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
-                .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
-
-                .question_timeout_enabled = node.getProperty(id_config_question_timeout_enabled, false),
-                .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
-
-                .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
-                .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
             };
             compressor_game_configs.push_back(config);
         }
@@ -331,7 +317,6 @@ Application_Standalone::~Application_Standalone()
                 { id_config_gain, config.eq_gain },
                 { id_config_quality, config.eq_quality },
                 { id_config_window, config.initial_correct_answer_window },
-#endif
                 { id_config_prelisten_type, config.prelisten_type },
                 { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
 
@@ -340,6 +325,7 @@ Application_Standalone::~Application_Standalone()
 
                 { id_config_result_timeout_enabled, config.result_timeout_enabled },
                 { id_config_result_timeout_ms, config.result_timeout_ms },
+#endif
             }};
             root_node.addChild(node, -1, nullptr);
         }
@@ -377,7 +363,7 @@ void Application_Standalone::to_main_menu()
     frequency_game_io.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
-        [] {},
+        [this] { to_compressor_game(); },
         [this] { to_file_selector(); },
         [] {}
     );
@@ -516,8 +502,7 @@ void Application_Standalone::to_compressor_game()
         juce::ignoreUnused(effects);
     };
     
-    assert(false);
-    auto new_game_state = compressor_game_state_init({}/*game_configs[current_config_idx]*/, audio_file_list.files);
+    auto new_game_state = compressor_game_state_init(compressor_game_config_default("test"), audio_file_list.files);
     compressor_game_io = compressor_game_io_init(new_game_state);
 
     auto on_quit = [this] { 

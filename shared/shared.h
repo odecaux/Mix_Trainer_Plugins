@@ -151,14 +151,16 @@ private:
         }
         //compressor 
         dsp_chain.setBypassed<1>(!state.comp.is_on);
-        dsp_chain.get<1>().setThreshold(state.comp.threshold_gain);
-        dsp_chain.get<1>().setRatio(state.comp.ratio);
-        dsp_chain.get<1>().setAttack(state.comp.attack);
-        dsp_chain.get<1>().setRelease(state.comp.release);
-        //makeup gain
-        dsp_chain.setBypassed<2>(!state.comp.is_on);
-        dsp_chain.get<2>().setGainLinear ((float)state.gain);
-
+        if (state.comp.is_on)
+        {
+            dsp_chain.get<1>().setThreshold(state.comp.threshold_gain);
+            dsp_chain.get<1>().setRatio(state.comp.ratio);
+            dsp_chain.get<1>().setAttack(state.comp.attack);
+            dsp_chain.get<1>().setRelease(state.comp.release);
+            //makeup gain
+            dsp_chain.setBypassed<2>(!state.comp.is_on);
+            dsp_chain.get<2>().setGainLinear ((float)state.gain);
+        }
         //gain
         dsp_chain.get<3>().setGainLinear ((float)state.gain);
     }
@@ -182,7 +184,7 @@ struct TextSlider : public juce::Slider
 {
     TextSlider() : Slider(){}
     juce::String getTextFromValue(double pos) override { return get_text_from_value(pos); }
-    std::function < juce::String(double) > get_text_from_value;
+    std::function < juce::String(double) > get_text_from_value = [] (double){ return ""; };
 };
 
 enum FaderStep {
