@@ -49,7 +49,7 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
 
 void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui)
 {
-    game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
+	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     
     //ui.threshold_values = new_ui.comp_widget.threshold_values_db;
     ui.threshold_slider.setValue(static_cast<double>(new_ui.comp_widget.threshold_pos), juce::dontSendNotification);
@@ -533,17 +533,19 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         {
             case GameStep_Begin :
             {
-                effects.ui->header_text = "Ready ?";
+                effects.ui->header_center_text = "Ready ?";
                 effects.ui->bottom_button_text = "Begin";
                 effects.ui->bottom_button_event = Event_Click_Begin;
             } break;
             case GameStep_Question :
             {
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+        
                 switch (state.config.variant)
                 {
                     case Compressor_Game_Normal :
                     {
-                        effects.ui->header_text = "Reproduce the target mix";
+                        effects.ui->header_center_text = "Reproduce the target mix";
                         effects.ui->bottom_button_text = "Validate";
                         effects.ui->bottom_button_event = Event_Click_Answer;
                     } break;
@@ -551,13 +553,13 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                     {
                         if (state.mix == Mix_Target)
                         {
-                            effects.ui->header_text = "Listen";
+                            effects.ui->header_center_text = "Listen";
                             effects.ui->bottom_button_text = "Go";
                             effects.ui->bottom_button_event = Event_Click_Done_Listening;
                         }
                         else if (state.mix == Mix_User)
                         {
-                            effects.ui->header_text = "Reproduce the target mix";
+                            effects.ui->header_center_text = "Reproduce the target mix";
                             effects.ui->bottom_button_text = "Validate";
                             effects.ui->bottom_button_event = Event_Click_Answer;
                         }
@@ -568,11 +570,11 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                         if (state.mix == Mix_Target)
                         {
                             if (!state.can_still_listen) return { .error = 1 };
-                            effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
+                            effects.ui->header_center_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
                         {
-                            effects.ui->header_text = "Reproduce the target mix";
+                            effects.ui->header_center_text = "Reproduce the target mix";
                         }
                         else jassertfalse;
                         effects.ui->bottom_button_text = "Validate";
@@ -582,14 +584,15 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             } break;
             case GameStep_Result :
             {
-                effects.ui->header_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_center_text = juce::String("Lives : ") + juce::String(state.lives);
                 effects.ui->bottom_button_text = "Next";
                 effects.ui->bottom_button_event = Event_Click_Next;
             } break;
             case GameStep_EndResults :
             {
                 effects.ui->results.score = state.score;
-                effects.ui->header_text = "Results";
+                effects.ui->header_center_text = "Results";
                 effects.ui->bottom_button_text = "Quit";
                 effects.ui->bottom_button_event = Event_Click_Quit;
             } break;
@@ -600,7 +603,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         }
 
         effects.ui->mix = Mix_Hidden;
-        effects.ui->score = state.score;
     }
 
     effects.new_state = state;

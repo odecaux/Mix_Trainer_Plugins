@@ -24,8 +24,9 @@ struct CompressorGame_Results
 
 struct Compressor_Game_Effect_UI {
     CompressorGame_Results results;
-    juce::String header_text;
-    int score;
+    juce::String header_center_text;
+    juce::String header_right_text;
+    //int score;
     struct {
         int threshold_pos;
         int ratio_pos;

@@ -393,7 +393,7 @@ public:
             header.onBackClicked = [click = std::move(onClickBack)] {
                 click();
             };
-            game_ui_header_update(&header, "Audio Files", -1);
+            game_ui_header_update(&header, "Audio Files", {});
             addAndMakeVisible(header);
         }
 
@@ -763,7 +763,7 @@ struct Config_Panel : public juce::Component
             header.onBackClicked = [click = std::move(onClickBack)] {
                 click();
             };
-            game_ui_header_update(&header, "Config", -1);
+            game_ui_header_update(&header, "Config", {});
             addAndMakeVisible(header);
         }
         

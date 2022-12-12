@@ -33,8 +33,8 @@ struct Frequency_Game_Effect_UI {
         float correct_answer_window;
     } freq_widget;
     FrequencyGame_Results results;
-    juce::String header_text;
-    int score;
+    juce::String header_center_text;
+    juce::String header_right_text;
     Mix mix;
     bool display_button;
     juce::String button_text;

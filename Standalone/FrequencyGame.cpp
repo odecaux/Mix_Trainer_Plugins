@@ -48,7 +48,7 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
 
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui)
 {
-    game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
+    game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     if (ui.frequency_widget)
     {
         frequency_widget_update(ui.frequency_widget.get(), new_ui);
@@ -378,60 +378,64 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
 
     if (update_ui)
     {
-        Frequency_Game_Effect_UI effect_ui;
+        effects.ui = Frequency_Game_Effect_UI{};
         switch (state.step)
         {
             case GameStep_Begin :
             {
-                effect_ui.header_text = "Ready ?";
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Begin";
-                effect_ui.button_event = Event_Click_Begin;
+                effects.ui->header_center_text = "Ready ?";
+                effects.ui->display_button = true;
+                effects.ui->button_text = "Begin";
+                effects.ui->button_event = Event_Click_Begin;
             } break;
             case GameStep_Question :
             {
-                effect_ui.freq_widget.display_target = false;
-                effect_ui.freq_widget.is_cursor_locked = false;
-                effect_ui.freq_widget.display_window = true;
-                effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+        
+                effects.ui->freq_widget.display_target = false;
+                effects.ui->freq_widget.is_cursor_locked = false;
+                effects.ui->freq_widget.display_window = true;
+                effects.ui->freq_widget.correct_answer_window = state.correct_answer_window;
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
-                effect_ui.display_button = false;
+                effects.ui->header_center_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->display_button = false;
             } break;
             case GameStep_Result :
             {
-                effect_ui.freq_widget.display_target = true;
-                effect_ui.freq_widget.target_frequency = state.target_frequency;
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+        
+                effects.ui->freq_widget.display_target = true;
+                effects.ui->freq_widget.target_frequency = state.target_frequency;
                 //TODO remove all that ! should not depend on the event, but on some kind of state 
                 //some kind of result, I guess
                 if (event.type == Event_Click_Frequency)
                 {
-                    effect_ui.freq_widget.is_cursor_locked = true;
+                    effects.ui->freq_widget.is_cursor_locked = true;
                     assert(check_answer);
-                    effect_ui.freq_widget.locked_cursor_frequency = TEMP_answer_frequency;
-                    effect_ui.freq_widget.display_window = true;
-                    effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
+                    effects.ui->freq_widget.locked_cursor_frequency = TEMP_answer_frequency;
+                    effects.ui->freq_widget.display_window = true;
+                    effects.ui->freq_widget.correct_answer_window = state.correct_answer_window;
                 } 
                 else if (event.type == Event_Timer_Tick)
                 {
-                    effect_ui.freq_widget.is_cursor_locked = true;
-                    effect_ui.freq_widget.locked_cursor_frequency = -1;
+                    effects.ui->freq_widget.is_cursor_locked = true;
+                    effects.ui->freq_widget.locked_cursor_frequency = -1;
                 }
                 else 
                     jassertfalse;
 
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Next";
-                effect_ui.button_event = Event_Click_Next;
+                effects.ui->header_center_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->display_button = true;
+                effects.ui->button_text = "Next";
+                effects.ui->button_event = Event_Click_Next;
             } break;
             case GameStep_EndResults :
             {
-                effect_ui.results.score = state.score;
-                effect_ui.header_text = "Results";
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Quit";
-                effect_ui.button_event = Event_Click_Quit;
+                effects.ui->results.score = state.score;
+                effects.ui->header_center_text = "Results";
+                effects.ui->display_button = true;
+                effects.ui->button_text = "Quit";
+                effects.ui->button_event = Event_Click_Quit;
             } break;
             case GameStep_None :
             {
@@ -439,9 +443,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             } break;
         }
 
-        effect_ui.mix = Mix_Hidden;
-        effect_ui.score = state.score;
-        effects.ui = effect_ui;
+        effects.ui->mix = Mix_Hidden;
+        //effects.ui->score = state.score;
     }
     
     effects.new_state = state;

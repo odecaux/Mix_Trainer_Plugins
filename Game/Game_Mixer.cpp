@@ -30,7 +30,7 @@ void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
         fader->update(new_ui.fader_step, pos);
     }
-    game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
+	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     game_ui_bottom_update(&ui.bottom, true, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
 
@@ -341,7 +341,6 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             slider_pos_to_display = *slider_pos;
         
         effects.ui = Game_Mixer_Effect_UI{};
-        effects.ui->score = state.score;
         effects.ui->fader_step = gameStepToFaderStep(state.step, state.mix);
         effects.ui->slider_pos_to_display = std::move(slider_pos_to_display);
 
@@ -360,36 +359,36 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                     effects.ui->mix = state.mix;
             } break;
         }
-        
 
         switch(state.step)
         {
             case GameStep_Begin :
             {
-                effects.ui->header_text = "Have a listen";
+                effects.ui->header_center_text = "Have a listen";
                 effects.ui->button_text = "Begin";
                 effects.ui->button_event = Event_Click_Begin;
             } break;
             case GameStep_Question :
             {
-                
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+        
                 switch (state.config.variant)
                 {
                     case MixerGame_Normal : {
-                        effects.ui->header_text = "Reproduce the target mix";
+                        effects.ui->header_center_text = "Reproduce the target mix";
                         effects.ui->button_text = "Validate";
                         effects.ui->button_event = Event_Click_Answer;
                     } break;
                     case MixerGame_Timer : {
                         if(state.mix == Mix_Target)
                         {
-                            effects.ui->header_text = "Listen";
+                            effects.ui->header_center_text = "Listen";
                             effects.ui->button_text = "Go";
                             effects.ui->button_event = Event_Click_Done_Listening;
                         }
                         else if (state.mix == Mix_User)
                         {
-                            effects.ui->header_text = "Reproduce the target mix";
+                            effects.ui->header_center_text = "Reproduce the target mix";
                             effects.ui->button_text = "Validate";
                             effects.ui->button_event = Event_Click_Answer;
                         }
@@ -399,11 +398,11 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                         if (state.mix == Mix_Target)
                         {
                             if(!state.can_still_listen) return { .error = 1 };
-                            effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
+                            effects.ui->header_center_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
                         {
-                            effects.ui->header_text = "Reproduce the target mix";
+                            effects.ui->header_center_text = "Reproduce the target mix";
                         }
                         else jassertfalse;
                         effects.ui->button_text = "Validate";
@@ -413,7 +412,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             } break;
             case GameStep_Result :
             {
-                effects.ui->header_text = "Results";
+                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_center_text = "Results";
                 effects.ui->button_text = "Next";
                 effects.ui->button_event = Event_Click_Next;
             } break;

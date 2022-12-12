@@ -78,14 +78,14 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
 GameUI_Header::GameUI_Header()
 {
     {
-        header_label.setJustificationType (juce::Justification::centred);
-        addAndMakeVisible(header_label);
+        center_label.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible(center_label);
         back_button.setButtonText("Back");
         back_button.onClick = [this] {
             onBackClicked();
         };
         addAndMakeVisible(back_button);
-        addAndMakeVisible(score_label);
+        addAndMakeVisible(right_label);
     }
 }
 
@@ -127,13 +127,13 @@ void GameUI_Header::resized()
     auto bounds = getLocalBounds();
             
     auto headerLabelBounds = bounds.withTrimmedLeft(90).withTrimmedRight(90);
-    header_label.setBounds(headerLabelBounds);
+    center_label.setBounds(headerLabelBounds);
 
     auto back_buttonBounds = bounds.withWidth(90);
     back_button.setBounds(back_buttonBounds);
 
     auto score_labelBounds = bounds.withTrimmedLeft(bounds.getWidth() - 90);
-    score_label.setBounds(score_labelBounds);
+    right_label.setBounds(score_labelBounds);
 }
 
 
@@ -155,18 +155,10 @@ void GameUI_Bottom::resized()
 
 
 
-void game_ui_header_update(GameUI_Header *header, juce::String header_text, int new_score)
+void game_ui_header_update(GameUI_Header *header, juce::String center_text, juce::String right_text)
 {
-    header->header_label.setText(header_text, juce::dontSendNotification);
-    if (new_score == -1)
-    {
-        header->score_label.setVisible(false);
-    }
-    else
-    {
-        header->score_label.setText(juce::String("Score : ") + juce::String(new_score), juce::dontSendNotification);
-        header->score_label.setVisible(true);
-    }
+    header->center_label.setText(center_text, juce::dontSendNotification);
+    header->right_label.setText(right_text, juce::dontSendNotification);
 }
 
 void game_ui_bottom_update(GameUI_Bottom *bottom, bool show_button, juce::String button_text, Mix mix, Event_Type event)
