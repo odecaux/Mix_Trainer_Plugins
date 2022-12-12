@@ -9,6 +9,17 @@
 #undef NDEBUG
 #include <assert.h>
 
+template<class to, class from>
+inline to checked_cast(const from& from_value) {
+    to to_value{static_cast<to>(from_value)};
+#if _DEBUG
+    DBG("test");
+    from round_trip{static_cast<from>(to_value)};
+    if (round_trip != from_value)
+        throw std::runtime_error("Naughty cast");
+#endif
+    return to_value;
+}
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
 static int random_int(int max)

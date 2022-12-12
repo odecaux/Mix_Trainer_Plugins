@@ -216,11 +216,6 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         case Event_Slider :
         case Event_Click_Answer :
         case Event_Click_Done_Listening :
-        case Event_Channel_Create :
-        case Event_Channel_Delete :
-        case Event_Channel_Rename_From_Track :
-        case Event_Channel_Rename_From_UI :
-        case Event_Change_Frequency_Range :
         {
             jassertfalse;
         } break;

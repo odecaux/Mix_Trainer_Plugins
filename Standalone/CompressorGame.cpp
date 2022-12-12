@@ -276,6 +276,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         case Event_Destroy_UI :
         {
         } break; 
+        case Event_Click_Frequency :
         case Event_Click_Track :
         case Event_Toggle_Track :
         case Event_Click_Answer :

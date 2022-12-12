@@ -141,8 +141,10 @@ target_sources(MixTrainer_Standalone
 
 if(MSVC)
   target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX /wd4505)
+  message("msvc")
 else()
   target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
+  message("gcc")
 endif()
 
 target_precompile_headers(MixTrainer_Standalone

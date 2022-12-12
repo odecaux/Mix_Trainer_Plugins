@@ -63,11 +63,6 @@ enum Event_Type{
     Event_Click_Next,
     Event_Click_Back,
     Event_Click_Quit,
-    Event_Channel_Create,
-    Event_Channel_Delete,
-    Event_Channel_Rename_From_Track,
-    Event_Channel_Rename_From_UI,
-    Event_Change_Frequency_Range,
     Event_Create_UI,
     Event_Destroy_UI
 };

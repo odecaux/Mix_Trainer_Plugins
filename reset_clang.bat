@@ -1,0 +1,1 @@
+cmake -B cmake-build -DCMAKE_PREFIX_PATH=../JUCE_install_clang -T ClangCL

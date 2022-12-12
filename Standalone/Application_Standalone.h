@@ -37,7 +37,7 @@ struct Audio_File_List
     }
     
     juce::AudioFormatManager &format_manager;
-    std::vector<Audio_File> files;
+    std::vector<Audio_File> files = {};
 };
 
 

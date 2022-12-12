@@ -348,7 +348,8 @@ public:
     {
         if (last_row_selected != -1)
         {
-            assert(last_row_selected < files.size());
+            assert(last_row_selected >= 0);
+            assert(static_cast<size_t>(last_row_selected) < files.size());
             const auto &file = files[last_row_selected].file;
             selected_file_changed_callback(file);
         }
@@ -562,7 +563,7 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowIsSelected && row < configs.size())
+        if (rowIsSelected && checked_cast<size_t>(row) < configs.size())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -576,14 +577,14 @@ public:
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
         //unused row
-        if (rowNumber > configs.size())
+        if (rowNumber > checked_cast<int>(configs.size()))
         {
             if (existingComponentToUpdate != nullptr)
                 delete existingComponentToUpdate;
             return nullptr;
         }
         //"Insert config" row
-        else if (rowNumber == configs.size()) 
+        else if (rowNumber == checked_cast<int>(configs.size())) 
         {
             EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
                 dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
@@ -628,7 +629,7 @@ public:
 
     void selectedRowsChanged (int last_row_selected) override
     {   
-        if(last_row_selected != -1 && last_row_selected != configs.size())
+        if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != configs.size())
             back_button_callback(last_row_selected);
     }
 
@@ -669,7 +670,7 @@ private:
         {
             bool restore_text = getText() == "";
 
-            if (row < owner.configs.size())
+            if (checked_cast<size_t>(row) < owner.configs.size())
             {
                 if (restore_text)
                 {
@@ -696,7 +697,7 @@ private:
         void setRow (const int newRow)
         {
             row = newRow;
-            if (row < owner.configs.size())
+            if (checked_cast<size_t>(row) < owner.configs.size())
             {
                 setJustificationType(juce::Justification::left);
                 setText (owner.configs[newRow].title, juce::dontSendNotification);
