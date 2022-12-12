@@ -361,6 +361,7 @@ Application_Standalone::~Application_Standalone()
 void Application_Standalone::to_main_menu()
 {
     frequency_game_io.reset();
+    compressor_game_io.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
         [this] { to_compressor_game(); },

@@ -158,11 +158,13 @@ struct CompressorGame_UI : public juce::Component
         };
         addAndMakeVisible(header);
         
-        auto setup_slider = [&] (juce::Slider &slider, juce::Label &label, juce::String name, std::function<void(int)> onEdit) {
+        auto setup_slider = [&] (TextSlider &slider, juce::Label &label, juce::String name, std::function<void(int)> onEdit) {
             label.setText(name, juce::NotificationType::dontSendNotification);
-        
-            slider.setSliderStyle(juce::Slider::Rotary);
-            slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, slider.getTextBoxWidth(), 40);
+            label.setJustificationType(juce::Justification::centred);
+            addAndMakeVisible(label);
+
+            slider.setSliderStyle(juce::Slider::RotaryVerticalDrag);
+            slider.setTextBoxStyle(juce::Slider::TextBoxBelow, true, slider.getTextBoxWidth(), 15);
             slider.setScrollWheelEnabled(true);
         
             slider.onValueChange = [&slider, onEdit = std::move(onEdit)] {
@@ -222,15 +224,26 @@ struct CompressorGame_UI : public juce::Component
 
         auto header_bounds = bounds.removeFromTop(game_ui_header_height);
         auto bottom_bounds = bounds.removeFromBottom(bottom_height);
-        auto game_bounds = bounds.withTrimmedTop(4).withTrimmedBottom(4);
+        auto game_bounds = juce::Rectangle < int > (200, 200); 
+        game_bounds.setCentre(bounds.getCentre());
 
         header.setBounds(header_bounds);
-#if 0
-        if(compressor_widget)
-            compressor_widget->setBounds(game_bounds);
-        else if(results_panel)
-            results_panel->setBounds(game_bounds);
-#endif
+        
+        auto threshold_bounds = game_bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
+        auto ratio_bounds = game_bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
+        auto attack_bounds = game_bounds.getProportion<float>( { 0.0f, 0.5f, 0.5f, 0.5f }).reduced(5);
+        auto release_bounds = game_bounds.getProportion<float>( { 0.5f, 0.5f, 0.5f, 0.5f }).reduced(5);
+
+        threshold_label.setBounds(threshold_bounds.removeFromTop(15));
+        ratio_label.setBounds(ratio_bounds.removeFromTop(15));
+        attack_label.setBounds(attack_bounds.removeFromTop(15));
+        release_label.setBounds(release_bounds.removeFromTop(15));
+        
+        threshold_slider.setBounds(threshold_bounds);
+        ratio_slider.setBounds(ratio_bounds);
+        attack_slider.setBounds(attack_bounds);
+        release_slider.setBounds(release_bounds);
+
         bottom.setBounds(bottom_bounds);
     }
 
@@ -249,11 +262,12 @@ struct CompressorGame_UI : public juce::Component
     juce::Label attack_label;
     juce::Label release_label;
 
+#if 0
     std::vector < float > threshold_values;
     std::vector < float > ratio_values;
     std::vector < float > attack_values;
     std::vector < float > release_values;
-
+#endif
     GameUI_Bottom bottom;
     CompressorGame_IO *game_io;
 private:

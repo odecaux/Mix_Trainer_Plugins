@@ -51,25 +51,40 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
 {
     game_ui_header_update(&ui.header, new_ui.header_text, new_ui.score);
     
-    ui.threshold_values = new_ui.comp_widget.threshold_values_db;
+    //ui.threshold_values = new_ui.comp_widget.threshold_values_db;
     ui.threshold_slider.setValue(static_cast<double>(new_ui.comp_widget.threshold_pos), juce::dontSendNotification);
     ui.threshold_slider.setRange(0.0, (double)((int)new_ui.comp_widget.threshold_values_db.size() - 1), 1.0);
-    ui.threshold_label.setText(juce::Decibels::toString(new_ui.comp_widget.threshold_values_db[new_ui.comp_widget.threshold_pos]), juce::dontSendNotification);
-    
-    ui.ratio_values = new_ui.comp_widget.ratio_values;
+    //ui.threshold_label.setText(juce::Decibels::toString(new_ui.comp_widget.threshold_values_db[new_ui.comp_widget.threshold_pos]), juce::dontSendNotification);
+    ui.threshold_slider.get_text_from_value = [=] (double new_pos)
+    {
+        return juce::Decibels::toString(new_ui.comp_widget.threshold_values_db[static_cast<size_t>(new_pos)], 0);
+    };
+    //ui.ratio_values = new_ui.comp_widget.ratio_values;
     ui.ratio_slider.setValue(static_cast<double>(new_ui.comp_widget.ratio_pos), juce::dontSendNotification);
     ui.ratio_slider.setRange(0.0, (double)((int)new_ui.comp_widget.ratio_values.size() - 1), 1.0);
-    ui.ratio_label.setText(juce::String(new_ui.comp_widget.ratio_values[new_ui.comp_widget.ratio_pos]), juce::dontSendNotification);
+    //ui.ratio_label.setText(juce::String(new_ui.comp_widget.ratio_values[new_ui.comp_widget.ratio_pos]), juce::dontSendNotification);
+    ui.ratio_slider.get_text_from_value = [=] (double new_pos)
+    {
+        return juce::String(new_ui.comp_widget.ratio_values[static_cast<size_t>(new_pos)]);
+    };
 
-    ui.attack_values = new_ui.comp_widget.attack_values;
+    //ui.attack_values = new_ui.comp_widget.attack_values;
     ui.attack_slider.setValue(static_cast<double>(new_ui.comp_widget.attack_pos), juce::dontSendNotification);
     ui.attack_slider.setRange(0.0, (double)((int)new_ui.comp_widget.attack_values.size() - 1), 1.0);
-    ui.attack_label.setText(juce::String(new_ui.comp_widget.attack_values[new_ui.comp_widget.attack_pos]) + " ms", juce::dontSendNotification);
-    
-    ui.release_values = new_ui.comp_widget.release_values;
+    //ui.attack_label.setText(juce::String(new_ui.comp_widget.attack_values[new_ui.comp_widget.attack_pos]) + " ms", juce::dontSendNotification);
+    ui.attack_slider.get_text_from_value = [=] (double new_pos)
+    {
+        return juce::String(new_ui.comp_widget.attack_values[static_cast<size_t>(new_pos)]) + " ms";
+    };
+
+    //ui.release_values = new_ui.comp_widget.release_values;
     ui.release_slider.setValue(static_cast<double>(new_ui.comp_widget.release_pos), juce::dontSendNotification);
     ui.release_slider.setRange(0.0, (double)((int)new_ui.comp_widget.release_values.size() - 1), 1.0);
-    ui.release_label.setText(juce::String(new_ui.comp_widget.release_values[new_ui.comp_widget.release_pos]) + " ms", juce::dontSendNotification);
+    //ui.release_label.setText(juce::String(new_ui.comp_widget.release_values[new_ui.comp_widget.release_pos]) + " ms", juce::dontSendNotification);
+    ui.release_slider.get_text_from_value = [=] (double new_pos)
+    {
+        return juce::String(new_ui.comp_widget.release_values[static_cast<size_t>(new_pos)]) + " ms";
+    };
 
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
@@ -457,7 +472,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 dsp.comp = {
                     .is_on = true,
                     .threshold_gain = threshold_gain,
-                    .ratio = state.config.ratio_values[threshold_pos],
+                    .ratio = state.config.ratio_values[ratio_pos],
                     .attack = state.config.attack_values[attack_pos],
                     .release = state.config.release_values[release_pos],
                     .makeup_gain = 1.0f,
