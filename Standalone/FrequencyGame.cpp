@@ -115,7 +115,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     };
 
     bool check_answer = false;
-    int TEMP_answer_frequency;
+    int TEMP_answer_frequency = -1;
 
     switch (event.type) 
     {

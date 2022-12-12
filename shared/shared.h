@@ -178,24 +178,11 @@ size_t db_to_slider_pos(double db, const std::vector<double> &db_values);
 size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values);
 double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values);
 
-class DecibelSlider : public juce::Slider
+struct TextSlider : public juce::Slider
 {
-public:
-    explicit DecibelSlider(const std::vector < double > &dBValues)
-    : db_values(dBValues)
-    {
-    }
-    
-    juce::String getTextFromValue(double pos) override
-    {
-        double db = db_values[(size_t)pos];
-        if (db == -100.0) 
-            return "Muted";
-        else
-            return juce::Decibels::toString(db, 0);
-    }
-
-    const std::vector < double > &db_values;
+    TextSlider() : Slider(){}
+    juce::String getTextFromValue(double pos) override { return get_text_from_value(pos); }
+    std::function < juce::String(double) > get_text_from_value;
 };
 
 enum FaderStep {
@@ -207,24 +194,22 @@ enum FaderStep {
 class FaderComponent : public juce::Component
 {
 public:
-    explicit FaderComponent(const std::vector<double> &db_values,
+    explicit FaderComponent(const std::vector<double> &dbValues,
                             const juce::String &name,
-                            std::function<void(int)> &&onFaderMove,
-                            std::function<void(const juce::String&)> &&onEditedName)
-    :   fader(db_values)
+                            std::function < void(int) > && onFaderMove)
+    : db_values(dbValues)
     {
         label.setText(name, juce::NotificationType::dontSendNotification);
-        label.setEditable(true);
-        label.onTextChange = [this, onEdited = std::move(onEditedName)] {
-            onEdited(label.getText());
-        };
-        label.onEditorShow = [&] {
-            auto *editor = label.getCurrentTextEditor();
-            assert(editor != nullptr);
-            editor->setJustification(juce::Justification::centred);
-        };
         addAndMakeVisible(label);
         
+        fader.get_text_from_value = [&] (double pos) -> juce::String
+        {
+            double db = db_values[static_cast<size_t>(pos)];
+            if (db == -100.0) 
+                return "Muted";
+            else
+                return juce::Decibels::toString(db, 0);
+        };
         fader.setSliderStyle(juce::Slider::LinearVertical);
         fader.setTextBoxStyle(juce::Slider::TextBoxBelow, true, fader.getTextBoxWidth(), 40);
         fader.setRange(0.0, (double)(db_values.size() - 1), 1.0);
@@ -241,10 +226,10 @@ public:
     void resized() override
     {
         auto r = getLocalBounds();
-        auto labelBounds = r.withBottom(50);
+        auto labelBounds = r.removeFromTop(50);
         label.setBounds(labelBounds);
         
-        auto faderBounds = r.withTrimmedTop(50);
+        auto faderBounds = r;
         fader.setBounds(faderBounds);
     }
     
@@ -292,8 +277,9 @@ public:
     
 private:
     juce::Label label;
-    DecibelSlider fader;
+    TextSlider fader;
     FaderStep step;
+    const std::vector<double> &db_values;
     //double targetValue;
     //double smoothing;
 };

@@ -113,21 +113,11 @@ struct MixerGameUI : public juce::Component
                 };
                 mixer_game_post_event(io, event);
             };
-            
-            auto onEdited = [id, io](const juce::String & new_name){ 
-                Event event = {
-                    .type = Event_Channel_Rename_From_UI,
-                    .id = id,
-                    .value_js = new_name
-                };
-                mixer_game_post_event(io, event);
-            };
 
             auto new_fader = std::make_unique < FaderComponent > (
                 db_slider_values,
                 a.second.name,
-                std::move(onFaderMoved),
-                std::move(onEdited)
+                std::move(onFaderMoved)
             );
             fader_row.addAndMakeVisible(new_fader.get());
             return { id, std::move(new_fader)};
@@ -201,21 +191,11 @@ struct MixerGameUI : public juce::Component
             };
             mixer_game_post_event(io, event);
         };
-            
-        auto onEdited = [id, io = io](const juce::String & new_name){ 
-            Event event = {
-                .type = Event_Channel_Rename_From_UI,
-                .id = id,
-                .value_js = new_name
-            };
-            mixer_game_post_event(io, event);
-        };
 
         auto [it, result] = faders.emplace(id, std::make_unique < FaderComponent > (
             db_slider_values,
             name,
-            std::move(onFaderMoved),
-            std::move(onEdited)
+            std::move(onFaderMoved)
         ));
         assert(result);
         auto &new_fader = it->second;
