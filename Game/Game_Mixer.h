@@ -13,9 +13,10 @@ struct Game_Mixer_Effect_DSP {
 struct Game_Mixer_Effect_UI {
     juce::String header_text;
     int score; 
-    FaderStep fader_step; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+    FaderStep fader_step; 
     Mix mix;
+    bool display_bottom_button;
     juce::String button_text;
     Event_Type button_event;
 };

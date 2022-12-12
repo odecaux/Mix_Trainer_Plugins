@@ -232,14 +232,6 @@ void Application::createChannel(int id)
     
     channels[id] = ChannelInfos { .id = id };
 
-    if (game_io) {
-        assert(type == PanelType::Game);
-        Event event = {
-            .type = Event_Channel_Create,
-            .id = id
-        };
-        mixer_game_post_event(game_io.get(), event);
-    }
 }
     
 void Application::deleteChannel(int id)
@@ -247,14 +239,6 @@ void Application::deleteChannel(int id)
     auto channel = channels.find(id);
     assert(channel != channels.end());
 
-    if (game_io) {
-        assert(type == PanelType::Game);
-        Event event = {
-            .type = Event_Channel_Delete,
-            .id = id
-        };
-        mixer_game_post_event(game_io.get(), event);
-    }
     channels.erase(channel);
 }
     
@@ -262,9 +246,6 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 {
     channels[id].name = new_name;
     
-    if (game_io) {
-        assert(type == PanelType::Game);
-    }
     host.broadcastRenameTrack(id, new_name);
 }
     
@@ -273,15 +254,6 @@ void Application::renameChannelFromTrack(int id, const juce::String &new_name)
     auto &channel = channels[id];
     channel.name = new_name;
         
-    if (game_io) {
-        assert(type == PanelType::Game);
-        Event event = {
-            .type = Event_Channel_Rename_From_Track,
-            .id = id,
-            .value_js = new_name //copy
-        };
-        mixer_game_post_event(game_io.get(), event);
-    }
 }
     
 void Application::changeFrequencyRange(int id, float new_min, float new_max)
@@ -290,14 +262,4 @@ void Application::changeFrequencyRange(int id, float new_min, float new_max)
     channel.min_freq = new_min;
     channel.max_freq = new_max;
 
-    if (game_io) {
-        assert(type == PanelType::Game);
-        Event event = {
-            .type = Event_Change_Frequency_Range,
-            .id = id,
-            .value_f = new_min,
-            .value_f_2 = new_max
-        };
-        mixer_game_post_event(game_io.get(), event);
-    }
 }

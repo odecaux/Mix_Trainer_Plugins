@@ -39,9 +39,8 @@ struct Compressor_Game_Effect_UI {
     } comp_widget;
     FaderStep fader_step;
     Mix mix;
-    bool display_button;
-    juce::String button_text;
-    Event_Type button_event;
+    juce::String bottom_button_text;
+    Event_Type bottom_button_event;
 };
 
 enum Compressor_Game_Variant

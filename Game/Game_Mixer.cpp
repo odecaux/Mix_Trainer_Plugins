@@ -191,7 +191,6 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         case Event_Click_Track : 
         case Event_Click_Frequency :
         case Event_Toggle_Track : 
-        case Event_Change_Frequency_Range : 
         {
             jassertfalse;
         } break;
@@ -341,34 +340,27 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         else
             slider_pos_to_display = *slider_pos;
         
-        Mix mix;
+        effects.ui = Game_Mixer_Effect_UI{};
+        effects.ui->score = state.score;
+        effects.ui->fader_step = gameStepToFaderStep(state.step, state.mix);
+        effects.ui->slider_pos_to_display = std::move(slider_pos_to_display);
+
         switch (state.config.variant)
         {
             case MixerGame_Normal : {
-                mix = state.mix;
+                effects.ui->mix = state.mix;
             } break;
             case MixerGame_Timer : {
-                mix = Mix_Hidden;
+                effects.ui->mix = Mix_Hidden;
             } break;
             case MixerGame_Tries : {
                 if (state.step == GameStep_Question && state.remaining_listens == 0)
-                    mix = Mix_Hidden;
+                    effects.ui->mix = Mix_Hidden;
                 else
-                    mix = state.mix;
-            } break;
-            default:
-            {
-                jassertfalse;
-                mix = {};
+                    effects.ui->mix = state.mix;
             } break;
         }
         
-        effects.ui = Game_Mixer_Effect_UI {
-            .score = state.score,
-            .fader_step = gameStepToFaderStep(state.step, state.mix),
-            .slider_pos_to_display = std::move(slider_pos_to_display),
-            .mix = mix
-        };
 
         switch(state.step)
         {

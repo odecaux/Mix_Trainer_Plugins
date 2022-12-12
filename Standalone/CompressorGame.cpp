@@ -86,7 +86,7 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
         return juce::String(new_ui.comp_widget.release_values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
-    game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
+    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix, new_ui.bottom_button_event);
 }
 
 void compressor_game_post_event(CompressorGame_IO *io, Event event)
@@ -143,6 +143,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
     };
 
     bool done_listening = false;
+    bool check_answer = false;
 
     switch (event.type) 
     {
@@ -255,6 +256,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
+        case Event_Click_Answer :
+        {
+            check_answer = true;
+        } break;
         case Event_Click_Next :
         {
             if (state.step != GameStep_Result) return { .error = 1 };
@@ -279,13 +284,30 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         case Event_Click_Frequency :
         case Event_Click_Track :
         case Event_Toggle_Track :
-        case Event_Click_Answer :
         case Event_Click_Done_Listening :
         {
             jassertfalse;
         } break;
     }
     
+    if (check_answer)
+    {
+        if(state.step != GameStep_Question) return { .error = 1 };
+
+        int points_awarded = 0;
+        if (state.target_threshold_pos == state.input_threshold_pos) 
+            points_awarded++;
+        if (state.target_ratio_pos == state.input_ratio_pos) 
+            points_awarded++;
+        if (state.target_attack_pos == state.input_attack_pos) 
+            points_awarded++;
+        if (state.target_release_pos == state.input_release_pos) 
+            points_awarded++;
+
+        state.score += points_awarded;
+        out_transition = GameStep_Question;
+        in_transition = GameStep_Result;
+    }
     
     if (done_listening)
     {
@@ -492,53 +514,84 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
 
     if (update_ui)
     {
-        Compressor_Game_Effect_UI effect_ui;
-        effect_ui.comp_widget = {
-            .threshold_pos = threshold_pos,
-            .ratio_pos = ratio_pos,
-            .attack_pos = attack_pos,
-            .release_pos = release_pos,
-            .threshold_values_db = state.config.threshold_values_db,
-            .ratio_values = state.config.ratio_values,
-            .attack_values = state.config.attack_values,
-            .release_values = state.config.release_values
+        effects.ui =
+        {
+            .comp_widget = {
+                .threshold_pos = threshold_pos,
+                .ratio_pos = ratio_pos,
+                .attack_pos = attack_pos,
+                .release_pos = release_pos,
+
+                .threshold_values_db = state.config.threshold_values_db,
+                .ratio_values = state.config.ratio_values,
+                .attack_values = state.config.attack_values,
+                .release_values = state.config.release_values
+            }
         };
 
         switch (state.step)
         {
             case GameStep_Begin :
             {
-                effect_ui.header_text = "Ready ?";
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Begin";
-                effect_ui.button_event = Event_Click_Begin;
+                effects.ui->header_text = "Ready ?";
+                effects.ui->bottom_button_text = "Begin";
+                effects.ui->bottom_button_event = Event_Click_Begin;
             } break;
             case GameStep_Question :
             {
-#if 0
-                effect_ui.freq_widget.display_target = false;
-                effect_ui.freq_widget.is_cursor_locked = false;
-                effect_ui.freq_widget.display_window = true;
-                effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
-#endif
-
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
-                effect_ui.display_button = false;
+                switch (state.config.variant)
+                {
+                    case Compressor_Game_Normal :
+                    {
+                        effects.ui->header_text = "Reproduce the target mix";
+                        effects.ui->bottom_button_text = "Validate";
+                        effects.ui->bottom_button_event = Event_Click_Answer;
+                    } break;
+                    case Compressor_Game_Timer :
+                    {
+                        if (state.mix == Mix_Target)
+                        {
+                            effects.ui->header_text = "Listen";
+                            effects.ui->bottom_button_text = "Go";
+                            effects.ui->bottom_button_event = Event_Click_Done_Listening;
+                        }
+                        else if (state.mix == Mix_User)
+                        {
+                            effects.ui->header_text = "Reproduce the target mix";
+                            effects.ui->bottom_button_text = "Validate";
+                            effects.ui->bottom_button_event = Event_Click_Answer;
+                        }
+                        else jassertfalse;
+                    } break;
+                    case Compressor_Game_Tries :
+                    {
+                        if (state.mix == Mix_Target)
+                        {
+                            if (!state.can_still_listen) return { .error = 1 };
+                            effects.ui->header_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
+                        }
+                        else if (state.mix == Mix_User)
+                        {
+                            effects.ui->header_text = "Reproduce the target mix";
+                        }
+                        else jassertfalse;
+                        effects.ui->bottom_button_text = "Validate";
+                        effects.ui->bottom_button_event = Event_Click_Answer;
+                    } break;
+                }
             } break;
             case GameStep_Result :
             {
-                effect_ui.header_text = juce::String("Lives : ") + juce::String(state.lives);
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Next";
-                effect_ui.button_event = Event_Click_Next;
+                effects.ui->header_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->bottom_button_text = "Next";
+                effects.ui->bottom_button_event = Event_Click_Next;
             } break;
             case GameStep_EndResults :
             {
-                effect_ui.results.score = state.score;
-                effect_ui.header_text = "Results";
-                effect_ui.display_button = true;
-                effect_ui.button_text = "Quit";
-                effect_ui.button_event = Event_Click_Quit;
+                effects.ui->results.score = state.score;
+                effects.ui->header_text = "Results";
+                effects.ui->bottom_button_text = "Quit";
+                effects.ui->bottom_button_event = Event_Click_Quit;
             } break;
             case GameStep_None :
             {
@@ -546,9 +599,8 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             } break;
         }
 
-        effect_ui.mix = Mix_Hidden;
-        effect_ui.score = state.score;
-        effects.ui = effect_ui;
+        effects.ui->mix = Mix_Hidden;
+        effects.ui->score = state.score;
     }
 
     effects.new_state = state;
