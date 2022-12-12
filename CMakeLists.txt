@@ -62,9 +62,9 @@ target_sources(MixTrainer_Host
         shared/shared.cpp)
         
 if(MSVC)
-  target_compile_options(MixTrainer_Host PRIVATE /W4 /WX)
+  target_compile_options(MixTrainer_Host PRIVATE /W4 /WX /wd4505)
 else()
-  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-shadow-field-in-constructor)
+  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
 endif()
 
 target_precompile_headers(MixTrainer_Host
@@ -106,9 +106,9 @@ target_sources(MixTrainer_Track
         shared/shared.cpp)
         
 if(MSVC)
-  target_compile_options(MixTrainer_Track PRIVATE /W4 /WX)
+  target_compile_options(MixTrainer_Track PRIVATE /W4 /WX /wd4505)
 else()
-  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
 endif()
 
 target_precompile_headers(MixTrainer_Track
@@ -140,9 +140,9 @@ target_sources(MixTrainer_Standalone
         shared/shared.cpp)
 
 if(MSVC)
-  target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX)
+  target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX /wd4505)
 else()
-  target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic)
+  target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
 endif()
 
 target_precompile_headers(MixTrainer_Standalone

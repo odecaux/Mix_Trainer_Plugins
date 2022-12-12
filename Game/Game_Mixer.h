@@ -1,28 +1,23 @@
 struct MixerGameUI;
 
 
-struct Effect_Transition {
+struct Game_Mixer_Effect_Transition {
     GameStep in_transition;
     GameStep out_transition;
 };
 
-struct Effect_DSP {
+struct Game_Mixer_Effect_DSP {
     std::unordered_map<int, Channel_DSP_State> dsp_states;
 };
 
-struct Effect_UI {
-    FaderStep fader_step; 
+struct Game_Mixer_Effect_UI {
     juce::String header_text;
     int score; 
+    FaderStep fader_step; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    juce::String button_text;
     Mix mix;
+    juce::String button_text;
     Event_Type button_event;
-};
-
-struct Effect_Rename {
-    int id;
-    std::string new_name;
 };
 
 
@@ -33,40 +28,41 @@ enum MixerGame_Variant
     MixerGame_Timer
 };
 
+struct MixerGame_Config 
+{
+    juce::String title;
+    std::unordered_map<int, ChannelInfos> channel_infos;
+    std::vector < double > db_slider_values;
+    MixerGame_Variant variant;
+    int listens;
+    int timeout_ms;
+};
 
 struct MixerGame_State {
-    std::unordered_map<int, ChannelInfos> channel_infos;
-    //state
     GameStep step;
     Mix mix;
     int score;
+    //mixer
     std::unordered_map < int, int > edited_slider_pos;
     std::unordered_map < int, int > target_slider_pos;
-    //parametres
-    MixerGame_Variant variant;
-    int listens;
+
+    MixerGame_Config config;
     int remaining_listens;
     bool can_still_listen;
-    int timeout_ms;
-    std::vector < double > db_slider_values;
     juce::int64 timestamp_start;
     juce::int64 current_timestamp;
 };
 
 
-struct Effects {
+struct Game_Mixer_Effects {
     int error;
     MixerGame_State new_state;
-    std::optional < Effect_Transition> transition;
-    std::optional < Effect_DSP> dsp;
-    std::optional < Effect_UI > ui;
-    std::optional < Effect_Rename > rename;
+    std::optional < Game_Mixer_Effect_Transition> transition;
+    std::optional < Game_Mixer_Effect_DSP> dsp;
+    std::optional < Game_Mixer_Effect_UI > ui;
     bool quit;
 };
-using observer_t = std::function<void(const Effects &)>;
-
-
-
+using observer_t = std::function<void(const Game_Mixer_Effects &)>;
 
 struct MixerGame_IO
 {
@@ -77,11 +73,23 @@ struct MixerGame_IO
     MixerGame_State game_state;
 };
 
+struct MixerGameUI;
+
 void mixer_game_post_event(MixerGame_IO *io, Event event);
-Effects mixer_game_update(MixerGame_State state, Event event);
-void mixer_game_ui_transitions(MixerGameUI &ui, Effect_Transition transition);
-void game_ui_update(const Effect_UI &new_ui, MixerGameUI &ui);
+Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event);
+void mixer_game_ui_transitions(MixerGameUI &ui, Game_Mixer_Effect_Transition transition);
+void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui);
 void mixer_game_add_observer(MixerGame_IO *io, observer_t new_observer);
+
+MixerGame_State mixer_game_state_init(
+    std::unordered_map<int, ChannelInfos> &channel_infos,
+    MixerGame_Variant variant,
+    int listens,
+    int timeout_ms,
+    std::vector<double> db_slider_values);
+
+std::unique_ptr<MixerGame_IO> mixer_game_io_init(MixerGame_State state);
+
 
 struct MixerGameUI : public juce::Component
 {
@@ -240,12 +248,3 @@ struct MixerGameUI : public juce::Component
     GameUI_Bottom bottom;
     MixerGame_IO *io;
 };
-
-MixerGame_State mixer_game_state_init(
-    std::unordered_map<int, ChannelInfos> &channel_infos,
-    MixerGame_Variant variant,
-    int listens,
-    int timeout_ms,
-    std::vector<double> db_slider_values);
-
-std::unique_ptr<MixerGame_IO> mixer_game_io_init(MixerGame_State state);

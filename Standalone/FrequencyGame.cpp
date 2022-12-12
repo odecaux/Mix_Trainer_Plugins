@@ -114,6 +114,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         .quit = false, 
     };
 
+    bool check_answer = false;
+    int TEMP_answer_frequency;
 
     switch (event.type) 
     {
@@ -123,27 +125,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         } break;
         case Event_Click_Frequency :
         {
-            if (state.step != GameStep_Question) return { .error = 1 };
-            auto clicked_freq = event.value_i;
-            auto clicked_ratio = normalize_frequency(clicked_freq);
-            auto target_ratio = normalize_frequency(state.target_frequency);
-            auto distance = std::abs(clicked_ratio - target_ratio);
-            if (distance < state.correct_answer_window)
-            {
-                int points_scored = int((1.0f - distance) * 100.0f);
-                state.score += points_scored;
-                state.correct_answer_window *= 0.95f;
-            }
-            else
-            {
-                state.lives--;
-            }
-            
-            if(state.lives > 0)
-                in_transition = GameStep_Result;
-            else
-                in_transition = GameStep_EndResults;
-            out_transition = GameStep_Question;
+            check_answer = true;
+            TEMP_answer_frequency = event.value_i;
         } break;
         case Event_Toggle_Input_Target :
         {
@@ -242,6 +225,30 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             jassertfalse;
         } break;
     }
+
+    if (check_answer)
+    {
+        if (state.step != GameStep_Question) return { .error = 1 };
+        auto clicked_ratio = normalize_frequency(TEMP_answer_frequency);
+        auto target_ratio = normalize_frequency(state.target_frequency);
+        auto distance = std::abs(clicked_ratio - target_ratio);
+        if (distance < state.correct_answer_window)
+        {
+            int points_scored = int((1.0f - distance) * 100.0f);
+            state.score += points_scored;
+            state.correct_answer_window *= 0.95f;
+        }
+        else
+        {
+            state.lives--;
+        }
+            
+        if(state.lives > 0)
+            in_transition = GameStep_Result;
+        else
+            in_transition = GameStep_EndResults;
+        out_transition = GameStep_Question;
+    }
     
     if (in_transition != GameStep_None || out_transition != GameStep_None)
     {
@@ -282,7 +289,9 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.step = GameStep_Begin;
             state.score = 0;
             state.lives = 5;
+
             state.correct_answer_window = state.config.initial_correct_answer_window;
+
             state.current_file_idx = -1;
             update_audio = true;
             update_ui = true;
@@ -291,7 +300,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.step = GameStep_Question;
             state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
     
-            state.current_file_idx = juce::Random::getSystemRandom().nextInt((int)state.files.size());
+            state.current_file_idx = random_int((int)state.files.size());
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },
@@ -398,10 +407,13 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             {
                 effect_ui.freq_widget.display_target = true;
                 effect_ui.freq_widget.target_frequency = state.target_frequency;
+                //TODO remove all that ! should not depend on the event, but on some kind of state 
+                //some kind of result, I guess
                 if (event.type == Event_Click_Frequency)
                 {
                     effect_ui.freq_widget.is_cursor_locked = true;
-                    effect_ui.freq_widget.locked_cursor_frequency = event.value_i;
+                    assert(check_answer);
+                    effect_ui.freq_widget.locked_cursor_frequency = TEMP_answer_frequency;
                     effect_ui.freq_widget.display_window = true;
                     effect_ui.freq_widget.correct_answer_window = state.correct_answer_window;
                 } 

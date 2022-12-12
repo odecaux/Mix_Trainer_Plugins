@@ -85,7 +85,7 @@ void Application::toGame(MixerGame_Variant variant)
 
     editor->changePanel(nullptr);
 
-    auto observer = [this] (const Effects &effects)
+    auto observer = [this] (const Game_Mixer_Effects &effects)
     {
         if (effects.transition)
         {
@@ -114,7 +114,7 @@ void Application::toGame(MixerGame_Variant variant)
         }
     };
 
-    auto debug_observer = [this] (const Effects &effects)
+    auto debug_observer = [this] (const Game_Mixer_Effects &effects)
     {
         if (effects.dsp)
         {

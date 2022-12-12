@@ -11,6 +11,13 @@
 
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
+static int random_int(int max)
+{
+    //I want to keep the value positive, it's an index !!!
+    auto seed = juce::Random::getSystemRandom().nextInt();
+    return ((seed % max) + max) % max;
+}
+
 struct Timer: public juce::Timer
 {
     void timerCallback() override {
@@ -45,8 +52,8 @@ struct DSP_EQ_Band {
 
 struct Compressor_DSP_State {
     bool is_on;
-    float ratio;
     float threshold_gain;
+    float ratio;
     float attack;
     float release;
     float makeup_gain;
