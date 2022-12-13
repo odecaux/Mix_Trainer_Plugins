@@ -24,9 +24,8 @@ inline to checked_cast(const from& from_value) {
 
 static int random_positive_int(int max = INT_MAX)
 {
-    //I want to keep the value positive, it's an index !!!
-    auto seed = juce::Random::getSystemRandom().nextInt();
-    return ((seed % max) + max) % max;
+    auto seed = juce::Random::getSystemRandom().nextInt(max);
+    return seed;
 }
 
 struct Timer: public juce::Timer
