@@ -93,8 +93,6 @@ public:
         addAndMakeVisible(list_comp);
 
         editable_mouse_down_callback = [&] (int row_idx) {
-            if(row_idx == -1)
-                row_idx = checked_cast<int>(model.game_channels.size());
             list_comp.selectRow(row_idx);
         };
         editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
@@ -143,9 +141,9 @@ public:
     void paintListBoxItem (int row,
                            juce::Graphics& g,
                            int width, int height,
-                           bool rowIsSelected) override
+                           bool row_is_selected) override
     {
-        if (rowIsSelected && row < getNumRows())
+        if (row_is_selected && row < getNumRows())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -156,7 +154,7 @@ public:
     void deleteKeyPressed (int) override
     {
         auto selected_row = list_comp.getSelectedRow();
-        if(selected_row == -1) 
+        if(selected_row == -1 || selected_row == getNumRows() - 1) 
             return;
         auto id = model.order[selected_row];
         model.order.erase(model.order.begin() + selected_row);
@@ -164,17 +162,22 @@ public:
             auto deleted_count = model.game_channels.erase(id);
             assert(deleted_count == 1);
         }
-#if 0
-        {
-            auto deleted_count = model.assigned_daw_track_count .erase(id);
-            assert(deleted_count == 1);
-        }
-#endif
+
         auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
         list_comp.selectRow(row_to_select);
         list_comp.updateContent();
         selected_channel_changed_callback(row_to_select);
         channel_list_changed_callback();
+    }
+
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.escapeKey)
+        {
+            list_comp.deselectAllRows();
+            return true;
+        }
+        return false;
     }
 
     
@@ -204,10 +207,10 @@ public:
             }
             else
             {
-                label = new List_Row_Label("Insert new config",
-                                                   editable_mouse_down_callback,
-                                                   editable_text_changed_callback,
-                                                   editable_create_row_callback);
+                label = new List_Row_Label("Create new channel",
+                                            editable_mouse_down_callback,
+                                            editable_text_changed_callback,
+                                            editable_create_row_callback);
             }
             juce::String row_text = "";
             if (row_number < model.game_channels.size())
@@ -220,6 +223,13 @@ public:
         } 
     }
     
+    
+    void selectedRowsChanged (int last_row_selected) override
+    {   
+        if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != configs.size())
+            selected_channel_changed_callback(0);
+    }
+
     std::function < void(int) > editable_mouse_down_callback;
     std::function < void(int, juce::String) > editable_text_changed_callback;
     std::function < void(juce::String) > editable_create_row_callback;

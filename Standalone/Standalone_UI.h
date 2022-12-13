@@ -528,15 +528,27 @@ class Config_List :
    
 public:
     Config_List(std::vector<FrequencyGame_Config> &gameConfigs,
-                std::function<void(int)> onBackClick) : 
+                std::function<void(int)> onSelectionChanged) : 
         configs(gameConfigs),
-        back_button_callback(std::move(onBackClick))
+        selected_row_changed_callback(std::move(onSelectionChanged))
     {
         file_list_component.setMultipleSelectionEnabled(false);
         file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
         file_list_component.setOutlineThickness (2);
         addAndMakeVisible(file_list_component);
         file_list_component.updateContent();
+
+        editable_mouse_down_callback = [&] (int row_idx) {
+            file_list_component.selectRow(row_idx);
+        };
+        editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
+            configs[row_idx].title = row_text;
+        };
+        editable_create_row_callback = [&] (juce::String new_row_text) {
+            configs.push_back(frequency_game_config_default(new_row_text));
+            file_list_component.selectRow(checked_cast<int>(configs.size()) - 1);
+            file_list_component.updateContent();
+        };
     }
 
     virtual ~Config_List() override = default;
@@ -548,7 +560,7 @@ public:
 
     void paintOverChildren(juce::Graphics& g) override
     {
-        if (configs.empty())
+        if (getNumRows() == 0)
         {
             auto r = getLocalBounds();
             g.setColour(juce::Colours::white);
@@ -561,9 +573,9 @@ public:
     void paintListBoxItem (int row,
                            juce::Graphics& g,
                            int width, int height,
-                           bool rowIsSelected) override
+                           bool row_is_selected) override
     {
-        if (rowIsSelected && checked_cast<size_t>(row) < configs.size())
+        if (row_is_selected && row < getNumRows())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -571,33 +583,41 @@ public:
         }
     }
 
-    juce::Component *refreshComponentForRow (int rowNumber,
+    juce::Component *refreshComponentForRow (int row_number,
                                              bool,
-                                             Component *existingComponentToUpdate) override
+                                             Component *existing_component) override
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
         //unused row
-        if (rowNumber > checked_cast<int>(configs.size()))
+        if (row_number > checked_cast<int>(configs.size()))
         {
-            if (existingComponentToUpdate != nullptr)
-                delete existingComponentToUpdate;
+            if (existing_component != nullptr)
+                delete existing_component;
             return nullptr;
-        }
-        //"Insert config" row
-        else if (rowNumber == checked_cast<int>(configs.size())) 
-        {
-            EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
-                dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
-                new EditableTextCustomComponent(*this);
-            label->setRow (rowNumber);
-            return label;
         }
         else
         {
-            EditableTextCustomComponent *label = existingComponentToUpdate != nullptr ?
-                dynamic_cast<EditableTextCustomComponent*>(existingComponentToUpdate) :
-                new EditableTextCustomComponent(*this);
-            label->setRow (rowNumber);
+            List_Row_Label *label;
+
+            if (existing_component != nullptr)
+            {
+                label = dynamic_cast<List_Row_Label*>(existing_component);
+                assert(label != nullptr);
+            }
+            else
+            {
+                label = new List_Row_Label("Create new config",
+                                           editable_mouse_down_callback,
+                                           editable_text_changed_callback,
+                                           editable_create_row_callback);
+            }
+            juce::String row_text = "";
+            bool is_last_row = row_number == configs.size();
+            if (!is_last_row)
+            {
+                row_text = configs[row_number].title;
+            }
+            label->update(row_number, row_text, is_last_row);
             return label;
         } 
     }
@@ -611,7 +631,7 @@ public:
     void deleteKeyPressed (int) override
     {
         auto selected_row = file_list_component.getSelectedRow();
-        if(selected_row == -1) 
+        if(selected_row == -1 || selected_row == getNumRows() - 1) 
             return;
         configs.erase(configs.begin() + selected_row);
         auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
@@ -621,16 +641,18 @@ public:
 
     bool keyPressed (const juce::KeyPress &key) override
     {
-        if (key != key.escapeKey)
-            return false;
-        file_list_component.deselectAllRows();
-        return true;
+        if (key == key.escapeKey)
+        {
+            file_list_component.deselectAllRows();
+            return true;
+        }
+        return false;
     }
 
     void selectedRowsChanged (int last_row_selected) override
     {   
         if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != configs.size())
-            back_button_callback(last_row_selected);
+            selected_row_changed_callback(last_row_selected);
     }
 
     void selectRow(int new_row)
@@ -639,92 +661,14 @@ public:
     }
 
 private:
+    
+    std::function < void(int) > editable_mouse_down_callback;
+    std::function < void(int, juce::String) > editable_text_changed_callback;
+    std::function < void(juce::String) > editable_create_row_callback;
+
     std::vector<FrequencyGame_Config> &configs;
     juce::ListBox file_list_component = { {}, this };
-    std::function < void(int) > back_button_callback;
-    
-    
-    class EditableTextCustomComponent  : public juce::Label
-    {
-    public:
-        EditableTextCustomComponent (Config_List& configListComponent)  : owner (configListComponent)
-        {
-            // double click to edit the label text; single click handled below
-            setEditable (false, true, true);
-        }
-
-        void mouseDown (const juce::MouseEvent& event) override
-        {   
-            // single click on the label should simply select the row
-            owner.file_list_component.selectRowsBasedOnModifierKeys (row, event.mods, false);
-
-            juce::Label::mouseDown (event);
-        }
-
-        void editorShown (juce::TextEditor * new_editor) override
-        {
-            new_editor->setText("", juce::dontSendNotification);
-        }
-
-        void textWasEdited() override
-        {
-            bool restore_text = getText() == "";
-
-            if (checked_cast<size_t>(row) < owner.configs.size())
-            {
-                if (restore_text)
-                {
-                    setText(owner.configs[row].title, juce::dontSendNotification);
-                    return;
-                }
-                owner.configs[row].title = getText();
-            }
-            else //
-            {
-                
-                if (restore_text)
-                {
-                    setText("Insert new config", juce::dontSendNotification);
-                    return;
-                }
-                owner.configs.push_back(frequency_game_config_default(getText()));
-                owner.back_button_callback(row);
-                owner.file_list_component.updateContent();
-            }
-        }
-
-        // Our demo code will call this when we may need to update our contents
-        void setRow (const int newRow)
-        {
-            row = newRow;
-            if (checked_cast<size_t>(row) < owner.configs.size())
-            {
-                setJustificationType(juce::Justification::left);
-                setText (owner.configs[newRow].title, juce::dontSendNotification);
-                setColour(juce::Label::textColourId, juce::Colours::white);
-            }
-            else
-            {
-                setJustificationType(juce::Justification::centred);
-                setText ("Insert new config", juce::dontSendNotification);
-                setColour(juce::Label::textColourId, juce::Colours::lightgrey);
-            }
-        }
-
-        void paint (juce::Graphics& g) override
-        {
-            auto& lf = getLookAndFeel();
-            if (! dynamic_cast<juce::LookAndFeel_V4*>(&lf))
-                lf.setColour (textColourId, juce::Colours::black);
-    
-            juce::Label::paint (g);
-        }
-    
-    private:
-        Config_List& owner;
-        int row;
-        juce::Colour textColour;
-    };
+    std::function < void(int) > selected_row_changed_callback;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Config_List)
 };
