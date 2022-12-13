@@ -27,7 +27,7 @@ ProcessorTrack::ProcessorTrack()
                  )
 #endif
 ,
-    daw_channel_id { juce::Random().nextInt() },
+    daw_channel_id { random_positive_int() },
     name { daw_channel_id },
     gain { 0.0f },
     minFrequency { 20 },

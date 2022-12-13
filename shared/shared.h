@@ -22,7 +22,7 @@ inline to checked_cast(const from& from_value) {
 }
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
-static int random_int(int max)
+static int random_positive_int(int max = INT_MAX)
 {
     //I want to keep the value positive, it's an index !!!
     auto seed = juce::Random::getSystemRandom().nextInt();

@@ -235,7 +235,7 @@ private:
                     setText("Insert new config", juce::dontSendNotification);
                     return;
                 }
-                int new_channel_id = juce::Random::getSystemRandom().nextInt();
+                int new_channel_id = random_positive_int();
                 new_channel_id = std::abs(new_channel_id);
                 Game_Channel new_channel = {
                     .id = new_channel_id,

@@ -1,6 +1,7 @@
 #Priority 1 :
 
-channel ids must be positives : -1 = unassigned
+unifier les ListBoxes 
+    une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 
 #Priority 2 :
 
@@ -14,7 +15,6 @@ Les freq bounds d'un fichier audio doivent influer sur le score
 
 #Priority 3 :
 
-unifier les ListBoxes ???
 
 Test suite
 Serialization Little Big Planet
