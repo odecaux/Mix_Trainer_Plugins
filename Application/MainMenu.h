@@ -89,7 +89,35 @@ public:
     : model(multitrackModel)
     {
         list_comp.setModel(this);
+        list_comp.setMultipleSelectionEnabled(false);
         addAndMakeVisible(list_comp);
+
+        editable_mouse_down_callback = [&] (int row_idx) {
+            if(row_idx == -1)
+                row_idx = checked_cast<int>(model.game_channels.size());
+            list_comp.selectRow(row_idx);
+        };
+        editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
+            assert(row_idx <= model.game_channels.size());
+            assert(row_idx >= 0);
+            int channel_id = model.order[row_idx];
+            model.game_channels[channel_id].name = row_text;
+            channel_list_changed_callback();
+        };
+        editable_create_row_callback = [&] (juce::String new_row_text) {
+            int new_channel_id = random_positive_int();
+            Game_Channel new_channel = {
+                .id = new_channel_id,
+                .name = new_row_text,
+            };
+            {
+                auto [it, result] = model.game_channels.emplace(new_channel_id, new_channel);
+                assert(result);
+            }
+            model.order.push_back(new_channel_id);
+            channel_list_changed_callback();
+            list_comp.updateContent();
+        };
     }
 
     
@@ -155,143 +183,53 @@ public:
                                              Component *existing_component) override
     {
         //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
-        //unused row
+        //unused row            
+        assert(model.order.size() == model.game_channels.size());
+
         if (row_number > model.game_channels.size())
         {
             if (existing_component != nullptr)
                 delete existing_component;
             return nullptr;
         }
-        //"Insert config" row
-        else if (row_number == model.game_channels.size()) 
-        {
-            Editable_Label *label = existing_component != nullptr ?
-                dynamic_cast<Editable_Label*>(existing_component) :
-                new Editable_Label(*this);
-            label->setRow (row_number);
-            return label;
-        }
         else
         {
-            Editable_Label *label = existing_component != nullptr ?
-                dynamic_cast<Editable_Label*>(existing_component) :
-                new Editable_Label(*this);
-            label->setRow (row_number);
+            List_Row_Label *label;
+
+            assert(model.order.size() == model.game_channels.size());
+            if (existing_component != nullptr)
+            {
+                label = dynamic_cast<List_Row_Label*>(existing_component);
+                assert(label != nullptr);
+            }
+            else
+            {
+                label = new List_Row_Label("Insert new config",
+                                                   editable_mouse_down_callback,
+                                                   editable_text_changed_callback,
+                                                   editable_create_row_callback);
+            }
+            juce::String row_text = "";
+            if (row_number < model.game_channels.size())
+            {
+                int channel_id = model.order[row_number];
+                row_text = model.game_channels[channel_id].name;
+            }
+            label->update(row_number, row_text, row_number == model.game_channels.size());
             return label;
         } 
     }
     
+    std::function < void(int) > editable_mouse_down_callback;
+    std::function < void(int, juce::String) > editable_text_changed_callback;
+    std::function < void(juce::String) > editable_create_row_callback;
+
     std::function < void(int) > selected_channel_changed_callback = {};
     std::function < void() > channel_list_changed_callback = {};
     juce::ListBox list_comp;
 private:
     MuliTrack_Model &model;
 
-    class Editable_Label  : public juce::Label
-    {
-    public:
-        Editable_Label (Channel_List& channelListComponent)  : owner (channelListComponent)
-        {
-            // double click to edit the label text; single click handled below
-            setEditable (false, true, true);
-        }
-
-        void mouseDown (const juce::MouseEvent& event) override
-        {   
-            // single click on the label should simply select the row
-            owner.list_comp.selectRowsBasedOnModifierKeys (row, event.mods, false);
-
-            juce::Label::mouseDown (event);
-        }
-
-        void editorShown (juce::TextEditor * new_editor) override
-        {
-            new_editor->setText("", juce::dontSendNotification);
-        }
-
-        void textWasEdited() override
-        {
-            bool user_didnt_input_anything = getText() == "";
-
-            //rename track
-            if (row < owner.model.game_channels.size())
-            {
-                int channel_id = owner.model.order[row];
-                Game_Channel &channel = owner.model.game_channels[channel_id];
-                if (user_didnt_input_anything)
-                {
-                    setText(channel.name, juce::dontSendNotification);
-                    return;
-                }
-                channel.name = getText();
-                owner.channel_list_changed_callback();
-            }
-            //insert new track
-            else 
-            {
-                
-                if (user_didnt_input_anything)
-                {
-                    setText("Insert new config", juce::dontSendNotification);
-                    return;
-                }
-                int new_channel_id = random_positive_int();
-                new_channel_id = std::abs(new_channel_id);
-                Game_Channel new_channel = {
-                    .id = new_channel_id,
-                    .name = getText(),
-                };
-                {
-                    auto [it, result] = owner.model.game_channels.emplace(new_channel_id, new_channel);
-                    assert(result);
-                }
-#if 0
-                {
-                    auto [it, result] = owner.model.assigned_daw_track_count.emplace(new_channel_id, 0);
-                    assert(result);
-                }
-#endif
-                owner.model.order.push_back(new_channel_id);
-                owner.selected_channel_changed_callback(new_channel_id);
-                owner.channel_list_changed_callback();
-                owner.list_comp.updateContent();
-            }
-        }
-
-        // Our demo code will call this when we may need to update our contents
-        void setRow (const int newRow)
-        {
-            row = newRow;
-            if (row < owner.model.game_channels.size())
-            {
-                int channel_id = owner.model.order[row];
-                Game_Channel &channel = owner.model.game_channels[channel_id];
-                setJustificationType(juce::Justification::left);
-                setText (channel.name, juce::dontSendNotification);
-                setColour(juce::Label::textColourId, juce::Colours::white);
-            }
-            else
-            {
-                setJustificationType(juce::Justification::centred);
-                setText ("Insert new channel", juce::dontSendNotification);
-                setColour(juce::Label::textColourId, juce::Colours::lightgrey);
-            }
-        }
-
-        void paint (juce::Graphics& g) override
-        {
-            auto& lf = getLookAndFeel();
-            if (! dynamic_cast<juce::LookAndFeel_V4*>(&lf))
-                lf.setColour (textColourId, juce::Colours::black);
-    
-            juce::Label::paint (g);
-        }
-
-    private:
-        Channel_List& owner;
-        int row;
-        juce::Colour textColour;
-    };
 };
 
 class ChannelSettingsMenu : public juce::Component
@@ -314,7 +252,8 @@ public :
 
         };
         channel_list.channel_list_changed_callback = [&] {
-            selected_channel_changed_callback();
+            multitrack_model_broadcast_change(&multitrack_model);
+            selected_channel_changed_callback(); //TODO supprimer celui-là, on va juste mettre un observer à la place
         };
         addAndMakeVisible(channel_list);
     }

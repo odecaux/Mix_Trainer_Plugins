@@ -208,6 +208,37 @@ struct MuliTrack_Model
     //std::unordered_map<int, int> assigned_daw_track_count;
 };
 
+static void debug_multitrack_model(MuliTrack_Model *model)
+{
+    DBG("Game Channels :");
+    for (auto& [id, game_channel] : model->game_channels)
+    {
+        DBG(game_channel.name << ", " << game_channel.id % 100);
+    }
+
+    DBG("Order");
+    for (auto channel_id : model->order)
+    {
+        DBG(model->game_channels[channel_id].name);
+    }
+    
+    DBG("Daw Channels :");
+    for (auto& [id, daw_channel] : model->daw_channels)
+    {
+        DBG(daw_channel.name << ", " << daw_channel.id % 100);
+        if (daw_channel.assigned_game_channel_id == -1)
+        {
+            DBG("-----> unassigned");
+        }
+        else
+        {
+            auto &game_channel = model->game_channels[daw_channel.assigned_game_channel_id];
+            DBG("-----> " << game_channel.name << ", " << game_channel.id % 100);
+        }
+    }
+    DBG("\n\n\n");
+}
+
 static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observer_id_to_skip = -1)
 {
     for (auto &[id, observer] : model->observers)
@@ -513,6 +544,106 @@ private:
     juce::Label minLabel;
     juce::Label maxLabel;
     juce::Slider frequencyRangeSlider;
+};
+
+
+
+class List_Row_Label  : public juce::Label
+{
+public:
+    List_Row_Label (
+        juce::String newRowText,
+        const std::function < void(int) > &onMouseDown,
+        const std::function < void(int, juce::String) > &onTextChanged,
+        const std::function < void(juce::String) > &onCreateRow
+    )
+    : new_row_text(newRowText),
+      mouse_down_callback(onMouseDown),
+      text_changed_callback(onTextChanged),
+      create_row_callback(onCreateRow)
+    {
+        // double click to edit the label text; single click handled below
+        setEditable (false, true, true);
+    }
+
+    void mouseDown (const juce::MouseEvent& ) override
+    {   
+        mouse_down_callback(row);
+        //juce::Label::mouseDown (event);
+    }
+
+    void editorShown (juce::TextEditor * new_editor) override
+    {
+        if(is_last_row)
+            new_editor->setText("", juce::dontSendNotification);
+    }
+
+    void textWasEdited() override
+    {
+        bool input_is_empty = getText().isEmpty();
+
+        //rename track
+        if (!is_last_row)
+        {
+            if (input_is_empty)
+            {
+                setText(row_text, juce::dontSendNotification);
+                return;
+            }
+            text_changed_callback(row, getText());
+        }
+        //insert new track
+        else 
+        {
+                
+            if (input_is_empty)
+            {
+                setText(new_row_text, juce::dontSendNotification);
+                return;
+            }
+            is_last_row = false;
+            create_row_callback(getText());
+        }
+    }
+
+    void update(int new_row, juce::String new_text, bool new_is_last_row)
+    {
+        row = new_row;
+        row_text = new_text;
+        is_last_row = new_is_last_row;
+        if (!is_last_row)
+        {
+            setJustificationType(juce::Justification::left);
+            setText (row_text, juce::dontSendNotification);
+            setColour(juce::Label::textColourId, juce::Colours::white);
+        }
+        else
+        {
+            setJustificationType(juce::Justification::centred);
+            setText (new_row_text, juce::dontSendNotification);
+            setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+        }
+    }
+
+    void paint (juce::Graphics& g) override
+    {
+        auto& lf = getLookAndFeel();
+        if (! dynamic_cast<juce::LookAndFeel_V4*>(&lf))
+            lf.setColour (textColourId, juce::Colours::black);
+    
+        juce::Label::paint (g);
+    }
+
+    const std::function < void(int) > &mouse_down_callback;
+    const std::function < void(int, juce::String) > &text_changed_callback;
+    const std::function < void(juce::String) > &create_row_callback;
+
+    int row;
+    juce::String row_text;
+    bool is_last_row;
+private:
+    juce::String new_row_text;
+    juce::Colour textColour;
 };
 
 #endif //SHARED_H

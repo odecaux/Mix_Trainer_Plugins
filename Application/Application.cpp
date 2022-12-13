@@ -8,33 +8,6 @@
 #include "../Plugin_Host/Processor_Host.h"
 #include "../Plugin_Host/PluginEditor_Host.h"
 
-void debug_multitrack_model(MuliTrack_Model *model)
-{
-    static int count = 0;
-    DBG("debug count : " << count++);
-    DBG("Game Channels :");
-    for (auto& [id, game_channel] : model->game_channels)
-    {
-        DBG(game_channel.name << ", " << game_channel.id % 100);
-    }
-    
-    DBG("Daw Channels :");
-    for (auto& [id, daw_channel] : model->daw_channels)
-    {
-        DBG(daw_channel.name << ", " << daw_channel.id % 100);
-        if (daw_channel.assigned_game_channel_id == -1)
-        {
-            DBG("-----> unassigned");
-        }
-        else
-        {
-            auto &game_channel = model->game_channels[daw_channel.assigned_game_channel_id];
-            DBG("-----> " << game_channel.name << ", " << game_channel.id % 100);
-        }
-    }
-    DBG("\n\n\n");
-}
-
 Application::Application(ProcessorHost &processorHost) :
     game_ui(nullptr),
     type(Panel_MainMenu),

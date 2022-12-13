@@ -381,10 +381,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.mix = Mix_Target;
             state.can_still_listen = true;
 
-            state.target_threshold_pos = random_int(static_cast<int>(state.config.threshold_values_db.size()));
-            state.target_ratio_pos = random_int(static_cast<int>(state.config.ratio_values.size()));
-            state.target_attack_pos = random_int(static_cast<int>(state.config.attack_values.size()));
-            state.target_release_pos = random_int(static_cast<int>(state.config.release_values.size()));
+            state.target_threshold_pos = random_positive_int(static_cast<int>(state.config.threshold_values_db.size()));
+            state.target_ratio_pos = random_positive_int(static_cast<int>(state.config.ratio_values.size()));
+            state.target_attack_pos = random_positive_int(static_cast<int>(state.config.attack_values.size()));
+            state.target_release_pos = random_positive_int(static_cast<int>(state.config.release_values.size()));
 
             //TODO
             state.input_threshold_pos = static_cast<int>(state.config.threshold_values_db.size()) - 1;
@@ -392,7 +392,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.input_attack_pos = 0;
             state.input_release_pos = 0;
 
-            state.current_file_idx = random_int((int)state.files.size());
+            state.current_file_idx = random_positive_int((int)state.files.size());
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },

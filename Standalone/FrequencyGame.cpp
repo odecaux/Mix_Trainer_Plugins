@@ -295,7 +295,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.step = GameStep_Question;
             state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
     
-            state.current_file_idx = random_int((int)state.files.size());
+            state.current_file_idx = random_positive_int((int)state.files.size());
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },

@@ -277,7 +277,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             state.can_still_listen = true;
             for (auto& [_, channel] : state.config.channel_infos)
             {
-                auto target_pos = random_int(static_cast<int>(state.config.db_slider_values.size()));
+                auto target_pos = random_positive_int(static_cast<int>(state.config.db_slider_values.size()));
                 state.target_slider_pos[channel.id] = target_pos;
                 auto edited_pos = static_cast<int>(state.config.db_slider_values.size()) - 2;
                 state.edited_slider_pos[channel.id] = edited_pos;
