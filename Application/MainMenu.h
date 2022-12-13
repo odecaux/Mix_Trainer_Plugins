@@ -306,7 +306,7 @@ public :
             header.onBackClicked = [click = std::move(onBackButtonClick)] {
                 click();
             };
-            game_ui_header_update(&header, "Game Tracks Settings", -1);
+            game_ui_header_update(&header, "Game Tracks Settings", "");
             addAndMakeVisible(header);
         }
 

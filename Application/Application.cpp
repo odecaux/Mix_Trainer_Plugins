@@ -15,13 +15,13 @@ void debug_multitrack_model(MuliTrack_Model *model)
     DBG("Game Channels :");
     for (auto& [id, game_channel] : model->game_channels)
     {
-        DBG(game_channel.name << ", " << game_channel.id);
+        DBG(game_channel.name << ", " << game_channel.id % 100);
     }
     
     DBG("Daw Channels :");
     for (auto& [id, daw_channel] : model->daw_channels)
     {
-        DBG(daw_channel.name << ", " << daw_channel.id);
+        DBG(daw_channel.name << ", " << daw_channel.id % 100);
         if (daw_channel.assigned_game_channel_id == -1)
         {
             DBG("-----> unassigned");
@@ -29,7 +29,7 @@ void debug_multitrack_model(MuliTrack_Model *model)
         else
         {
             auto &game_channel = model->game_channels[daw_channel.assigned_game_channel_id];
-            DBG("-----> " << game_channel.name << ", " << game_channel.id);
+            DBG("-----> " << game_channel.name << ", " << game_channel.id % 100);
         }
     }
     DBG("\n\n\n");
@@ -43,7 +43,7 @@ Application::Application(ProcessorHost &processorHost) :
 {
     //NOTE useless
     broadcastDSP(bypassedAllChannelsDSP(multitrack_model.game_channels));
-    multitrack_model_add_observer(&multitrack_model, MultiTrack_Obsevers_Debug, debug_multitrack_model);
+    multitrack_model_add_observer(&multitrack_model, MultiTrack_Observers_Debug, debug_multitrack_model);
 }
 
 
@@ -93,27 +93,28 @@ void Application::toGame(MixerGame_Variant variant)
     assert(type == Panel_MainMenu);
     type = Panel_Game;
     assert(editor);
-    assert(!game_state);
+    assert(!game_io);
     
-    switch (variant)
-    {
-        case MixerGame_Normal : {
-            game_state = mixer_game_state_init(multitrack_model.game_channels, MixerGame_Normal, -1, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-        case MixerGame_Timer : {
-            game_state = mixer_game_state_init(multitrack_model.game_channels, MixerGame_Timer, -1, 2000, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-        case MixerGame_Tries : {
-            game_state = mixer_game_state_init(multitrack_model.game_channels, MixerGame_Tries, 5, -1, std::vector<double> { -100.0, -12.0, -9.0, -6.0, -3.0 });
-        } break;
-    }
-
-    if(game_state == nullptr)
-        return;
+    MixerGame_State new_game_state = [&] {
+        switch (variant)
+        {
+            case MixerGame_Normal : {
+                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Normal, -1, -1, db_slider_values);
+            } break;
+            case MixerGame_Timer : {
+                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Timer, -1, 2000, db_slider_values);
+            } break;
+            case MixerGame_Tries : {
+                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Tries, 5, -1, db_slider_values);
+            } break;
+        }
+        assert(false);
+        return MixerGame_State{};
+    }();
 
     editor->changePanel(nullptr);
 
-    auto observer = [this] (const Effects &effects)
+    auto observer = [this] (const Game_Mixer_Effects &effects)
     {
         if (effects.transition)
         {
@@ -121,9 +122,8 @@ void Application::toGame(MixerGame_Variant variant)
             {
                 auto new_game_ui = std::make_unique < MixerGameUI > (
                     multitrack_model.game_channels,
-                    game_state->db_slider_values,
-                    game_io.get(),
-                    game_state.get()
+                    db_slider_values,
+                    game_io.get()
                 );
                 game_ui = new_game_ui.get();
                 editor->changePanel(std::move(new_game_ui));
@@ -143,7 +143,7 @@ void Application::toGame(MixerGame_Variant variant)
         }
     };
 
-    auto debug_observer = [this] (const Effects &effects)
+    auto debug_observer = [this] (const Game_Mixer_Effects &effects)
     {
         if (effects.dsp)
         {
@@ -151,12 +151,11 @@ void Application::toGame(MixerGame_Variant variant)
         }
     };
 
-    assert(!game_io);
-    game_io = mixer_game_io_init();
+    assert(game_io = nullptr);
+    game_io = mixer_game_io_init(new_game_state);
     
     auto on_quit = [this] { 
         game_io->timer.stopTimer();
-        game_state.reset();  
         game_io.reset();  
         toMainMenu();
     };
@@ -166,13 +165,13 @@ void Application::toGame(MixerGame_Variant variant)
     mixer_game_add_observer(game_io.get(), std::move(observer));
     mixer_game_add_observer(game_io.get(), std::move(debug_observer));
     
-    game_io->timer.callback = [state = game_state.get(), io = game_io.get()] (juce::int64 timestamp) {
-        mixer_game_post_event(state, io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
+    game_io->timer.callback = [io = game_io.get()] (juce::int64 timestamp) {
+        mixer_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
     game_io->timer.startTimerHz(60);
 
-    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Init });
-    mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
+    mixer_game_post_event(game_io.get(), Event { .type = Event_Init });
+    mixer_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
 }
 
 void Application::toChannelSettings()
@@ -221,8 +220,8 @@ void Application::onEditorDelete()
     editor = nullptr;
     if (type == Panel_Game)
     {
-        assert(game_state);
-        mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Destroy_UI });
+        assert(game_io);
+        mixer_game_post_event(game_io.get(), Event { .type = Event_Destroy_UI });
         game_ui = nullptr;
     }
 }
@@ -261,15 +260,13 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         } break;
         case Panel_Game :
         {
-            assert(game_state); 
             assert(game_io); 
             panel = std::make_unique<MixerGameUI>(
                 multitrack_model.game_channels,
-                game_state->db_slider_values,
-                game_io.get(),
-                game_state.get()
+                db_slider_values, //TODO ??
+                game_io.get()
             );
-            mixer_game_post_event(game_state.get(), game_io.get(), Event { .type = Event_Create_UI });
+            mixer_game_post_event(game_io.get(), Event { .type = Event_Create_UI });
         } break;
     }
     editor->changePanel(std::move(panel));
@@ -282,7 +279,7 @@ void Application::broadcastDSP(const std::unordered_map < int, Channel_DSP_State
 
 void Application::create_daw_channel(int daw_channel_id)
 {
-    //DBG("action create " << daw_channel_id);
+    //DBG("action create " << daw_channel_id % 100 );
     auto [it, result] = multitrack_model.daw_channels.emplace(daw_channel_id, Daw_Channel { .id = daw_channel_id, .assigned_game_channel_id = -1  });
     assert(result);
     multitrack_model_broadcast_change(&multitrack_model);
@@ -290,7 +287,7 @@ void Application::create_daw_channel(int daw_channel_id)
     
 void Application::delete_daw_channel(int daw_channel_id)
 {    
-    //DBG("action delete " << daw_channel_id << " " << multitrack_model.daw_channels[daw_channel_id].name);
+    //DBG("action delete " << daw_channel_id % 100 << " " << multitrack_model.daw_channels[daw_channel_id].name);
     {
         auto erased_count = multitrack_model.daw_channels.erase(daw_channel_id);
         assert(erased_count == 1);
@@ -316,14 +313,14 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 void Application::rename_daw_channel(int daw_channel_id, const juce::String &new_name)
 {
     auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
-    //DBG("action rename " << daw_channel_id << " " << daw_channel.name << " into " << new_name);
+    //DBG("action rename " << daw_channel_id % 100 << " " << daw_channel.name << " into " << new_name);
     daw_channel.name = new_name;
     multitrack_model_broadcast_change(&multitrack_model);
 }
     
 void Application::change_frequency_range_from_daw(int daw_channel_id, int game_channel_id, float new_min, float new_max)
 {
-    //DBG("action frequency " << daw_channel_id);
+    //DBG("action frequency " << daw_channel_id % 100);
     auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
     assert(daw_channel.assigned_game_channel_id != -1);
     assert(daw_channel.assigned_game_channel_id == game_channel_id);
@@ -336,7 +333,7 @@ void Application::change_frequency_range_from_daw(int daw_channel_id, int game_c
 
 void Application::bind_daw_channel_with_game_channel(int daw_channel_id, int game_channel_id)
 {
-    //DBG("action bind " << daw_channel_id << " " << game_channel_id);
+    //DBG("action bind " << daw_channel_id % 100 << " " << game_channel_id % 100);
     assert(multitrack_model.daw_channels.contains(daw_channel_id));
     multitrack_model.daw_channels[daw_channel_id].assigned_game_channel_id = game_channel_id;
     if (game_channel_id != -1)

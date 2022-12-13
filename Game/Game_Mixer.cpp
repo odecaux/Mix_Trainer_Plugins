@@ -429,7 +429,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     return effects;
 }
 
-void mixer_game_add_observer(MixerGame_IO *io, observer_t new_observer)
+void mixer_game_add_observer(MixerGame_IO *io, mixer_game_observer_t new_observer)
 {
     io->observers.push_back(std::move(new_observer));
 }

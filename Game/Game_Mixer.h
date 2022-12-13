@@ -33,7 +33,7 @@ enum MixerGame_Variant
 struct MixerGame_Config 
 {
     juce::String title;
-    std::unordered_map<int, ChannelInfos> channel_infos;
+    std::unordered_map<int, Game_Channel> channel_infos;
     std::vector < double > db_slider_values;
     MixerGame_Variant variant;
     int listens;
@@ -64,13 +64,13 @@ struct Game_Mixer_Effects {
     std::optional < Game_Mixer_Effect_UI > ui;
     bool quit;
 };
-using observer_t = std::function<void(const Game_Mixer_Effects &)>;
+using mixer_game_observer_t = std::function<void(const Game_Mixer_Effects &)>;
 
 struct MixerGame_IO
 {
     std::mutex mutex;
     Timer timer;
-    std::vector<observer_t> observers;
+    std::vector<mixer_game_observer_t> observers;
     std::function < void() > on_quit;
     MixerGame_State game_state;
 };
@@ -80,10 +80,9 @@ void mixer_game_post_event(MixerGame_IO *io, Event event);
 Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event);
 void mixer_game_ui_transitions(MixerGameUI &ui, Game_Mixer_Effect_Transition transition);
 void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui);
-void mixer_game_add_observer(MixerGame_IO *io, observer_t new_observer);
+void mixer_game_add_observer(MixerGame_IO *io, mixer_game_observer_t new_observer);
 
-MixerGame_State mixer_game_state_init(
-                                      std::unordered_map<int, ChannelInfos> &channel_infos,
+MixerGame_State mixer_game_state_init(std::unordered_map<int, Game_Channel> &channel_infos,
                                       MixerGame_Variant variant,
                                       int listens,
                                       int timeout_ms,
@@ -113,13 +112,11 @@ struct MixerGameUI : public juce::Component
                     .value_i = new_pos
                 };
                 mixer_game_post_event(io, event);
-            }
+            };
             
-            auto new_fader = std::make_unique < FaderComponent > (
-                                                                  db_slider_values,
+            auto new_fader = std::make_unique < FaderComponent > (db_slider_values,
                                                                   a.second.name,
-                                                                  std::move(onFaderMoved)
-                                                                  );
+                                                                  std::move(onFaderMoved));
             fader_row.addAndMakeVisible(new_fader.get());
             return { id, std::move(new_fader)};
         };
