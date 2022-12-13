@@ -9,25 +9,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-template<class to, class from>
-inline to checked_cast(const from& from_value) {
-    to to_value{static_cast<to>(from_value)};
-#if _DEBUG
-    DBG("test");
-    from round_trip{static_cast<from>(to_value)};
-    if (round_trip != from_value)
-        throw std::runtime_error("Naughty cast");
-#endif
-    return to_value;
-}
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
-
-static int random_int(int max)
-{
-    //I want to keep the value positive, it's an index !!!
-    auto seed = juce::Random::getSystemRandom().nextInt();
-    return ((seed % max) + max) % max;
-}
 
 struct Timer: public juce::Timer
 {
@@ -61,38 +43,18 @@ struct DSP_EQ_Band {
     float gain;
 };
 
-struct Compressor_DSP_State {
-    bool is_on;
-    float threshold_gain;
-    float ratio;
-    float attack;
-    float release;
-    float makeup_gain;
-};
 
-struct Channel_DSP_State {
+struct Channel_DSP_State{
     double gain;
-    DSP_EQ_Band eq_bands[1];
-    Compressor_DSP_State comp;
-};
-
-
-struct Audio_File
-{
-    juce::File file;
-    juce::String title;
-    juce::Range<juce::int64> loop_bounds;
-    juce::Range<int> freq_bounds;
-    float max_gain;
+    DSP_EQ_Band bands[1];
 };
 
 Channel_DSP_State ChannelDSP_on();
 Channel_DSP_State ChannelDSP_off();
 Channel_DSP_State ChannelDSP_gain(double gain);
-DSP_EQ_Band eq_band_peak(float frequency, float quality, float gain);
 
 
-juce::dsp::IIR::Coefficients < float > ::Ptr make_coefficients(DSP_EQ_Band band, double sample_rate);
+juce::dsp::IIR::Coefficients < float > ::Ptr make_coefficients(DSP_Filter_Type type, double sample_rate, float frequency, float quality, float gain);
 
 //------------------------------------------------------------------------
 struct Channel_DSP_Callback : public juce::AudioSource
@@ -142,8 +104,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
     using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
     using Gain       = juce::dsp::Gain<float>;
-    using Compressor = juce::dsp::Compressor<float>;
-    juce::dsp::ProcessorChain<FilterBand, Compressor, Gain, Gain> dsp_chain;
+    juce::dsp::ProcessorChain<FilterBand, Gain> dsp_chain;
     double sample_rate = -1.0;
     juce::CriticalSection lock;
     juce::AudioSource *input_source;
@@ -152,31 +113,79 @@ private:
     void updateDspChain()
     {
         for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
-            auto new_coefficients = make_coefficients(state.eq_bands[i], sample_rate);
+            auto new_coefficients = make_coefficients(state.bands[i].type, sample_rate, state.bands[i].frequency, state.bands[i].quality, state.bands[i].gain);
             assert(new_coefficients);
+            // minimise lock scope, get<0>() needs to be a  compile time constant
             {
                 juce::ScopedLock processLock (lock);
                 if (i == 0)
                     *dsp_chain.get<0>().state = *new_coefficients;
             }
         }
-        //compressor 
-        dsp_chain.setBypassed<1>(!state.comp.is_on);
-        if (state.comp.is_on)
-        {
-            dsp_chain.get<1>().setThreshold(state.comp.threshold_gain);
-            dsp_chain.get<1>().setRatio(state.comp.ratio);
-            dsp_chain.get<1>().setAttack(state.comp.attack);
-            dsp_chain.get<1>().setRelease(state.comp.release);
-            //makeup gain
-            dsp_chain.setBypassed<2>(!state.comp.is_on);
-            dsp_chain.get<2>().setGainLinear ((float)state.gain);
-        }
         //gain
-        dsp_chain.get<3>().setGainLinear ((float)state.gain);
+        dsp_chain.get<1>().setGainLinear ((float)state.gain);
     }
 };
 
+struct Game_Channel
+{
+    int id;
+    juce::String name;
+    float min_freq;
+    float max_freq;
+};
+
+struct Daw_Channel
+{
+    int id;
+    int assigned_game_channel_id;
+    juce::String name;
+};
+
+struct MuliTrack_Model;
+
+using multitrack_observer_t = std::function < void(MuliTrack_Model*) >;
+
+enum MultiTrack_Obsevers_ID : int
+{
+    MultiTrack_Obsevers_Debug
+};
+
+struct MuliTrack_Model
+{
+    std::unordered_map<int, Game_Channel> game_channels;
+    std::vector<int> order;
+    std::unordered_map<int, Daw_Channel> daw_channels;
+    std::unordered_map<int, multitrack_observer_t> observers;
+    //std::unordered_map<int, int> assigned_daw_track_count;
+};
+
+static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observer_id_to_skip = -1)
+{
+    for (auto &[id, observer] : model->observers)
+    {
+        if(id != observer_id_to_skip)
+            observer(model);
+    }
+}
+
+static void multitrack_model_add_observer(MuliTrack_Model *model, int observer_id, multitrack_observer_t observer)
+{
+    assert(!model->observers.contains(observer_id));
+    auto [it, result] = model->observers.emplace(observer_id, std::move(observer));
+    assert(result);
+}
+static void multitrack_model_remove_observer(MuliTrack_Model *model, int observer_id)
+{
+    assert(model->observers.contains(observer_id));
+    auto count = model->observers.erase(observer_id);
+    assert(count == 1);
+}
+
+struct Game_Channel_Broadcast_Message {
+    Game_Channel channels[256];
+    int channel_count;
+};
 
 struct Settings{
     float difficulty;
@@ -191,11 +200,24 @@ size_t db_to_slider_pos(double db, const std::vector<double> &db_values);
 size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values);
 double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values);
 
-struct TextSlider : public juce::Slider
+class DecibelSlider : public juce::Slider
 {
-    TextSlider() : Slider(){}
-    juce::String getTextFromValue(double pos) override { return get_text_from_value(pos); }
-    std::function < juce::String(double) > get_text_from_value = [] (double){ return ""; };
+public:
+    explicit DecibelSlider(const std::vector < double > &dBValues)
+    : db_values(dBValues)
+    {
+    }
+    
+    juce::String getTextFromValue(double pos) override
+    {
+        double db = db_values[(size_t)pos];
+        if (db == -100.0) 
+            return "Muted";
+        else
+            return juce::Decibels::toString(db, 0);
+    }
+
+    const std::vector < double > &db_values;
 };
 
 enum FaderStep {
@@ -207,22 +229,15 @@ enum FaderStep {
 class FaderComponent : public juce::Component
 {
 public:
-    explicit FaderComponent(const std::vector<double> &dbValues,
+    explicit FaderComponent(const std::vector<double> &db_values,
                             const juce::String &name,
-                            std::function < void(int) > && onFaderMove)
-    : db_values(dbValues)
+                            std::function<void(int)> &&onFaderMove)
+    :   fader(db_values)
     {
         label.setText(name, juce::NotificationType::dontSendNotification);
+        label.setEditable(false);
         addAndMakeVisible(label);
         
-        fader.get_text_from_value = [&] (double pos) -> juce::String
-        {
-            double db = db_values[static_cast<size_t>(pos)];
-            if (db == -100.0) 
-                return "Muted";
-            else
-                return juce::Decibels::toString(db, 0);
-        };
         fader.setSliderStyle(juce::Slider::LinearVertical);
         fader.setTextBoxStyle(juce::Slider::TextBoxBelow, true, fader.getTextBoxWidth(), 40);
         fader.setRange(0.0, (double)(db_values.size() - 1), 1.0);
@@ -239,10 +254,10 @@ public:
     void resized() override
     {
         auto r = getLocalBounds();
-        auto labelBounds = r.removeFromTop(50);
+        auto labelBounds = r.withBottom(50);
         label.setBounds(labelBounds);
         
-        auto faderBounds = r;
+        auto faderBounds = r.withTrimmedTop(50);
         fader.setBounds(faderBounds);
     }
     
@@ -251,11 +266,6 @@ public:
         auto r = getLocalBounds();
         g.setColour(juce::Colours::white);
         g.drawRoundedRectangle(r.toFloat(), 5.0f, 2.0f);
-    }
-    
-    void setTrackName(const juce::String& new_name)
-    {
-        label.setText(new_name, juce::dontSendNotification);
     }
     
     void update(FaderStep new_step, int new_pos)
@@ -290,9 +300,8 @@ public:
     
 private:
     juce::Label label;
-    TextSlider fader;
+    DecibelSlider fader;
     FaderStep step;
-    const std::vector<double> &db_values;
     //double targetValue;
     //double smoothing;
 };

@@ -1,9 +1,8 @@
-Priority 1 :
+#Priority 1 :
 
-files : toggle les fichiers pour chaque config
+channel ids must be positives : -1 = unassigned
 
-
-Priority 2 :
+#Priority 2 :
 
 Bass game mode
 rising gain
@@ -13,11 +12,14 @@ on doit pouvoir aussi avoir un mix toggle dans le frequency game
 Les freq bounds d'un fichier audio doivent influer sur le score
     sigmoid score ?
 
-Priority 3 :
+#Priority 3 :
+
+unifier les ListBoxes ???
 
 Test suite
 Serialization Little Big Planet
 File explorer
+files : active, desactivate
 
 ajouter preview et bounds au file selector panel
     pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/
@@ -29,6 +31,7 @@ ajouter preview et bounds au file selector panel
 Hierarchical FSM ?
 
 when should the timestamp be initialized ?
+unifier les editable_label
 
 
 
@@ -38,15 +41,16 @@ Refactor pour que j'ai une application standalone avec des fenêtre pour tt les 
 message : bypass_all
 Trouver un nom : game_tracks, internal_tracks ? 
 séparer les deux 
-1)  les gam_tracks sont crées dans un tableau, on un nom et un id
-    la liste est envoyée à tous les plugins
-    les plugins peuvent choisir leur game_track et l'envoient au host
-    l'host a un counter pour chaque game_track, tant que tt le monde est pas à 1, on fait 
-    les plugins enrengistrent l'ID de leur game_track, si elle est pas dans la liste qu'ils ont reçu y a erreur
+1) + les gam_tracks sont crées dans un tableau, on un nom et un id
+   + la liste est envoyée à tous les plugins
+   + les plugins peuvent choisir leur game_track
+   + l'envoient au host
+     l'host a un counter pour chaque game_track, tant que tt le monde est pas à 1, on fait 
+     les plugins enrengistrent l'ID de leur game_track, si elle est pas dans la liste qu'ils ont reçu y a erreur
 
 
 
-on a plus besoin des events add/remove/rename tracks
++ on a plus besoin des events add/remove/rename tracks
 On peut pas commencer tant que toutes les internal tracks on pas été assignées 
 
 

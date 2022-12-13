@@ -67,10 +67,10 @@
 				<Path>Host.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
-				<Path>Standalone.10x</Path>
+				<Path>Track.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
-				<Path>Track.10x</Path>
+				<Path>Standalone.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
 				<Path>../JUCE/juce.10x</Path>
@@ -84,13 +84,13 @@
 				<IsVirtual>false</IsVirtual>
 				<Children>
 					<File>
+						<Path>Application/MainMenu.h</Path>
+					</File>
+					<File>
 						<Path>Application/Application.h</Path>
 					</File>
 					<File>
 						<Path>Application/Application.cpp</Path>
-					</File>
-					<File>
-						<Path>Application/MainMenu.h</Path>
 					</File>
 				</Children>
 			</Folder>

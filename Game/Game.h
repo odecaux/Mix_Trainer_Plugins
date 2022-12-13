@@ -37,13 +37,7 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix);
 
 juce::String step_to_str(GameStep step);
 
-struct ChannelInfos
-{
-    int id;
-    juce::String name;
-    float min_freq;
-    float max_freq;
-};
+
 
 class ProcessorHost;
 class Application;

@@ -68,11 +68,30 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         }
     }
 
+    void broadcastChannelList(const MuliTrack_Model& model)
+    {
+        juce::ignoreUnused(model);
+        Game_Channel_Broadcast_Message out = {};
+        assert(model.game_channels.size() == model.order.size());
+        //assert(model.game_channels.size() == model.assigned_daw_track_count.size());
+        out.channel_count = static_cast<int>(model.game_channels.size());
+        for (auto i = 0; i < model.game_channels.size(); i++)
+        {
+            auto id = model.order[i];
+            auto track = model.game_channels.at(id);
+            out.channels[i] = track;
+        }
+        auto message = juce::String("new_track_list ") + juce::String::toHexString((void*)&out, sizeof(out), 0);
+        juce::MessageManager::getInstance()->broadcastMessage(message);
+    }
+
+#if 0
     void broadcastRenameTrack(int id, const juce::String& new_name)
     {
         auto message = juce::String("name_from_ui ") + juce::String(id) + " " + new_name;
         juce::MessageManager::getInstance()->broadcastMessage(message);
     }
+#endif
 
     
     Application app;

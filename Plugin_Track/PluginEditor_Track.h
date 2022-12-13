@@ -13,16 +13,21 @@ class EditorTrack : public juce::AudioProcessorEditor
 {
     public:
     
-    EditorTrack(ProcessorTrack& p, 
-                int id, 
+    EditorTrack(ProcessorTrack& p,
+                const std::vector<Game_Channel> &gameChannels,
+                int &gameTrackId
+                #if 0
                 const juce::String &name, 
                 float minFrequency, 
-                float maxFrequency)
+                float maxFrequency
+                #endif
+                )
     : AudioProcessorEditor(p),
       audioProcessor(p),
-      id(id)
+      game_channels(gameChannels),
+      game_track_id(gameTrackId)
     {
-        
+#if 0
         track_name_label.setSize(200, 30);
         track_name_label.setJustificationType(juce::Justification::centred);
         track_name_label.setText(name, juce::dontSendNotification);
@@ -40,8 +45,23 @@ class EditorTrack : public juce::AudioProcessorEditor
             
         addAndMakeVisible(frequency_bounds_widget);
 
+#endif
+        game_track_combo.setSize(150, 30);
+        game_track_combo.setEditableText(false);
+        game_track_combo.setJustificationType(juce::Justification::left);
+        game_track_combo.onChange = [&] { 
+            auto selected_idx = game_track_combo.getSelectedId();
+            if (selected_idx == 0)
+                game_track_id = -1;
+            else
+                game_track_id = gameChannels[selected_idx - 1].id;
+            audioProcessor.broadcast_selected_game_channel();
+        };
+        addAndMakeVisible(game_track_combo);
+
         setSize(400, 300);
         setResizable(true, false);
+        update_track_list();
     }
     
     void paint(juce::Graphics& g) override
@@ -54,23 +74,45 @@ class EditorTrack : public juce::AudioProcessorEditor
     {
         auto bounds = getLocalBounds();
         auto center = bounds.getCentre();
+        game_track_combo.setCentrePosition(center);
+#if 0
         track_name_label.setCentrePosition(center.x, 40);
         frequency_bounds_widget.setCentrePosition(center.x, center.y);
+#endif
     }
 
+#if 0
     void renameTrack(const juce::String &new_name)
     {
         track_name_label.setText(new_name, juce::dontSendNotification);
+    }
+#endif
+
+    void update_track_list()
+    {
+        game_track_combo.clear(juce::dontSendNotification);
+        for (auto i = 0; i < game_channels.size(); i++)
+        {
+            const Game_Channel& track = game_channels[i];
+            game_track_combo.addItem(track.name, i + 1);
+            if(track.id == game_track_id)
+                game_track_combo.setSelectedId(i + 1, juce::dontSendNotification);
+        }
     }
     
     private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     ProcessorTrack& audioProcessor;
-    juce::Label track_name_label;
-    int id;
-    Frequency_Bounds_Widget frequency_bounds_widget;
     
+    const std::vector<Game_Channel> &game_channels;
+    int &game_track_id;
+    juce::ComboBox game_track_combo;
+#if 0
+    juce::Label track_name_label;
+    Frequency_Bounds_Widget frequency_bounds_widget;
+#endif
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(EditorTrack)
 };
 

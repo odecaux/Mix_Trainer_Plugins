@@ -62,6 +62,7 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     
     void updateTrackProperties(const TrackProperties& properties) override;
     
+#if 0
     void frequencyRangeChanged(float newMin, float newMax)
     {
         minFrequency = newMin;
@@ -72,15 +73,28 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     void broadcastFrequencies()
     {
         juce::String message = 
-            juce::String("frequency_range ") + 
-            juce::String(id) + " " + 
-            juce::String(minFrequency) + " " + 
-            juce::String(maxFrequency);
+        juce::String("frequency_range ") + 
+        juce::String(daw_channel_id) + " " + 
+        juce::String(game_track_id) + " " + 
+        juce::String(minFrequency) + " " + 
+        juce::String(maxFrequency);
         juce::MessageManager::getInstance()->broadcastMessage(message);
     }
+#endif
+
     
+    void broadcast_selected_game_channel()
+    {
+        juce::String message = 
+            juce::String("select_game_channel ") + 
+            juce::String(daw_channel_id) + " " + 
+            juce::String(game_channel_id);
+        juce::MessageManager::getInstance()->broadcastMessage(message);
+    }
     //==============================================================================
-    int id;
+    std::vector<Game_Channel> game_channels;
+    int game_channel_id = -1;
+    int daw_channel_id;
     juce::String name;
     double gain;
     float minFrequency;

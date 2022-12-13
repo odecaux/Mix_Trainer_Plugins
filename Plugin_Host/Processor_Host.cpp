@@ -181,26 +181,31 @@ void ProcessorHost::actionListenerCallback(const juce::String& message) {
     
 
     assert(tokens.size() >= 2);
-    int message_id = tokens[1].getIntValue();
+    int daw_channel_id = tokens[1].getIntValue();
     
     if (tokens[0] == "create") 
     {
-        app.createChannel(message_id);
+        app.create_daw_channel(daw_channel_id);
     }
     else if (tokens[0] == "delete") 
     {
-       app.deleteChannel(message_id);
+       app.delete_daw_channel(daw_channel_id);
     }
     else if (tokens[0] == "name_from_track")
     {
-        app.renameChannelFromTrack(message_id, tokens[2]);
+        app.rename_daw_channel(daw_channel_id, tokens[2]);
     }
-    //TODO more infos from the channel ?
     else if (tokens[0] == "frequency_range")
     {
-        auto minFreq = tokens[2].getFloatValue();
-        auto maxFreq = tokens[3].getFloatValue();
-        app.changeFrequencyRange(message_id, minFreq, maxFreq);
+        auto game_channel_id = tokens[2].getIntValue();
+        auto minFreq = tokens[3].getFloatValue();
+        auto maxFreq = tokens[4].getFloatValue();
+        app.change_frequency_range_from_daw(daw_channel_id, game_channel_id, minFreq, maxFreq);
+    }
+    else if (tokens[0] == "select_game_channel")
+    {
+        auto game_channel_id = tokens[2].getIntValue();
+        app.bind_daw_channel_with_game_channel(daw_channel_id, game_channel_id);
     }
 }
 

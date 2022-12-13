@@ -27,20 +27,20 @@ ProcessorTrack::ProcessorTrack()
                  )
 #endif
 ,
-    id { juce::Random().nextInt() },
-    name { id },
+    daw_channel_id { juce::Random().nextInt() },
+    name { daw_channel_id },
     gain { 0.0f },
     minFrequency { 20 },
     maxFrequency { 20000 }
 {
     juce::MessageManager::getInstance()->registerBroadcastListener(this);
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("create ") + juce::String(id));
-    broadcastFrequencies();
+    juce::MessageManager::getInstance()->broadcastMessage(juce::String("create ") + juce::String(daw_channel_id));
+    //broadcastFrequencies();
 }
 
 ProcessorTrack::~ProcessorTrack()
 {
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("delete ") + juce::String(id));
+    juce::MessageManager::getInstance()->broadcastMessage(juce::String("delete ") + juce::String(daw_channel_id));
     juce::MessageManager::getInstance()->deregisterBroadcastListener(this);
 }
 
@@ -166,35 +166,45 @@ bool ProcessorTrack::hasEditor() const
 
 juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 {
-    return new EditorTrack(*this, id, name, minFrequency, maxFrequency);
+    return new EditorTrack(*this, game_channels, game_channel_id /*, name, minFrequency, maxFrequency */);
 }
 
 //==============================================================================
 void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream out (destData, false);
+    out.writeInt(daw_channel_id);
+    out.writeInt(game_channel_id);
     out.writeFloat(minFrequency);
     out.writeFloat(maxFrequency);
     out.writeInt(0);
 }
 
-void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
+void ProcessorTrack::setStateInformation(const void*, int sizeInBytes)
 {
+    //const char *data_ptr = static_cast<const char*>(data);
     if(sizeInBytes > 0)
     {
-        assert(sizeInBytes == 12);
-        minFrequency = ((const float*)data)[0];
-        maxFrequency = ((const float*)data)[1];
+#if 0
+        assert(sizeInBytes == 20);
+        daw_channel_id = *reinterpret_cast<const int*>(data_ptr);
+        data_ptr += sizeof(int);
+        game_track_id = *reinterpret_cast<const int*>(data_ptr);
+        data_ptr += sizeof(int);
+        minFrequency = *reinterpret_cast<const float*>(data_ptr);
+        data_ptr += sizeof(float);
+        maxFrequency = *reinterpret_cast<const float*>(data_ptr);
+#endif
     }
 }
 
 void ProcessorTrack::updateTrackProperties(const TrackProperties& properties)
 {
-    juce::MessageManager::getInstance()->broadcastMessage(juce::String("name_from_track ") + juce::String(id) + juce::String(" ") + properties.name);
     name = properties.name;
+    juce::MessageManager::getInstance()->broadcastMessage(juce::String("name_from_track ") + juce::String(daw_channel_id) + juce::String(" ") + name);
     if (auto *editor = (EditorTrack*)getActiveEditor())
     {
-        editor->renameTrack(name);
+        //editor->renameTrack(name);
     }
 }
 
@@ -204,12 +214,12 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
     juce::StringArray tokens = juce::StringArray::fromTokens(message, " ", "\"");
     
     assert(tokens.size() >= 2);
-    int message_id = tokens[1].getIntValue();
-    if(message_id != id)
-        return;
     
     if(tokens[0] == "dsp")
     {
+        int message_id = tokens[1].getIntValue();
+        if(message_id != game_channel_id)
+            return;
         auto blob = juce::MemoryBlock{};
         blob.loadFromHexString(tokens[2]);
         size_t blob_size = blob.getSize();
@@ -220,10 +230,34 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
     }
     else if(tokens[0] == "name_from_ui")
     {
+        int message_id = tokens[1].getIntValue();
+        if(message_id != daw_channel_id)
+            return;
         name = tokens[2];
         if (auto *editor = (EditorTrack*)getActiveEditor())
         {
-            editor->renameTrack(name);
+            //editor->renameTrack(name);
+        }
+    }
+    else if (tokens[0] == "new_track_list")
+    {
+        auto blob = juce::MemoryBlock{};
+        blob.loadFromHexString(tokens[1]);
+        size_t blob_size = blob.getSize();
+        size_t track_list_size = sizeof(Game_Channel_Broadcast_Message);
+        assert(blob_size == track_list_size);
+        Game_Channel_Broadcast_Message in = *(Game_Channel_Broadcast_Message*)blob.getData();
+        
+        game_channels.clear();
+        for (auto i = 0; i < in.channel_count; i++)
+        {
+            game_channels.push_back(in.channels[i]);
+        }
+        assert(game_channels.size() == in.channel_count);
+
+        if (auto *editor = (EditorTrack*)getActiveEditor())
+        {
+            editor->update_track_list();
         }
     }
 }
