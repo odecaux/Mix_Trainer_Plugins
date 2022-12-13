@@ -16,10 +16,10 @@ struct Game_Mixer_Effect_UI {
     //int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
     FaderStep fader_step; 
-    Mix mix;
+    Mix mix_toggles;
     bool display_bottom_button;
-    juce::String button_text;
-    Event_Type button_event;
+    juce::String bottom_button_text;
+    Event_Type bottom_button_event;
 };
 
 

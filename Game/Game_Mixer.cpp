@@ -21,6 +21,7 @@ void mixer_game_ui_transitions(MixerGameUI &ui, Game_Mixer_Effect_Transition tra
 
 void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
 {
+    game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     if (new_ui.slider_pos_to_display)
     {
         assert(new_ui.slider_pos_to_display->size() == ui.faders.size());
@@ -30,8 +31,7 @@ void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
         fader->update(new_ui.fader_step, pos);
     }
-	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
-    game_ui_bottom_update(&ui.bottom, true, new_ui.button_text, new_ui.mix, new_ui.button_event);
+    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
 }
 
 void mixer_game_post_event(MixerGame_IO *io, Event event)
@@ -347,16 +347,16 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         switch (state.config.variant)
         {
             case MixerGame_Normal : {
-                effects.ui->mix = state.mix;
+                effects.ui->mix_toggles = state.mix;
             } break;
             case MixerGame_Timer : {
-                effects.ui->mix = Mix_Hidden;
+                effects.ui->mix_toggles = Mix_Hidden;
             } break;
             case MixerGame_Tries : {
                 if (state.step == GameStep_Question && state.remaining_listens == 0)
-                    effects.ui->mix = Mix_Hidden;
+                    effects.ui->mix_toggles = Mix_Hidden;
                 else
-                    effects.ui->mix = state.mix;
+                    effects.ui->mix_toggles = state.mix;
             } break;
         }
 
@@ -365,8 +365,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             case GameStep_Begin :
             {
                 effects.ui->header_center_text = "Have a listen";
-                effects.ui->button_text = "Begin";
-                effects.ui->button_event = Event_Click_Begin;
+                effects.ui->bottom_button_text = "Begin";
+                effects.ui->bottom_button_event = Event_Click_Begin;
             } break;
             case GameStep_Question :
             {
@@ -376,21 +376,21 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                 {
                     case MixerGame_Normal : {
                         effects.ui->header_center_text = "Reproduce the target mix";
-                        effects.ui->button_text = "Validate";
-                        effects.ui->button_event = Event_Click_Answer;
+                        effects.ui->bottom_button_text = "Validate";
+                        effects.ui->bottom_button_event = Event_Click_Answer;
                     } break;
                     case MixerGame_Timer : {
                         if(state.mix == Mix_Target)
                         {
                             effects.ui->header_center_text = "Listen";
-                            effects.ui->button_text = "Go";
-                            effects.ui->button_event = Event_Click_Done_Listening;
+                            effects.ui->bottom_button_text = "Go";
+                            effects.ui->bottom_button_event = Event_Click_Done_Listening;
                         }
                         else if (state.mix == Mix_User)
                         {
                             effects.ui->header_center_text = "Reproduce the target mix";
-                            effects.ui->button_text = "Validate";
-                            effects.ui->button_event = Event_Click_Answer;
+                            effects.ui->bottom_button_text = "Validate";
+                            effects.ui->bottom_button_event = Event_Click_Answer;
                         }
                         else jassertfalse;
                     } break;
@@ -405,8 +405,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                             effects.ui->header_center_text = "Reproduce the target mix";
                         }
                         else jassertfalse;
-                        effects.ui->button_text = "Validate";
-                        effects.ui->button_event = Event_Click_Answer;
+                        effects.ui->bottom_button_text = "Validate";
+                        effects.ui->bottom_button_event = Event_Click_Answer;
                     } break;
                 }
             } break;
@@ -414,8 +414,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             {
                 effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
                 effects.ui->header_center_text = "Results";
-                effects.ui->button_text = "Next";
-                effects.ui->button_event = Event_Click_Next;
+                effects.ui->bottom_button_text = "Next";
+                effects.ui->bottom_button_event = Event_Click_Next;
             } break;
             case GameStep_None :
             case GameStep_EndResults :

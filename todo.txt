@@ -1,6 +1,7 @@
 Priority 1 :
 
-implémenter le pre-listen
+files : toggle les fichiers pour chaque config
+
 
 Priority 2 :
 
@@ -17,7 +18,6 @@ Priority 3 :
 Test suite
 Serialization Little Big Planet
 File explorer
-files : active, desactivate
 
 ajouter preview et bounds au file selector panel
     pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/
