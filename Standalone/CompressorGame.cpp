@@ -9,7 +9,7 @@ CompressorGame_Config compressor_game_config_default(juce::String name)
 {
     return {
         .title = name,
-        .threshold_values_db = { -20.0f, -16.0f, -12.0f, -8.0f, -4.0f, 0.0f },
+        .threshold_values_db = { -90.0f, -50.0f, -12.0f, -8.0f, -4.0f, 0.0f },
         .ratio_values = { 1.0f, 3.0f, 6.0f, 10.0f },
         .attack_values = { 1.0f, 10.0f, 30.0f, 60.0f, 100.0f },
         .release_values = { 1.0f, 50.0f, 100.0f, 150.0f },
@@ -86,7 +86,7 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
         return juce::String(new_ui.comp_widget.release_values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
-    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix, new_ui.bottom_button_event);
+    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
 }
 
 void compressor_game_post_event(CompressorGame_IO *io, Event event)
@@ -174,16 +174,16 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         {
             if (state.step == GameStep_Question)
             {
-                if(state.config.variant == Compressor_Game_Timer) return { .error = 1 };
-                if (!state.can_still_listen) return { .error = 1 };
+                if(state.config.variant == Compressor_Game_Timer) assert(false);
+                if (!state.can_still_listen) assert(false);
                 if (state.mix == Mix_User)
                 {
-                    if(!event.value_b) return { .error = 1 };
+                    if(!event.value_b) assert(false);
                     state.mix = Mix_Target;
                 }
                 else if (state.mix == Mix_Target)
                 {
-                    if(event.value_b) return { .error = 1 };
+                    if(event.value_b) assert(false);
                     switch (state.config.variant)
                     {
                         case Compressor_Game_Normal : 
@@ -210,12 +210,12 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             {
                 if (state.mix == Mix_User)
                 {
-                    if(!event.value_b) return { .error = 1 };
+                    if(!event.value_b) assert(false);
                     state.mix = Mix_Target;
                 }
                 else if (state.mix == Mix_Target)
                 {
-                    if(event.value_b) return { .error = 1 };
+                    if(event.value_b) assert(false);
                     state.mix = Mix_User;
                 }
                 else jassertfalse;
@@ -239,19 +239,19 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             }
             else
             {
-                if(state.timestamp_start != -1) return { .error = 1 };
+                if(state.timestamp_start != -1) assert(false);
             }
         } break;
         case Event_Click_Begin :
         {
-            if(state.step != GameStep_Begin) return { .error = 1 };
-            if(state.mix != Mix_Hidden) return { .error = 1 };
+            if(state.step != GameStep_Begin) assert(false);
+            if(state.mix != Mix_Hidden) assert(false);
             if (state.target_ratio_pos != -1 ||
                 state.target_threshold_pos != -1 ||
                 state.target_attack_pos != -1 ||
                 state.target_release_pos != -1)
             {
-                return { .error = 1 };
+                assert(false);
             }
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
@@ -262,7 +262,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         } break;
         case Event_Click_Next :
         {
-            if (state.step != GameStep_Result) return { .error = 1 };
+            if (state.step != GameStep_Result) assert(false);
             out_transition = GameStep_Result;
             in_transition = GameStep_Question;
         } break;
@@ -292,7 +292,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
     
     if (check_answer)
     {
-        if(state.step != GameStep_Question) return { .error = 1 };
+        if(state.step != GameStep_Question) assert(false);
 
         int points_awarded = 0;
         if (state.target_threshold_pos == state.input_threshold_pos) 
@@ -311,8 +311,8 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
     
     if (done_listening)
     {
-        if(state.step != GameStep_Question) return { .error = 1 };
-        if(state.mix != Mix_Target) return { .error = 1 };
+        if(state.step != GameStep_Question) assert(false);
+        if(state.mix != Mix_Target) assert(false);
         state.mix = Mix_User;
         state.timestamp_start = -1;
 
@@ -378,6 +378,8 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         }break;
         case GameStep_Question : {
             state.step = GameStep_Question;
+            state.mix = Mix_Target;
+            state.can_still_listen = true;
 
             state.target_threshold_pos = random_int(static_cast<int>(state.config.threshold_values_db.size()));
             state.target_ratio_pos = random_int(static_cast<int>(state.config.ratio_values.size()));
@@ -417,7 +419,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             }
             else
             {
-                if (state.timestamp_start != -1) return { .error = 1 };
+                if (state.timestamp_start != -1) assert(false);
             }
 #endif
             update_audio = true;
@@ -434,7 +436,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             }
             else
             {
-                if (state.timestamp_start != -1) return { .error = 1 };
+                if (state.timestamp_start != -1) assert(false);
             }
 #endif
             update_audio = true;
@@ -491,10 +493,9 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             case GameStep_Question :
             case GameStep_Result :
             {
-                float threshold_gain = juce::Decibels::decibelsToGain(state.config.threshold_values_db[threshold_pos]);
                 dsp.comp = {
                     .is_on = true,
-                    .threshold_gain = threshold_gain,
+                    .threshold_gain = state.config.threshold_values_db[threshold_pos],
                     .ratio = state.config.ratio_values[ratio_pos],
                     .attack = state.config.attack_values[attack_pos],
                     .release = state.config.release_values[release_pos],
@@ -528,6 +529,22 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 .release_values = state.config.release_values
             }
         };
+        
+        switch (state.config.variant)
+        {
+            case Compressor_Game_Normal : {
+                effects.ui->mix_toggles = state.mix;
+            } break;
+            case Compressor_Game_Timer : {
+                effects.ui->mix_toggles = Mix_Hidden;
+            } break;
+            case Compressor_Game_Tries : {
+                if (state.step == GameStep_Question && state.remaining_listens == 0)
+                    effects.ui->mix_toggles = Mix_Hidden;
+                else
+                    effects.ui->mix_toggles = state.mix;
+            } break;
+        }
 
         switch (state.step)
         {
@@ -569,7 +586,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                     {
                         if (state.mix == Mix_Target)
                         {
-                            if (!state.can_still_listen) return { .error = 1 };
+                            if (!state.can_still_listen) assert(false);
                             effects.ui->header_center_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
@@ -601,8 +618,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 jassertfalse;
             } break;
         }
-
-        effects.ui->mix = Mix_Hidden;
     }
 
     effects.new_state = state;

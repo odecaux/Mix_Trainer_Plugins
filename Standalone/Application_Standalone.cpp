@@ -570,13 +570,13 @@ bool FilePlayer::load_file_into_transport (const juce::File& audio_file)
         return false;
 
     current_reader_source = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
+    current_reader_source->setLooping(true);
 
     // ..and plug it into our transport source
     transport_source.setSource (current_reader_source.get(),
                             32768,                   // tells it to buffer this many samples ahead
                             &read_ahead_thread,                 // this is the background thread to use for reading-ahead
                             current_reader_source->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
-    transport_source.setLooping(true);
     return true;
 }
 
