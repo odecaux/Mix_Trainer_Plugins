@@ -531,12 +531,17 @@ FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)
 {
     // audio setup
     read_ahead_thread.startThread ();
-
-    device_manager.initialise (0, 2, nullptr, true, {}, nullptr);
     
     dsp_callback.push_new_dsp_state(ChannelDSP_on());
     source_player.setSource (&dsp_callback);
-    device_manager.addAudioCallback (&source_player);
+
+    auto result = device_manager.initialiseWithDefaultDevices(0, 2);
+    if (result.isEmpty())
+    {
+        device_manager.addAudioCallback (&source_player);
+        output_device_name = device_manager.getAudioDeviceSetup().outputDeviceName;
+    }
+    device_manager.addChangeListener(this);
 }
 
 FilePlayer::~FilePlayer()
@@ -622,4 +627,27 @@ Return_Value FilePlayer::post_command(Audio_Command command)
 void FilePlayer::push_new_dsp_state(Channel_DSP_State new_dsp_state)
 {
     dsp_callback.push_new_dsp_state(new_dsp_state);
+}
+
+void FilePlayer::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if(source != &device_manager)
+        return;
+
+    auto *io_device_type = device_manager.getCurrentDeviceTypeObject();
+    auto device_names = io_device_type->getDeviceNames();
+    if(device_names.size() == 0)
+        return;
+    auto default_device_idx = io_device_type->getDefaultDeviceIndex(false);
+    auto default_device_name = device_names[default_device_idx];
+    if(default_device_name == output_device_name)
+        return;
+    device_manager.removeChangeListener(this);
+    auto result = device_manager.initialiseWithDefaultDevices(0, 2);
+    if (result.isEmpty())
+    {
+        device_manager.addAudioCallback (&source_player);
+        output_device_name = device_manager.getAudioDeviceSetup().outputDeviceName;
+    }
+    device_manager.addChangeListener(this);
 }

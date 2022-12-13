@@ -41,9 +41,9 @@ struct Audio_File_List
 };
 
 
-
 //------------------------------------------------------------------------
-struct FilePlayer {
+struct FilePlayer : juce::ChangeListener 
+{
     FilePlayer(juce::AudioFormatManager &formatManager);
 
     ~FilePlayer();
@@ -56,6 +56,7 @@ struct FilePlayer {
     Transport_State transport_state;
     
     juce::AudioDeviceManager device_manager;
+    juce::String output_device_name;
     juce::TimeSliceThread read_ahead_thread  { "audio file preview" };
     
     //juce::URL currentAudioFile;
@@ -63,6 +64,9 @@ struct FilePlayer {
     juce::AudioTransportSource transport_source;
     std::unique_ptr<juce::AudioFormatReaderSource> current_reader_source;
     Channel_DSP_Callback dsp_callback;
+
+private:
+    void changeListenerCallback(juce::ChangeBroadcaster*) override;
 };
 
 class Application_Standalone
