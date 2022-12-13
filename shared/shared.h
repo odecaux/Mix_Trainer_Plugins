@@ -285,10 +285,10 @@ struct TextSlider : public juce::Slider
     std::function < juce::String(double) > get_text_from_value = [] (double){ return ""; };
 };
 
-enum FaderStep {
-    FaderStep_Editing,
-    FaderStep_Hiding,
-    FaderStep_Showing
+enum Widget_Interaction_Type {
+    Widget_Editing,
+    Widget_Hiding,
+    Widget_Showing
 };
 
 class FaderComponent : public juce::Component
@@ -318,7 +318,7 @@ public:
         fader.setScrollWheelEnabled(true);
         
         fader.onValueChange = [this, onMove = std::move(onFaderMove)] {
-            assert(this->step == FaderStep_Editing);
+            assert(this->DEBUG_step == Widget_Editing);
             onMove((int)fader.getValue());
         };
         addAndMakeVisible(fader);
@@ -347,17 +347,18 @@ public:
         label.setText(new_name, juce::dontSendNotification);
     }
     
-    void update(FaderStep new_step, int new_pos)
+    void update(Widget_Interaction_Type new_step, int new_pos)
     {
+        DEBUG_step = new_step;
         switch (new_step)
         {
-            case FaderStep_Editing :
+            case Widget_Editing :
             {
                 fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(true);
                 fader.setVisible(true);
             } break;
-            case FaderStep_Hiding :
+            case Widget_Hiding :
             {
                 assert(new_pos == -1);
                 //TODO ?
@@ -365,7 +366,7 @@ public:
                 fader.setEnabled(false);
                 fader.setVisible(false);
             } break;
-            case FaderStep_Showing :
+            case Widget_Showing :
             {
                 fader.setValue((double)new_pos, juce::dontSendNotification);
                 fader.setEnabled(false);
@@ -373,14 +374,13 @@ public:
             } break;
         }
 
-        step = new_step;
         repaint();
     }
     
 private:
+    Widget_Interaction_Type DEBUG_step;
     juce::Label label;
     TextSlider fader;
-    FaderStep step;
     const std::vector<double> &db_values;
     //double targetValue;
     //double smoothing;

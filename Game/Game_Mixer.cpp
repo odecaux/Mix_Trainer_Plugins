@@ -29,7 +29,7 @@ void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
     for(auto& [id, fader] : ui.faders)
     {
         int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
-        fader->update(new_ui.fader_step, pos);
+        fader->update(new_ui.widget_visibility, pos);
     }
     game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
 }
@@ -341,7 +341,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             slider_pos_to_display = *slider_pos;
         
         effects.ui = Game_Mixer_Effect_UI{};
-        effects.ui->fader_step = gameStepToFaderStep(state.step, state.mix);
+        effects.ui->widget_visibility = gameStepToFaderStep(state.step, state.mix);
         effects.ui->slider_pos_to_display = std::move(slider_pos_to_display);
         
         switch (state.config.variant)

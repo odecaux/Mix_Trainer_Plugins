@@ -33,7 +33,7 @@ struct Effect_Player {
     std::vector<Audio_Command> commands;
 };
 
-FaderStep gameStepToFaderStep(GameStep game_step, Mix mix);
+Widget_Interaction_Type gameStepToFaderStep(GameStep game_step, Mix mix);
 
 juce::String step_to_str(GameStep step);
 

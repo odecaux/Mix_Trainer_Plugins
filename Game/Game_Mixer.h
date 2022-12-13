@@ -15,7 +15,7 @@ struct Game_Mixer_Effect_UI {
     juce::String header_right_text;
     //int score; 
     std::optional < std::unordered_map<int, int> > slider_pos_to_display;
-    FaderStep fader_step; 
+    Widget_Interaction_Type widget_visibility;
     Mix mix_toggles;
     bool display_bottom_button;
     juce::String bottom_button_text;

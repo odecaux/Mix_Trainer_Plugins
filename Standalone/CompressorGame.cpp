@@ -9,7 +9,7 @@ CompressorGame_Config compressor_game_config_default(juce::String name)
 {
     return {
         .title = name,
-        .threshold_values_db = { -90.0f, -50.0f, -12.0f, -8.0f, -4.0f, 0.0f },
+        .threshold_values_db = { -24.0f, -18.0f, -12.0f, -6.0f, 0.0f },
         .ratio_values = { 1.0f, 3.0f, 6.0f, 10.0f },
         .attack_values = { 1.0f, 10.0f, 30.0f, 60.0f, 100.0f },
         .release_values = { 1.0f, 50.0f, 100.0f, 150.0f },
@@ -21,6 +21,7 @@ CompressorGame_Config compressor_game_config_default(juce::String name)
 
 void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition)
 {
+    juce::ignoreUnused(ui);
     if (transition.out_transition == GameStep_Begin)
     {
 #if 0
@@ -33,8 +34,8 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
             compressor_game_post_event(state, io, event);
         };
         ui.addAndMakeVisible(*ui.compressor_widget);
-#endif
         ui.resized();
+#endif
     }
     if (transition.in_transition == GameStep_EndResults)
     {
@@ -42,8 +43,8 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
         ui.compressor_widget.reset();
         ui.results_panel = std::make_unique < CompressorGame_Results_Panel > ();
         ui.addAndMakeVisible(*ui.results_panel);
-#endif
         ui.resized();
+#endif
     }
 }
 
@@ -51,40 +52,57 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
 {
 	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     
-    //ui.threshold_values = new_ui.comp_widget.threshold_values_db;
-    ui.threshold_slider.setValue(static_cast<double>(new_ui.comp_widget.threshold_pos), juce::dontSendNotification);
-    ui.threshold_slider.setRange(0.0, (double)((int)new_ui.comp_widget.threshold_values_db.size() - 1), 1.0);
-    //ui.threshold_label.setText(juce::Decibels::toString(new_ui.comp_widget.threshold_values_db[new_ui.comp_widget.threshold_pos]), juce::dontSendNotification);
-    ui.threshold_slider.get_text_from_value = [=] (double new_pos)
+    auto threshold_callback = [values = new_ui.comp_widget.threshold_values_db] (double new_pos)
     {
-        return juce::Decibels::toString(new_ui.comp_widget.threshold_values_db[static_cast<size_t>(new_pos)], 0);
+        return juce::Decibels::toString(values[static_cast<size_t>(new_pos)], 0);
     };
-    //ui.ratio_values = new_ui.comp_widget.ratio_values;
-    ui.ratio_slider.setValue(static_cast<double>(new_ui.comp_widget.ratio_pos), juce::dontSendNotification);
-    ui.ratio_slider.setRange(0.0, (double)((int)new_ui.comp_widget.ratio_values.size() - 1), 1.0);
-    //ui.ratio_label.setText(juce::String(new_ui.comp_widget.ratio_values[new_ui.comp_widget.ratio_pos]), juce::dontSendNotification);
-    ui.ratio_slider.get_text_from_value = [=] (double new_pos)
+    auto ratio_callback = [values = new_ui.comp_widget.ratio_values] (double new_pos)
     {
-        return juce::String(new_ui.comp_widget.ratio_values[static_cast<size_t>(new_pos)]);
+        return juce::String(values[static_cast<size_t>(new_pos)]);
+    };
+    auto attack_callback = [values = new_ui.comp_widget.attack_values] (double new_pos)
+    {
+        return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
+    };
+    auto release_callback = [values = new_ui.comp_widget.release_values] (double new_pos)
+    {
+        return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
+    };
+    using bundle_t = std::tuple<TextSlider&, int, int,  std::function < juce::String(double)> >;
+
+    auto bundle = std::vector<bundle_t>{
+        { ui.threshold_slider, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_callback) },
+        { ui.ratio_slider, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_callback) },
+        { ui.attack_slider, new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_callback) },
+        { ui.release_slider, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_callback) }
     };
 
-    //ui.attack_values = new_ui.comp_widget.attack_values;
-    ui.attack_slider.setValue(static_cast<double>(new_ui.comp_widget.attack_pos), juce::dontSendNotification);
-    ui.attack_slider.setRange(0.0, (double)((int)new_ui.comp_widget.attack_values.size() - 1), 1.0);
-    //ui.attack_label.setText(juce::String(new_ui.comp_widget.attack_values[new_ui.comp_widget.attack_pos]) + " ms", juce::dontSendNotification);
-    ui.attack_slider.get_text_from_value = [=] (double new_pos)
+    //TODO rename range
+    for (auto &[slider, position, range, text_from_value] : bundle)
     {
-        return juce::String(new_ui.comp_widget.attack_values[static_cast<size_t>(new_pos)]) + " ms";
-    };
+        slider.setValue(static_cast<double>(position), juce::dontSendNotification);
+        slider.setRange(0.0, (double)(range - 1), 1.0);
+        slider.get_text_from_value = std::move(text_from_value);
 
-    //ui.release_values = new_ui.comp_widget.release_values;
-    ui.release_slider.setValue(static_cast<double>(new_ui.comp_widget.release_pos), juce::dontSendNotification);
-    ui.release_slider.setRange(0.0, (double)((int)new_ui.comp_widget.release_values.size() - 1), 1.0);
-    //ui.release_label.setText(juce::String(new_ui.comp_widget.release_values[new_ui.comp_widget.release_pos]) + " ms", juce::dontSendNotification);
-    ui.release_slider.get_text_from_value = [=] (double new_pos)
-    {
-        return juce::String(new_ui.comp_widget.release_values[static_cast<size_t>(new_pos)]) + " ms";
-    };
+        switch (new_ui.widget_visibility)
+        {
+            case Widget_Editing :
+            {
+                slider.setEnabled(true);
+                slider.setVisible(true);
+            } break;
+            case Widget_Hiding :
+            {
+                slider.setEnabled(false);
+                slider.setVisible(false);
+            } break;
+            case Widget_Showing :
+            {
+                slider.setEnabled(false);
+                slider.setVisible(true);
+            } break;
+        }
+    }
 
     game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
 }
@@ -529,6 +547,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 .release_values = state.config.release_values
             }
         };
+        effects.ui->widget_visibility = gameStepToFaderStep(state.step, state.mix);
         
         switch (state.config.variant)
         {

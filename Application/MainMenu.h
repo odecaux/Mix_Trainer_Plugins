@@ -226,7 +226,7 @@ public:
     
     void selectedRowsChanged (int last_row_selected) override
     {   
-        if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != configs.size())
+        if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != model.game_channels.size())
             selected_channel_changed_callback(0);
     }
 

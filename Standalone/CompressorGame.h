@@ -38,7 +38,7 @@ struct Compressor_Game_Effect_UI {
         std::vector < float > attack_values;
         std::vector < float > release_values;
     } comp_widget;
-    FaderStep fader_step;
+    Widget_Interaction_Type widget_visibility;
     Mix mix_toggles;
     juce::String bottom_button_text;
     Event_Type bottom_button_event;

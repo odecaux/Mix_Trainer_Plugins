@@ -32,24 +32,25 @@ juce::String step_to_str(GameStep step)
     }
 }
 
-FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
+//TODO helloooooooo tu vas mourir toi
+Widget_Interaction_Type gameStepToFaderStep(GameStep game_step, Mix mix)
 {
     switch (game_step)
     {
         case GameStep_Begin :
         {
             assert(mix == Mix_Hidden);
-            return FaderStep_Editing;
+            return Widget_Editing;
         } break;
         case GameStep_Question :
         {
             if (mix == Mix_User)
             {
-                return FaderStep_Editing;
+                return Widget_Editing;
             }
             else if (mix == Mix_Target)
             {
-                return FaderStep_Hiding;
+                return Widget_Hiding;
             }
             else
             {
@@ -60,7 +61,7 @@ FaderStep gameStepToFaderStep(GameStep game_step, Mix mix)
         case GameStep_Result :
         {
             assert(mix != Mix_Hidden);
-            return FaderStep_Showing;
+            return Widget_Showing;
         } break;
         case GameStep_EndResults :
         case GameStep_None :
