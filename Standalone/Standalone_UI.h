@@ -1061,6 +1061,15 @@ public :
     {
         addAndMakeVisible(main_fader);
         setSize (500, 300);
+#if 0
+        auto selection_list = std::make_unique<Selection_List>(
+            std::vector<juce::String> { "yes", "no", "maybe", "I don't know" },
+            std::vector<int>{0, 3},
+            true,
+            [](const auto &){}
+        );
+        changePanel(std::move(selection_list));
+#endif
     }
 
     void resized() override 

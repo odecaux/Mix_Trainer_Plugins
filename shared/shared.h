@@ -699,4 +699,73 @@ private:
     juce::Colour textColour;
 };
 
+
+class Selection_List : public juce::Component,
+public juce::ListBoxModel
+{
+public:
+    explicit Selection_List(
+                   std::vector<juce::String> initial_row_texts,
+                   const std::vector<int> &initial_selection_indices,
+                   bool multiple_selection_enabled,
+                   std::function < void(const std::vector<int> &) > onSelectionChaged)
+    :
+      row_texts(std::move(initial_row_texts)),
+      selection_changed_callback(std::move(onSelectionChaged))
+    {
+        list_comp.setModel(this);
+        list_comp.setMultipleSelectionEnabled(multiple_selection_enabled);
+        //list_comp.updateContent();
+        for (int idx : initial_selection_indices)
+        {
+            list_comp.selectRow(idx, false, false);
+        }
+        //TODO slow
+        addAndMakeVisible(list_comp);
+    }
+
+    int getNumRows() override
+    {
+        return checked_cast<int>(row_texts.size());
+    }
+
+    void paintListBoxItem (int rowNumber,
+                           juce::Graphics &g,
+                           int width, int height,
+                           bool rowIsSelected) override
+    {
+        auto bounds = juce::Rectangle { 0, 0, width, height };
+        g.setColour(juce::Colours::white);
+        g.drawText(row_texts[rowNumber], bounds, juce::Justification::centredLeft);
+        if (rowIsSelected)
+        {
+            g.drawRect(bounds);
+        }
+    }
+
+    void selectedRowsChanged(int) override
+    {
+        auto selected_rows = list_comp.getSelectedRows();
+        std::vector<int> selected_indices{};
+        for (auto i = 0; i < selected_rows.size(); i++)
+        {
+            int selected_idx = selected_rows[i];
+            selected_indices.push_back(selected_idx);
+        }
+        //TODO slow ??? who cares ?
+        selection_changed_callback(selected_indices);
+    }
+
+    void resized() override
+    {
+        list_comp.setBounds(getLocalBounds());
+    }
+
+    std::function < void(const std::vector<int> &) > selection_changed_callback;
+
+private:
+    std::vector<juce::String> row_texts;
+    juce::ListBox list_comp;
+};
+
 #endif //SHARED_H
