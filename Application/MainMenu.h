@@ -266,13 +266,23 @@ public :
         }
 
         channel_list.selected_channel_changed_callback = [&] (int) {
-
+            selected_channel_changed_callback();
         };
         channel_list.channel_list_changed_callback = [&] {
-            multitrack_model_broadcast_change(&multitrack_model);
-            selected_channel_changed_callback(); //TODO supprimer celui-là, on va juste mettre un observer à la place
+            multitrack_model_broadcast_change(&multitrack_model, MultiTrack_Observers_Channel_Settings);
         };
+        multitrack_model_add_observer(
+            &multitrack_model,
+            MultiTrack_Observers_Channel_Settings,
+            [ = ](auto *new_model) { juce::ignoreUnused(new_model); }
+        );
+
         addAndMakeVisible(channel_list);
+    }
+
+    ~ChannelSettingsMenu()
+    {
+        multitrack_model_remove_observer(&multitrack_model, MultiTrack_Observers_Channel_Settings);
     }
     
     void paint(juce::Graphics &g) override

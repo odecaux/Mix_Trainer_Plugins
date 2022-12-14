@@ -17,6 +17,9 @@ Application::Application(ProcessorHost &processorHost) :
     //NOTE useless
     broadcastDSP(bypassedAllChannelsDSP(multitrack_model.game_channels));
     multitrack_model_add_observer(&multitrack_model, MultiTrack_Observers_Debug, debug_multitrack_model);
+    multitrack_model_add_observer(&multitrack_model, 
+                                  MultiTrack_Observers_Broadcast, 
+                                  [&host = host] (auto *model) { host.broadcastChannelList(*model);});
 }
 
 
@@ -157,7 +160,6 @@ void Application::toChannelSettings()
     auto channel_settings_menu =
         std::make_unique < ChannelSettingsMenu > (multitrack_model, [this] { toMainMenu(); });
     channel_settings_menu->selected_channel_changed_callback = [&] {
-        host.broadcastChannelList(multitrack_model);
     };
     editor->changePanel(std::move(channel_settings_menu));
 }

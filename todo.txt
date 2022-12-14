@@ -45,8 +45,8 @@ séparer les deux
    + la liste est envoyée à tous les plugins
    + les plugins peuvent choisir leur game_track
    + l'envoient au host
-     l'host a un counter pour chaque game_track, tant que tt le monde est pas à 1, on fait 
-     les plugins enrengistrent l'ID de leur game_track, si elle est pas dans la liste qu'ils ont reçu y a erreur
+   +  l'host a un counter pour chaque game_track, tant que tt le monde est pas à 1, on fait 
+   +  les plugins enrengistrent l'ID de leur game_track, si elle est pas dans la liste qu'ils ont reçu y a erreur
 
 
 

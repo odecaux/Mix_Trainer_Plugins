@@ -190,7 +190,9 @@ using multitrack_observer_t = std::function < void(MuliTrack_Model*) >;
 
 enum MultiTrack_Observers_ID : int
 {
-    MultiTrack_Observers_Debug
+    MultiTrack_Observers_Debug,
+    MultiTrack_Observers_Broadcast,
+    MultiTrack_Observers_Channel_Settings
 };
 
 struct MuliTrack_Model
@@ -199,7 +201,7 @@ struct MuliTrack_Model
     std::vector<int> order;
     std::unordered_map<int, Daw_Channel> daw_channels;
     std::unordered_map<int, multitrack_observer_t> observers;
-    //std::unordered_map<int, int> assigned_daw_track_count;
+    std::unordered_map<int, int> assigned_daw_track_count;
 };
 
 static void debug_multitrack_model(MuliTrack_Model *model)
@@ -208,6 +210,7 @@ static void debug_multitrack_model(MuliTrack_Model *model)
     for (auto& [id, game_channel] : model->game_channels)
     {
         DBG(game_channel.name << ", " << game_channel.id % 100);
+        DBG("-----> bound to " << model->assigned_daw_track_count.at(id) << " tracks");
     }
 
     DBG("Order");
@@ -235,6 +238,16 @@ static void debug_multitrack_model(MuliTrack_Model *model)
 
 static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observer_id_to_skip = -1)
 {
+    model->assigned_daw_track_count.clear();
+    for (const auto& [id, game_channel] : model->game_channels)
+    {
+        model->assigned_daw_track_count.emplace(game_channel.id, 0);
+    }
+    for (const auto& [id, daw_channel] : model->daw_channels)
+    {
+        if (daw_channel.assigned_game_channel_id == -1) continue;
+        model->assigned_daw_track_count.at(daw_channel.assigned_game_channel_id)++;
+    }
     for (auto &[id, observer] : model->observers)
     {
         if(id != observer_id_to_skip)
