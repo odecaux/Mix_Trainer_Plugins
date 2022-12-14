@@ -192,7 +192,8 @@ enum MultiTrack_Observers_ID : int
 {
     MultiTrack_Observers_Debug = 0,
     MultiTrack_Observers_Broadcast,
-    MultiTrack_Observers_Channel_Settings
+    MultiTrack_Observers_Channel_Settings,
+    MultiTrack_Observers_Main_Menu
 };
 
 struct MuliTrack_Model

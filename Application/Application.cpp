@@ -38,7 +38,8 @@ void Application::toMainMenu()
             [this] { toGame(MixerGame_Tries); },
             [this] { toChannelSettings(); },
             [this] { toStats(); },
-            [this] { toSettings(); }
+            [this] { toSettings(); },
+            &multitrack_model
         );
     editor->changePanel(std::move(main_menu));
 }
@@ -216,7 +217,8 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
                 [this] { toGame(MixerGame_Tries); },
                 [this] { toChannelSettings(); },
                 [this] { toStats(); },
-                [this] { toSettings(); }
+                [this] { toSettings(); },
+                &multitrack_model
             );
         } break;
         case Panel_Channel_Settings : {

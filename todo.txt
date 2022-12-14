@@ -3,6 +3,8 @@
 unifier les ListBoxes 
     une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 
+pouvoir selectionner aucune track !
+
 #Priority 2 :
 
 Bass game mode
@@ -55,7 +57,7 @@ séparer les deux
    quand on save leur state, faut faire gaffe à nettoyer
 
 + on a plus besoin des events add/remove/rename tracks
-On peut pas commencer tant que toutes les internal tracks on pas été assignées 
++ On peut pas commencer tant que toutes les internal tracks on pas été assignées 
 
 
 

@@ -2,12 +2,14 @@
 class MainMenu : public juce::Component
 {
 public :
-    MainMenu(std::function<void()> &&toNormalGameButtonClick,
-             std::function<void()> &&toTimerGameButtonClick,
-             std::function<void()> &&toTriesGameButtonClick,
-             std::function<void()> &&toChannelSettingsButtonClick,
-             std::function<void()> &&toStatsButtonClick,
-             std::function<void()> &&toSettingsButtonClick)
+    MainMenu(std::function<void()> && toNormalGameButtonClick,
+             std::function<void()> && toTimerGameButtonClick,
+             std::function<void()> && toTriesGameButtonClick,
+             std::function<void()> && toChannelSettingsButtonClick,
+             std::function<void()> && toStatsButtonClick,
+             std::function<void()> && toSettingsButtonClick,
+             MuliTrack_Model *multitrackModel)
+    :   multitrack_model { multitrackModel }
     {
         game_normal_button.setSize(100, 40);
         game_normal_button.setButtonText("Normal");
@@ -53,8 +55,39 @@ public :
             click();
         };
         addAndMakeVisible(settings_button);
+
+        auto model_observer = [&] (MuliTrack_Model *model)
+        {
+            bool is_valid = true;
+            for (auto &[game_channel_id, assigned_count] : model->assigned_daw_track_count)
+            {
+                if (assigned_count != 1)
+                {
+                    is_valid = false;
+                    break;
+                }
+            }
+            if (is_valid)
+            {
+                game_normal_button.setEnabled(true);
+                game_timer_button.setEnabled(true);
+                game_tries_button.setEnabled(true);
+            }
+            else
+            {
+                game_normal_button.setEnabled(false);
+                game_timer_button.setEnabled(false);
+                game_tries_button.setEnabled(false);
+            }
+        };
+        model_observer(multitrack_model);
+        multitrack_model_add_observer(multitrack_model, MultiTrack_Observers_Main_Menu, std::move(model_observer));
     }
-    
+    ~MainMenu()
+    {
+        multitrack_model_remove_observer(multitrack_model, MultiTrack_Observers_Main_Menu);
+    }
+
     void paint(juce::Graphics &g) override
     {
         juce::ignoreUnused(g);
@@ -79,6 +112,7 @@ private :
     juce::TextButton channel_settings_button;
     juce::TextButton stats_button;
     juce::TextButton settings_button;
+    MuliTrack_Model *multitrack_model;
 };
 
 class Channel_List : public juce::Component,
