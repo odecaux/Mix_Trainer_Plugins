@@ -172,7 +172,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
 struct Game_Channel
 {
     int id;
-    juce::String name;
+    char name[128];
     float min_freq;
     float max_freq;
 };
@@ -181,7 +181,7 @@ struct Daw_Channel
 {
     int id;
     int assigned_game_channel_id;
-    juce::String name;
+    char name[128];
 };
 
 struct MuliTrack_Model;

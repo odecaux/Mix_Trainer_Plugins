@@ -165,15 +165,35 @@ juce::AudioProcessorEditor* ProcessorHost::createEditor()
     return editor;
 }
 
+static const char out_message[] = "hello world";
 //==============================================================================
 void ProcessorHost::getStateInformation(juce::MemoryBlock& destData)
 {
-    juce::ignoreUnused(destData);
+    juce::MemoryOutputStream out (destData, false);
+    out.write(out_message, sizeof(out_message));
+
+    auto game_channels = app.save_model();
+    int size = checked_cast<int>(game_channels.size());
+    out.writeInt(checked_cast<int>(size));
+    out.write(game_channels.data(), size * sizeof(Game_Channel));
+    out.writeInt(0);
 }
 
 void ProcessorHost::setStateInformation(const void* data, int sizeInBytes)
 {
-    juce::ignoreUnused(data, sizeInBytes);
+    juce::MemoryInputStream in { data, checked_cast<size_t>(sizeInBytes), false };
+    if (sizeInBytes > 0)
+    {
+        //assert(sizeInBytes == (size * sizeof(Game_Channel) + sizeof(int) * 2));
+        char in_message[sizeof(out_message) / sizeof(*out_message)] = {};
+        in.read(in_message, sizeof(in_message));
+
+        int size = in.readInt();
+        std::vector<Game_Channel> game_channels{};
+        game_channels.resize(size);
+        in.read(game_channels.data(), size * sizeof(Game_Channel));
+        app.set_model(game_channels);
+    }
 }
 
 void ProcessorHost::actionListenerCallback(const juce::String& message) {

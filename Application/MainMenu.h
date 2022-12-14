@@ -99,15 +99,22 @@ public:
             assert(row_idx <= model.game_channels.size());
             assert(row_idx >= 0);
             int channel_id = model.order[row_idx];
-            model.game_channels[channel_id].name = row_text;
+            auto& channel_to_rename = model.game_channels[channel_id];
+            row_text.copyToUTF8(
+                channel_to_rename.name,
+                sizeof(channel_to_rename.name)
+            );
             channel_list_changed_callback();
         };
         editable_create_row_callback = [&] (juce::String new_row_text) {
             int new_channel_id = random_positive_int();
             Game_Channel new_channel = {
                 .id = new_channel_id,
-                .name = new_row_text,
             };
+            new_row_text.copyToUTF8(
+                new_channel.name,
+                sizeof(new_channel.name)
+            );
             {
                 auto [it, result] = model.game_channels.emplace(new_channel_id, new_channel);
                 assert(result);

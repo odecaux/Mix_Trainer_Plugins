@@ -285,9 +285,13 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
     
 void Application::rename_daw_channel(int daw_channel_id, const juce::String &new_name)
 {
-    auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
     //DBG("action rename " << daw_channel_id % 100 << " " << daw_channel.name << " into " << new_name);
-    daw_channel.name = new_name;
+    auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
+
+    new_name.copyToUTF8(
+        daw_channel.name,
+        sizeof(daw_channel.name)
+    );
     multitrack_model_broadcast_change(&multitrack_model);
 }
     
@@ -314,4 +318,31 @@ void Application::bind_daw_channel_with_game_channel(int daw_channel_id, int gam
         assert(multitrack_model.game_channels.contains(game_channel_id));
     }
     multitrack_model_broadcast_change(&multitrack_model);
+}
+
+void Application::set_model(const std::vector<Game_Channel> &channels)
+{
+    auto size = channels.size();
+    juce::ignoreUnused(size);
+    assert(multitrack_model.game_channels.size() == multitrack_model.order.size());
+    multitrack_model.game_channels.clear();
+    multitrack_model.order.clear();
+    for (const auto& channel : channels)
+    {
+        multitrack_model.game_channels.emplace(channel.id, channel);
+        multitrack_model.order.push_back(channel.id);
+    }
+    DBG("SET");
+    multitrack_model_broadcast_change(&multitrack_model);
+}
+
+std::vector<Game_Channel> Application::save_model()
+{
+    assert(multitrack_model.game_channels.size() == multitrack_model.order.size());
+    std::vector<Game_Channel> out_vector{};
+    for (const auto& channel_id : multitrack_model.order)
+    {
+        out_vector.push_back(multitrack_model.game_channels.at(channel_id));
+    }
+    return out_vector;
 }

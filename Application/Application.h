@@ -36,6 +36,8 @@ public:
     void rename_daw_channel(int id, const juce::String &new_name);
     void change_frequency_range_from_daw(int daw_channel_id, int game_channel_id, float new_min, float new_max);
     void bind_daw_channel_with_game_channel(int daw_track_id, int game_track_id);
+    void set_model(const std::vector<Game_Channel> &channels);
+    std::vector<Game_Channel> save_model();
 
 private:
     enum PanelType{

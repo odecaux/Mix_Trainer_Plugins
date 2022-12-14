@@ -173,28 +173,19 @@ juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream out (destData, false);
-    out.writeInt(daw_channel_id);
+    //out.writeInt(daw_channel_id);
     out.writeInt(game_channel_id);
-    out.writeFloat(minFrequency);
-    out.writeFloat(maxFrequency);
+    //out.writeFloat(minFrequency);
+    //out.writeFloat(maxFrequency);
     out.writeInt(0);
 }
 
-void ProcessorTrack::setStateInformation(const void*, int sizeInBytes)
+void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 {
-    //const char *data_ptr = static_cast<const char*>(data);
+    juce::MemoryInputStream in { data, checked_cast<size_t>(sizeInBytes), false };
     if(sizeInBytes > 0)
     {
-#if 0
-        assert(sizeInBytes == 20);
-        daw_channel_id = *reinterpret_cast<const int*>(data_ptr);
-        data_ptr += sizeof(int);
-        game_track_id = *reinterpret_cast<const int*>(data_ptr);
-        data_ptr += sizeof(int);
-        minFrequency = *reinterpret_cast<const float*>(data_ptr);
-        data_ptr += sizeof(float);
-        maxFrequency = *reinterpret_cast<const float*>(data_ptr);
-#endif
+        game_channel_id = in.readInt();
     }
 }
 
