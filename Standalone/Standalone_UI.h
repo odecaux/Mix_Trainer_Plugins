@@ -380,6 +380,10 @@ public:
                        Audio_File_List *fileList)
     : list_comp(true)
     {
+        list_comp.selection_changed_callback = [fileList] (const auto& new_selection)
+        {
+            fileList->selected = new_selection;
+        };
         std::vector<juce::String> file_names{};
         for (const Audio_File& file : fileList->files)
         {
@@ -387,10 +391,6 @@ public:
         }
         list_comp.set_rows(file_names, fileList->selected);
         
-        list_comp.selection_changed_callback = [fileList] (const auto& new_selection)
-        {
-            fileList->selected = new_selection;
-        };
         header.onBackClicked = std::move(onBackClicked);
         
         game_ui_header_update(&header, "Select active files", "");
@@ -406,7 +406,7 @@ public:
     {
         auto r = getLocalBounds();
         auto header_bounds = r.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = r.removeFromBottom(100);
+        auto bottom_bounds = r.removeFromBottom(50);
         header.setBounds(header_bounds);
         list_comp.setBounds(r);
         bottom.setBounds(bottom_bounds);

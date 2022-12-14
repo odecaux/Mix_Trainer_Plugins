@@ -88,8 +88,6 @@ class Application_Standalone
     void to_low_end_frequency_game();
     void to_compressor_game();
 
-
-
     private :
     FilePlayer player;
     Audio_File_List audio_file_list;

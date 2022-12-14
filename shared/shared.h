@@ -727,6 +727,63 @@ private:
     juce::Colour textColour;
 };
 
+#if 0
+class DumbRow  : public juce::Component
+{
+public:
+    DumbRow(const std::function<void(int)> &onMouseDown) :
+        on_mouse_down(onMouseDown)
+    {}
+
+    DumbRow (juce::ListBox& lb) : owner (lb) {}
+
+    void paint (juce::Graphics& g) override
+    {
+        g.setColour(juce::Colours::white);
+        //g.drawText(text, getLocalBounds(), juce::Justification::left);
+    }
+
+    void update (const juce::String new_text, int new_row)
+    {
+        text = new_text;
+        row = new_row;
+    }
+
+    void mouseDown (const juce::MouseEvent&) override
+    {
+        assert(row != -1);
+        on_mouse_down(row);
+    }
+
+    void mouseUp (const juce::MouseEvent& ) override
+    {
+    }
+
+    void mouseDoubleClick (const juce::MouseEvent& ) override
+    {
+    }
+
+    void mouseDrag (const juce::MouseEvent& ) override
+    {
+    }
+
+    void resized() override
+    {
+        if (customComponent != nullptr)
+            customComponent->setBounds (getLocalBounds());
+    }
+
+    //==============================================================================
+    std::unique_ptr<juce::Component> customComponent;
+    int row = -1;
+    bool isSelected = false, isDragging = false, isDraggingToScroll = false, selectRowOnMouseUp = false;
+    juce::ListBox& owner;
+    const std::function<void(int)> &on_mouse_down;
+    juce::String text;
+    int row = -1;
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DumbRow)
+};
+#endif
 
 class Selection_List : 
     public juce::Component,
@@ -737,7 +794,7 @@ public:
     {
         list_comp.setModel(this);
         list_comp.setMultipleSelectionEnabled(multiple_selection_enabled);
-        //TODO slow
+        list_comp.setClickingTogglesRowSelection(true);
         addAndMakeVisible(list_comp);
     }
 
@@ -751,6 +808,9 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
+        if (rowNumber >= getNumRows()) 
+            return;
+
         auto bounds = juce::Rectangle { 0, 0, width, height };
         g.setColour(juce::Colours::white);
         g.drawText(row_texts[rowNumber], bounds, juce::Justification::centredLeft);
@@ -759,6 +819,34 @@ public:
             g.drawRect(bounds);
         }
     }
+#if 0
+    juce::Component *refreshComponentForRow (int row_number, bool, juce::Component *existing_component) override
+    {
+        //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
+        //unused row            
+        if (row_number >= row_texts.size())
+        {
+            if (existing_component != nullptr)
+                delete existing_component;
+            return nullptr;
+        }
+        else
+        {
+            DumbRow *row;
+            if (existing_component != nullptr)
+            {
+                row = dynamic_cast<DumbRow*>(existing_component);
+                assert(row != nullptr);
+            }
+            else
+            {
+                row = new DumbRow(row_on_mouse_down);
+            }
+            row->update(row_texts[row_number], row_number);
+            return row;
+        } 
+    }
+#endif
 
     void selectedRowsChanged(int) override
     {
@@ -771,6 +859,17 @@ public:
         }
         //TODO slow ??? who cares ?
         selection_changed_callback(selection);
+    }
+
+    
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.escapeKey)
+        {
+            list_comp.deselectAllRows();
+            return true;
+        }
+        return false;
     }
 
     void resized() override
@@ -790,8 +889,12 @@ public:
             if(selection[i])
                 selected_set.addRange(juce::Range<int>(i, i + 1));
         }
-        list_comp.setSelectedRows (selected_set, juce::dontSendNotification);
+        for (int i = 0; i < selected_set.size(); i++)
+        {
+            DBG(" " << i << " " << int(selected_set[i]));
+        }
         list_comp.updateContent();
+        list_comp.setSelectedRows (selected_set, juce::dontSendNotification);
     }
 
     std::function < void(const std::vector<bool> &) > selection_changed_callback;
@@ -799,6 +902,7 @@ public:
 private:
     std::vector<juce::String> row_texts;
     juce::ListBox list_comp;
+    std::function<void(int)> row_on_mouse_down;
 };
 
 #endif //SHARED_H
