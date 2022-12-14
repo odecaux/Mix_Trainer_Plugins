@@ -92,11 +92,22 @@ DSP_EQ_Band eq_band_peak(float frequency, float quality, float gain);
 
 juce::dsp::IIR::Coefficients < float > ::Ptr make_coefficients(DSP_EQ_Band band, double sample_rate);
 
+using Channel_DSP_FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
+using Channel_DSP_Gain       = juce::dsp::Gain<float>;
+using Channel_DSP_Compressor = juce::dsp::Compressor<float>;
+using Channel_DSP_Chain = juce::dsp::ProcessorChain<Channel_DSP_FilterBand, Channel_DSP_Compressor, Channel_DSP_Gain, Channel_DSP_Gain>;
+
+void channel_dsp_update_chain(Channel_DSP_Chain *dsp_chain,
+                              Channel_DSP_State state,
+                              juce::CriticalSection *lock,
+                              double sample_rate);
+
 //------------------------------------------------------------------------
 struct Channel_DSP_Callback : public juce::AudioSource
 {
     Channel_DSP_Callback(juce::AudioSource* inputSource) : input_source(inputSource)
     {
+        state = ChannelDSP_on();
     }
     
     virtual ~Channel_DSP_Callback() override = default;
@@ -108,11 +119,17 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
         juce::ScopedNoDenormals noDenormals;
 
-        juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
-        juce::dsp::ProcessContextReplacing<float> context (block);
         {
+            juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
+            juce::dsp::ProcessContextReplacing<float> context (block);
             juce::ScopedLock processLock (lock);
             dsp_chain.process (context);
+        }
+
+        {
+            juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
+            juce::dsp::ProcessContextReplacing<float> context (block);
+            master_volume.process(context);
         }
     }
     
@@ -120,11 +137,13 @@ struct Channel_DSP_Callback : public juce::AudioSource
     {
         sample_rate = sampleRate;
         input_source->prepareToPlay (blockSize, sampleRate);
-        dsp_chain.prepare ({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
-        updateDspChain();
+
+        dsp_chain.prepare({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
+        channel_dsp_update_chain(&dsp_chain, state, &lock, sample_rate);
+        master_volume.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
     }
 
-    void releaseResources() override 
+    void releaseResources() override
     {
         input_source->releaseResources();
     }
@@ -133,47 +152,23 @@ struct Channel_DSP_Callback : public juce::AudioSource
     {
         state = new_state;
         if(sample_rate != -1.0)
-            updateDspChain();
+            channel_dsp_update_chain(&dsp_chain, state, &lock, sample_rate);
+    }
+
+    void push_master_volume_db(double master_volume_db)
+    {
+        master_volume.setGainDecibels((float)master_volume_db);
     }
 
     Channel_DSP_State state;
+    Channel_DSP_Chain dsp_chain;
+    juce::dsp::Gain<float> master_volume;
 
-    using FilterBand = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>, juce::dsp::IIR::Coefficients<float>>;
-    using Gain       = juce::dsp::Gain<float>;
-    using Compressor = juce::dsp::Compressor<float>;
-    juce::dsp::ProcessorChain<FilterBand, Compressor, Gain, Gain> dsp_chain;
     double sample_rate = -1.0;
     juce::CriticalSection lock;
     juce::AudioSource *input_source;
-
-private:
-    void updateDspChain()
-    {
-        for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
-            auto new_coefficients = make_coefficients(state.eq_bands[i], sample_rate);
-            assert(new_coefficients);
-            {
-                juce::ScopedLock processLock (lock);
-                if (i == 0)
-                    *dsp_chain.get<0>().state = *new_coefficients;
-            }
-        }
-        //compressor 
-        dsp_chain.setBypassed<1>(!state.comp.is_on);
-        if (state.comp.is_on)
-        {
-            dsp_chain.get<1>().setThreshold(state.comp.threshold_gain);
-            dsp_chain.get<1>().setRatio(state.comp.ratio);
-            dsp_chain.get<1>().setAttack(state.comp.attack);
-            dsp_chain.get<1>().setRelease(state.comp.release);
-            //makeup gain
-            dsp_chain.setBypassed<2>(!state.comp.is_on);
-            dsp_chain.get<2>().setGainLinear ((float)state.gain);
-        }
-        //gain
-        dsp_chain.get<3>().setGainLinear ((float)state.gain);
-    }
 };
+
 struct Game_Channel
 {
     int id;

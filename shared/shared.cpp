@@ -72,6 +72,36 @@ juce::dsp::IIR::Coefficients<float>::Ptr make_coefficients(DSP_EQ_Band band, dou
     }
 }
 
+void channel_dsp_update_chain(Channel_DSP_Chain *dsp_chain,
+                              Channel_DSP_State state,
+                              juce::CriticalSection *lock,
+                              double sample_rate)
+{
+    for (auto i = 0; i < 1 /* une seule bande pour l'instant */; ++i) {
+        auto new_coefficients = make_coefficients(state.eq_bands[i], sample_rate);
+        assert(new_coefficients);
+        {
+            juce::ScopedLock processLock (*lock);
+            if (i == 0)
+                *dsp_chain->get<0>().state = *new_coefficients;
+        }
+    }
+    //compressor
+    dsp_chain->setBypassed<1>(!state.comp.is_on);
+    dsp_chain->setBypassed<2>(!state.comp.is_on);
+    if (state.comp.is_on)
+    {
+        dsp_chain->get<1>().setThreshold(state.comp.threshold_gain);
+        dsp_chain->get<1>().setRatio(state.comp.ratio);
+        dsp_chain->get<1>().setAttack(state.comp.attack);
+        dsp_chain->get<1>().setRelease(state.comp.release);
+        //makeup gain
+        dsp_chain->get<2>().setGainLinear ((float)state.gain);
+    }
+    //gain
+    dsp_chain->get<3>().setGainLinear ((float)state.gain);
+}
+
 bool equal_double(double a, double b, double theta)
 {
     return std::abs(a - b) < theta;

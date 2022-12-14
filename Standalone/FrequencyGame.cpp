@@ -349,7 +349,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     if (update_audio)
     {
         Channel_DSP_State dsp = ChannelDSP_on();
-        
+
         float compensation_gain = state.config.eq_gain > 1.0f ? 
             1.0f / state.config.eq_gain :
             1.0f;
@@ -374,6 +374,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             } break;
         }
         effects.dsp = Effect_DSP_Single_Track { dsp };
+
     }
 
     if (update_ui)

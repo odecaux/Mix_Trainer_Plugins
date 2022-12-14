@@ -27,7 +27,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
 
     main_component->main_fader.fader_moved_db_callback = [&] (double new_gain_db)
     {
-        juce::ignoreUnused(new_gain_db);
+        player.dsp_callback.push_master_volume_db(new_gain_db);
     };
     main_component->main_fader.update(-6.0);
 
