@@ -387,7 +387,11 @@ void Application_Standalone::to_file_selector()
 {
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
-    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list, [&] { to_main_menu(); } );
+    auto on_back_pressed = [&] {
+        player.post_command( { .type = Audio_Command_Stop });
+        to_main_menu();
+    };
+    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list,  std::move(on_back_pressed));
     main_component->changePanel(std::move(file_selector_panel));
 }
 

@@ -533,7 +533,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
 
     if (update_ui)
     {
-        effects.ui =
+        effects.ui = Compressor_Game_Effect_UI
         {
             .comp_widget = {
                 .threshold_pos = threshold_pos,
