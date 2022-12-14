@@ -1,5 +1,7 @@
 #Priority 1 :
 
+Le top et bottom gèrent eux-même leurs hauteur
+Select audio files before an exercice
 unifier les ListBoxes 
     une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 

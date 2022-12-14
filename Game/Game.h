@@ -105,7 +105,7 @@ struct GameUI_Bottom : public juce::Component
     juce::ToggleButton target_mix_button;
     juce::ToggleButton user_mix_button;
     
-    std::function<void()> onBeginClicked;
+    //std::function<void()> onBeginClicked;
     std::function<void(Event_Type)> onNextClicked;
     std::function<void(bool)> onToggleClicked;
 

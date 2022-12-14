@@ -26,7 +26,7 @@ inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::File& fil
 
 
 //==============================================================================
-class DemoThumbnailComp  :
+class Thumbnail  :
     public juce::Component,
     public juce::ChangeListener,
     public juce::ChangeBroadcaster,
@@ -34,7 +34,7 @@ class DemoThumbnailComp  :
     private juce::Timer
 {
 public:
-    DemoThumbnailComp (juce::AudioFormatManager& formatManager,
+    Thumbnail (juce::AudioFormatManager& formatManager,
                        juce::AudioTransportSource& source)
     : transport_source (source),
       thumbnail (512, formatManager, thumbnail_cache)
@@ -50,7 +50,7 @@ public:
         addAndMakeVisible (current_position_marker);
     }
 
-    ~DemoThumbnailComp() override
+    ~Thumbnail() override
     {
         scrollbar.removeListener (this);
         thumbnail.removeChangeListener (this);
@@ -372,18 +372,62 @@ private:
 };
 
 
+class Audio_File_Chooser : public juce::Component
+{
+public:
+    Audio_File_Chooser(std::function<void()> onBackClicked,
+                       std::function<void()> onBeginClicked,
+                       Audio_File_List *fileList)
+    : list_comp(true)
+    {
+        std::vector<juce::String> file_names{};
+        for (const Audio_File& file : fileList->files)
+        {
+            file_names.push_back(file.title);
+        }
+        list_comp.set_rows(file_names, fileList->selected);
+        
+        list_comp.selection_changed_callback = [fileList] (const auto& new_selection)
+        {
+            fileList->selected = new_selection;
+        };
+        header.onBackClicked = std::move(onBackClicked);
+        
+        game_ui_header_update(&header, "Select active files", "");
+        game_ui_bottom_update(&bottom, true, "Next", Mix_Hidden, {});
+        bottom.next_button.onClick = std::move(onBeginClicked);
+        //TODO pas foufifou, ça devrait faire partie de l'API non ?
+        addAndMakeVisible(header);
+        addAndMakeVisible(list_comp);
+        addAndMakeVisible(bottom);
+    }
 
+    void resized() override
+    {
+        auto r = getLocalBounds();
+        auto header_bounds = r.removeFromTop(game_ui_header_height);
+        auto bottom_bounds = r.removeFromBottom(100);
+        header.setBounds(header_bounds);
+        list_comp.setBounds(r);
+        bottom.setBounds(bottom_bounds);
+    }
+
+private:
+    GameUI_Header header;
+    Selection_List list_comp;
+    GameUI_Bottom bottom;
+};
 
 
 //------------------------------------------------------------------------
-class FileSelector_Panel : 
+class Audio_File_Settings_Panel : 
     public juce::Component,
     private juce::FileBrowserListener,
     public juce::DragAndDropContainer
 {
 public:
     
-    FileSelector_Panel(FilePlayer &filePlayer,
+    Audio_File_Settings_Panel(FilePlayer &filePlayer,
                        Audio_File_List &audio_file_list,
                        std::function < void() > onClickBack)
     :  player(filePlayer),
@@ -457,7 +501,7 @@ public:
         }
     }
 
-    ~FileSelector_Panel() override
+    ~Audio_File_Settings_Panel() override
     {
         explorer.removeListener (this);
     }
@@ -501,7 +545,7 @@ private:
     juce::DirectoryContentsList directory_list {nullptr, explorer_thread};
     juce::FileTreeComponent explorer { directory_list };
 
-    DemoThumbnailComp thumbnail { player.format_manager, player.transport_source };
+    Thumbnail thumbnail { player.format_manager, player.transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
 
     void selectionChanged() override
@@ -516,7 +560,7 @@ private:
     void fileDoubleClicked (const juce::File&) override                       {}
     void browserRootChanged (const juce::File&) override                      {}
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FileSelector_Panel)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };
 
 
@@ -958,13 +1002,13 @@ public:
                 else 
                     player.post_command( { .type = Audio_Command_Play });
             };
-            thumbnail = std::make_unique < DemoThumbnailComp > (player.formatManager, player.transportSource, zoomSlider);
+            thumbnail = std::make_unique < Thumbnail > (player.formatManager, player.transportSource, zoomSlider);
 #endif   
     }
 
 private:
     FilePlayer &player;
-    std::unique_ptr<DemoThumbnailComp> thumbnail;
+    std::unique_ptr<Thumbnail> thumbnail;
 
     void showAudioResource (juce::File resource)
     {

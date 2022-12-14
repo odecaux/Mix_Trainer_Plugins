@@ -23,6 +23,7 @@ struct Audio_File_List
             .loop_bounds = { 0, reader->lengthInSamples }
         };
         files.emplace_back(std::move(new_audio_file));
+        selected.emplace_back(false);
         delete reader;
         return true;
     }
@@ -31,13 +32,17 @@ struct Audio_File_List
     {
         for (int i = static_cast<int>(files.size()); --i >= 0;)
         {   
-            if(indices.contains(static_cast<int>(i)))
+            if (indices.contains(static_cast<int>(i)))
+            {
                 files.erase(files.begin() + i);
+                selected.erase(selected.begin() + i);
+            }
         }
     }
     
     juce::AudioFormatManager &format_manager;
     std::vector<Audio_File> files = {};
+    std::vector<bool> selected;
 };
 
 
@@ -76,7 +81,8 @@ class Application_Standalone
     Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *main_component);
     ~Application_Standalone();
     void to_main_menu();
-    void to_file_selector();
+
+    void to_audio_file_settings();
     void to_game_config();
     void to_frequency_game();
     void to_low_end_frequency_game();

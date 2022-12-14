@@ -370,7 +370,7 @@ void Application_Standalone::to_main_menu()
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
         [this] { to_game_config(); },
         [this] { to_compressor_game(); },
-        [this] { to_file_selector(); },
+        [this] { to_audio_file_settings(); },
         [] {}
     );
     if (audio_file_list.files.empty())
@@ -383,7 +383,7 @@ void Application_Standalone::to_main_menu()
     main_component->changePanel(std::move(main_menu_panel));
 }
 
-void Application_Standalone::to_file_selector()
+void Application_Standalone::to_audio_file_settings()
 {
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
@@ -391,15 +391,34 @@ void Application_Standalone::to_file_selector()
         player.post_command( { .type = Audio_Command_Stop });
         to_main_menu();
     };
-    auto file_selector_panel = std::make_unique < FileSelector_Panel > (player, audio_file_list,  std::move(on_back_pressed));
-    main_component->changePanel(std::move(file_selector_panel));
+    auto audio_file_settings_panel = std::make_unique < Audio_File_Settings_Panel > (player, audio_file_list,  std::move(on_back_pressed));
+    main_component->changePanel(std::move(audio_file_settings_panel));
 }
 
 void Application_Standalone::to_game_config()
 {
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
-    auto config_panel = std::make_unique < Config_Panel > (frequency_game_configs, current_config_idx, [&] { to_main_menu(); }, [&] { to_frequency_game(); });
+    auto to_main_menu = [&] { this->to_main_menu(); };
+    auto to_selector = [&] {
+        auto back_to_config = [&] { 
+            to_game_config();
+        };
+        auto to_game = [&] { to_frequency_game(); };
+        auto selector_panel = std::make_unique < Audio_File_Chooser > (
+            std::move(back_to_config),
+            std::move(to_game),
+            &audio_file_list
+        );
+        main_component->changePanel(std::move(selector_panel));
+    };
+
+    auto config_panel = std::make_unique < Config_Panel > (
+        frequency_game_configs, 
+        current_config_idx, 
+        std::move(to_main_menu), 
+        std::move(to_selector)
+    );
     main_component->changePanel(std::move(config_panel));
 }
 
@@ -443,7 +462,15 @@ void Application_Standalone::to_frequency_game()
         juce::ignoreUnused(effects);
     };
     
-    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_config_idx], audio_file_list.files);
+    std::vector<Audio_File> selected_audio_files{};
+    assert(audio_file_list.files.size() == audio_file_list.selected.size());
+    for (auto i = 0 ; i < audio_file_list.files.size(); i++)
+    {
+        if(audio_file_list.selected[i])
+            selected_audio_files.push_back(audio_file_list.files[i]);
+    }
+    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_config_idx], 
+                                                    selected_audio_files);
     frequency_game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 

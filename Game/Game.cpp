@@ -78,16 +78,14 @@ Widget_Interaction_Type gameStepToFaderStep(GameStep game_step, Mix mix)
 
 GameUI_Header::GameUI_Header()
 {
-    {
-        center_label.setJustificationType (juce::Justification::centred);
-        addAndMakeVisible(center_label);
-        back_button.setButtonText("Back");
-        back_button.onClick = [this] {
-            onBackClicked();
-        };
-        addAndMakeVisible(back_button);
-        addAndMakeVisible(right_label);
-    }
+    center_label.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible(center_label);
+    back_button.setButtonText("Back");
+    back_button.onClick = [this] {
+        onBackClicked();
+    };
+    addAndMakeVisible(back_button);
+    addAndMakeVisible(right_label);
 }
 
 

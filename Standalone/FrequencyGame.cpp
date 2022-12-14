@@ -79,7 +79,7 @@ void frequency_game_post_event(FrequencyGame_IO *io, Event event)
 }
 
 FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, 
-                                                               std::vector<Audio_File> files)
+                                              std::vector<Audio_File> files)
 {
     assert(!files.empty());
     auto state = FrequencyGame_State {

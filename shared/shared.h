@@ -728,26 +728,15 @@ private:
 };
 
 
-class Selection_List : public juce::Component,
-public juce::ListBoxModel
+class Selection_List : 
+    public juce::Component,
+    public juce::ListBoxModel
 {
 public:
-    explicit Selection_List(
-                   std::vector<juce::String> initial_row_texts,
-                   const std::vector<int> &initial_selection_indices,
-                   bool multiple_selection_enabled,
-                   std::function < void(const std::vector<int> &) > onSelectionChaged)
-    :
-      row_texts(std::move(initial_row_texts)),
-      selection_changed_callback(std::move(onSelectionChaged))
+    explicit Selection_List(bool multiple_selection_enabled)
     {
         list_comp.setModel(this);
         list_comp.setMultipleSelectionEnabled(multiple_selection_enabled);
-        //list_comp.updateContent();
-        for (int idx : initial_selection_indices)
-        {
-            list_comp.selectRow(idx, false, false);
-        }
         //TODO slow
         addAndMakeVisible(list_comp);
     }
@@ -774,14 +763,14 @@ public:
     void selectedRowsChanged(int) override
     {
         auto selected_rows = list_comp.getSelectedRows();
-        std::vector<int> selected_indices{};
+        std::vector<bool> selection(getNumRows(), false);;
         for (auto i = 0; i < selected_rows.size(); i++)
         {
             int selected_idx = selected_rows[i];
-            selected_indices.push_back(selected_idx);
+            selection[selected_idx] = true;
         }
         //TODO slow ??? who cares ?
-        selection_changed_callback(selected_indices);
+        selection_changed_callback(selection);
     }
 
     void resized() override
@@ -789,7 +778,23 @@ public:
         list_comp.setBounds(getLocalBounds());
     }
 
-    std::function < void(const std::vector<int> &) > selection_changed_callback;
+    void set_rows(const std::vector<juce::String> &rowTexts,
+                  const std::vector<bool> &selection)
+    {
+        assert(selection.size() == rowTexts.size());
+        row_texts = std::move(rowTexts);
+
+        juce::SparseSet < int > selected_set{};
+        for (int i = 0; i < selection.size(); i++)
+        {
+            if(selection[i])
+                selected_set.addRange(juce::Range<int>(i, i + 1));
+        }
+        list_comp.setSelectedRows (selected_set, juce::dontSendNotification);
+        list_comp.updateContent();
+    }
+
+    std::function < void(const std::vector<bool> &) > selection_changed_callback;
 
 private:
     std::vector<juce::String> row_texts;
