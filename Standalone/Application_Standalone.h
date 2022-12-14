@@ -83,6 +83,7 @@ class Application_Standalone
     void to_compressor_game();
     
 
+
     private :
     FilePlayer player;
     Audio_File_List audio_file_list;

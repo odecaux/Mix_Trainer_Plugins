@@ -1059,12 +1059,15 @@ public :
     Main_Component(juce::AudioFormatManager &formatManager)
     : application(formatManager, this)
     {
+        addAndMakeVisible(main_fader);
         setSize (500, 300);
     }
 
     void resized() override 
     {
         auto r = getLocalBounds();
+        auto main_fader_bounds = r.removeFromRight(60);
+        main_fader.setBounds(main_fader_bounds);
         auto panelBounds = r;
         if(panel)
             panel->setBounds(panelBounds);
@@ -1078,7 +1081,8 @@ public :
         resized();
     }
 
-    private :
+    Continuous_Fader main_fader;
+private :
     std::unique_ptr<juce::Component> panel;
     Application_Standalone application;
 

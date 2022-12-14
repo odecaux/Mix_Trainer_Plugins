@@ -291,6 +291,65 @@ enum Widget_Interaction_Type {
     Widget_Showing
 };
 
+
+class Continuous_Fader : public juce::Component
+{
+public:
+    Continuous_Fader()
+    {
+        label.setText("Main Volume", juce::NotificationType::dontSendNotification);
+        label.setJustificationType(juce::Justification::centred);
+        label.setEditable(false);
+        addAndMakeVisible(label);
+
+        fader.get_text_from_value = [&] (double db) -> juce::String
+        {
+            if (db == -30.0)
+                return "Muted";
+            else
+                return juce::Decibels::toString(db, 0);
+        };
+
+        fader.setSliderStyle(juce::Slider::LinearVertical);
+        fader.setTextBoxStyle(juce::Slider::TextBoxBelow, true, fader.getTextBoxWidth(), 40);
+        fader.setRange(-30.0, 0.0, 1);
+        fader.setScrollWheelEnabled(true);
+
+        fader.onValueChange = [this, &onMove = fader_moved_db_callback] {
+            onMove(fader.getValue());
+        };
+        addAndMakeVisible(fader);
+    }
+
+
+    void resized() override
+    {
+        auto r = getLocalBounds();
+        auto labelBounds = r.removeFromTop(50);
+        label.setBounds(labelBounds);
+
+        auto faderBounds = r;
+        fader.setBounds(faderBounds);
+    }
+
+    void paint(juce::Graphics& g) override
+    {
+        auto r = getLocalBounds();
+        g.setColour(juce::Colours::white);
+        g.drawRoundedRectangle(r.toFloat(), 5.0f, 2.0f);
+    }
+
+    void update(double new_value_db)
+    {
+        fader.setValue(new_value_db);
+    }
+    std::function < void(double) > fader_moved_db_callback;
+
+private:
+    juce::Label label;
+    TextSlider fader;
+};
+
 class FaderComponent : public juce::Component
 {
 public:

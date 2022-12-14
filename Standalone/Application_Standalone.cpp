@@ -21,12 +21,20 @@ static const juce::Identifier id_result_timestamp = "timestamp";
 
 Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *mainComponent)
 :   player(formatManager),
-    audio_file_list { formatManager },
+    audio_file_list{formatManager},
     main_component(mainComponent)
 {
+
+    main_component->main_fader.fader_moved_db_callback = [&] (double new_gain_db)
+    {
+        juce::ignoreUnused(new_gain_db);
+    };
+    main_component->main_fader.update(-6.0);
+
     juce::File app_data = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory);
     DBG(app_data.getFullPathName());
     auto store_directory = app_data.getChildFile("MixTrainer");
+
 
     //load audio file list
     [&] {
@@ -100,7 +108,6 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         };
     }
     jassert(!frequency_game_configs.empty());
-
     
     //load previous results
     [&] {
@@ -131,7 +138,6 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             frequency_game_results_history.push_back(result);
         }
     }();
-
     
     //load config list
     [&] {
@@ -170,7 +176,6 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
     }
     jassert(!compressor_game_configs.empty());
 
-    
     //load previous results
     [&] {
         auto file_RENAME = store_directory.getChildFile("compressor_game_results.xml");
