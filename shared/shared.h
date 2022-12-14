@@ -190,7 +190,7 @@ using multitrack_observer_t = std::function < void(MuliTrack_Model*) >;
 
 enum MultiTrack_Observers_ID : int
 {
-    MultiTrack_Observers_Debug,
+    MultiTrack_Observers_Debug = 0,
     MultiTrack_Observers_Broadcast,
     MultiTrack_Observers_Channel_Settings
 };
@@ -205,19 +205,23 @@ struct MuliTrack_Model
 };
 
 static void debug_multitrack_model(MuliTrack_Model *model)
-{
+{    
+    assert(model->game_channels.size() == model->order.size());
+
     DBG("Game Channels :");
     for (auto& [id, game_channel] : model->game_channels)
     {
         DBG(game_channel.name << ", " << game_channel.id % 100);
         DBG("-----> bound to " << model->assigned_daw_track_count.at(id) << " tracks");
     }
+    assert(model->game_channels.size() == model->order.size());
 
     DBG("Order");
     for (auto channel_id : model->order)
     {
-        DBG(model->game_channels[channel_id].name);
+        DBG(model->game_channels.at(channel_id).name);
     }
+    assert(model->game_channels.size() == model->order.size());
     
     DBG("Daw Channels :");
     for (auto& [id, daw_channel] : model->daw_channels)
@@ -229,15 +233,19 @@ static void debug_multitrack_model(MuliTrack_Model *model)
         }
         else
         {
-            auto &game_channel = model->game_channels[daw_channel.assigned_game_channel_id];
-            DBG("-----> " << game_channel.name << ", " << game_channel.id % 100);
+            auto game_channel_it = model->game_channels.find(daw_channel.assigned_game_channel_id);
+            if(game_channel_it != model->game_channels.end())
+                DBG("-----> " << game_channel_it->second.name << ", " << daw_channel.assigned_game_channel_id % 100);
+            else 
+                DBG("-----> incorrect assignment : " << daw_channel.assigned_game_channel_id % 100);
         }
     }
     DBG("\n\n\n");
 }
 
 static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observer_id_to_skip = -1)
-{
+{       
+    assert(model->game_channels.size() == model->order.size());
     model->assigned_daw_track_count.clear();
     for (const auto& [id, game_channel] : model->game_channels)
     {
@@ -245,13 +253,19 @@ static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observ
     }
     for (const auto& [id, daw_channel] : model->daw_channels)
     {
-        if (daw_channel.assigned_game_channel_id == -1) continue;
-        model->assigned_daw_track_count.at(daw_channel.assigned_game_channel_id)++;
+        //if (daw_channel.assigned_game_channel_id == -1) continue;
+        //TODO HACK, not sure if it is a proper fix
+        auto it = model->assigned_daw_track_count.find(daw_channel.assigned_game_channel_id);
+        if(it == model->assigned_daw_track_count.end())
+            continue;
+        it->second++;
     }
     for (auto &[id, observer] : model->observers)
-    {
+    {    
+        assert(model->game_channels.size() == model->order.size());
         if(id != observer_id_to_skip)
             observer(model);
+        assert(model->game_channels.size() == model->order.size());
     }
 }
 

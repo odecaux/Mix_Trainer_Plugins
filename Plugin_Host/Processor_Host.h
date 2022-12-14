@@ -77,7 +77,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         out.channel_count = static_cast<int>(model.game_channels.size());
         for (auto i = 0; i < model.game_channels.size(); i++)
         {
-            auto id = model.order[i];
+            auto id = model.order.at(i);
             auto track = model.game_channels.at(id);
             out.channels[i] = track;
         }

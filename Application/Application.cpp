@@ -275,7 +275,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 {
     juce::ignoreUnused(id);
     juce::ignoreUnused(new_name);
-    multitrack_model.game_channels[id].name = new_name;
+    multitrack_model.game_channels.at(id).name = new_name;
     
     if (game_state) {
         assert(type == Panel_Game);
@@ -288,7 +288,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 void Application::rename_daw_channel(int daw_channel_id, const juce::String &new_name)
 {
     //DBG("action rename " << daw_channel_id % 100 << " " << daw_channel.name << " into " << new_name);
-    auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
+    auto &daw_channel = multitrack_model.daw_channels.at(daw_channel_id);
 
     new_name.copyToUTF8(
         daw_channel.name,
@@ -300,10 +300,10 @@ void Application::rename_daw_channel(int daw_channel_id, const juce::String &new
 void Application::change_frequency_range_from_daw(int daw_channel_id, int game_channel_id, float new_min, float new_max)
 {
     //DBG("action frequency " << daw_channel_id % 100);
-    auto &daw_channel = multitrack_model.daw_channels[daw_channel_id];
+    auto &daw_channel = multitrack_model.daw_channels.at(daw_channel_id);
     assert(daw_channel.assigned_game_channel_id != -1);
     assert(daw_channel.assigned_game_channel_id == game_channel_id);
-    auto &game_channel = multitrack_model.game_channels[game_channel_id];
+    auto &game_channel = multitrack_model.game_channels.at(game_channel_id);
     game_channel.min_freq = new_min;
     game_channel.max_freq = new_max;
     multitrack_model_broadcast_change(&multitrack_model);
@@ -314,10 +314,10 @@ void Application::bind_daw_channel_with_game_channel(int daw_channel_id, int gam
 {
     //DBG("action bind " << daw_channel_id % 100 << " " << game_channel_id % 100);
     assert(multitrack_model.daw_channels.contains(daw_channel_id));
-    multitrack_model.daw_channels[daw_channel_id].assigned_game_channel_id = game_channel_id;
+    multitrack_model.daw_channels.at(daw_channel_id).assigned_game_channel_id = game_channel_id;
     if (game_channel_id != -1)
     {
-        assert(multitrack_model.game_channels.contains(game_channel_id));
+        //assert(multitrack_model.game_channels.contains(game_channel_id));
     }
     multitrack_model_broadcast_change(&multitrack_model);
 }

@@ -98,8 +98,8 @@ public:
         editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
             assert(row_idx <= model.game_channels.size());
             assert(row_idx >= 0);
-            int channel_id = model.order[row_idx];
-            auto& channel_to_rename = model.game_channels[channel_id];
+            int channel_id = model.order.at(row_idx);
+            auto& channel_to_rename = model.game_channels.at(channel_id);
             row_text.copyToUTF8(
                 channel_to_rename.name,
                 sizeof(channel_to_rename.name)
@@ -163,7 +163,7 @@ public:
         auto selected_row = list_comp.getSelectedRow();
         if(selected_row == -1 || selected_row == getNumRows() - 1) 
             return;
-        auto id = model.order[selected_row];
+        auto id = model.order.at(selected_row);
         model.order.erase(model.order.begin() + selected_row);
         {
             auto deleted_count = model.game_channels.erase(id);
@@ -222,8 +222,8 @@ public:
             juce::String row_text = "";
             if (row_number < model.game_channels.size())
             {
-                int channel_id = model.order[row_number];
-                row_text = model.game_channels[channel_id].name;
+                int channel_id = model.order.at(row_number);
+                row_text = model.game_channels.at(channel_id).name;
             }
             label->update(row_number, row_text, row_number == model.game_channels.size());
             return label;

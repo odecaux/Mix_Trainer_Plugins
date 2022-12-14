@@ -170,22 +170,30 @@ juce::AudioProcessorEditor* ProcessorTrack::createEditor()
 }
 
 //==============================================================================
+static const char out_message[] = "hello world";
 void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
 {
     juce::MemoryOutputStream out (destData, false);
     //out.writeInt(daw_channel_id);
+    out.write(out_message, sizeof(out_message));
+
     out.writeInt(game_channel_id);
     //out.writeFloat(minFrequency);
     //out.writeFloat(maxFrequency);
     out.writeInt(0);
 }
 
+
 void ProcessorTrack::setStateInformation(const void* data, int sizeInBytes)
 {
     juce::MemoryInputStream in { data, checked_cast<size_t>(sizeInBytes), false };
     if(sizeInBytes > 0)
     {
+        char in_message[sizeof(out_message) / sizeof(*out_message)] = {};
+        in.read(in_message, sizeof(in_message));
+
         game_channel_id = in.readInt();
+        broadcast_selected_game_channel();
     }
 }
 

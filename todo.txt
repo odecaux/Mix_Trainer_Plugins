@@ -48,7 +48,11 @@ séparer les deux
    +  l'host a un counter pour chaque game_track, tant que tt le monde est pas à 1, on fait 
    +  les plugins enrengistrent l'ID de leur game_track, si elle est pas dans la liste qu'ils ont reçu y a erreur
 
-
+   pour l'instant, quand le plugin est restored, on envoie quand même l'id sauvegardé, même si il est invalide.
+   Hack : on le skip juste au moment où on génère assigned_daw_track_count
+   ils chargent des valeurs biiiiizarres de leur mémoire tho
+   
+   quand on save leur state, faut faire gaffe à nettoyer
 
 + on a plus besoin des events add/remove/rename tracks
 On peut pas commencer tant que toutes les internal tracks on pas été assignées 
