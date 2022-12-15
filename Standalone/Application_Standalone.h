@@ -83,9 +83,10 @@ class Application_Standalone
     void to_main_menu();
 
     void to_audio_file_settings();
-    void to_game_config();
+    void to_freq_game_settings();
     void to_frequency_game();
     void to_low_end_frequency_game();
+    void to_comp_game_settings();
     void to_compressor_game();
 
     private :

@@ -368,8 +368,8 @@ void Application_Standalone::to_main_menu()
     frequency_game_io.reset();
     compressor_game_io.reset();
     auto main_menu_panel = std::make_unique < MainMenu_Panel > (
-        [this] { to_game_config(); },
-        [this] { to_compressor_game(); },
+        [this] { to_freq_game_settings(); },
+        [this] { to_comp_game_settings(); },
         [this] { to_audio_file_settings(); },
         [] {}
     );
@@ -395,14 +395,14 @@ void Application_Standalone::to_audio_file_settings()
     main_component->changePanel(std::move(audio_file_settings_panel));
 }
 
-void Application_Standalone::to_game_config()
+void Application_Standalone::to_freq_game_settings()
 {
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
     auto to_main_menu = [&] { this->to_main_menu(); };
     auto to_selector = [&] {
         auto back_to_config = [&] { 
-            to_game_config();
+            to_freq_game_settings();
         };
         auto to_game = [&] { to_frequency_game(); };
         auto selector_panel = std::make_unique < Audio_File_Chooser > (
@@ -497,6 +497,21 @@ void Application_Standalone::to_low_end_frequency_game()
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
     //main_component->changePanel(std::move(config_panel));
+}
+
+void Application_Standalone::to_comp_game_settings()
+{
+    assert(frequency_game_io == nullptr);
+    assert(compressor_game_io == nullptr);
+    auto to_main_menu = [&] { this->to_main_menu(); };
+
+    auto to_game = [&] { to_compressor_game(); };
+    auto selector_panel = std::make_unique < Audio_File_Chooser > (
+        std::move(to_main_menu),
+        std::move(to_game),
+        &audio_file_list
+    );
+    main_component->changePanel(std::move(selector_panel));
 }
 
 void Application_Standalone::to_compressor_game()
