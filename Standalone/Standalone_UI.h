@@ -382,7 +382,7 @@ public:
     {
         auto update_ui = [&] (const std::vector<bool> & new_selection)
         {
-            if (std::ranges::any_of(new_selection, [](bool val) { return val; }))
+            if (std::any_of(new_selection.begin(), new_selection.end(), [](bool val) { return val; }))
                 bottom.next_button.setEnabled(true);
             else
                 bottom.next_button.setEnabled(false);
