@@ -121,7 +121,7 @@ GameUI_Bottom::GameUI_Bottom()
         user_mix_button.setRadioGroupId (1000);
     }
 
-    setSize(0, 100);
+    setSize(0, 50);
 }
        
 void GameUI_Header::resized()

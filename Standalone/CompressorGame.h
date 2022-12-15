@@ -216,6 +216,16 @@ struct CompressorGame_UI : public juce::Component
 
         addAndMakeVisible(bottom);
     }
+    
+    void parentHierarchyChanged() override
+    {
+        auto * top_level_window = getTopLevelComponent();
+        auto * resizable_window = dynamic_cast<juce::ResizableWindow*>(top_level_window);
+        assert(resizable_window);
+        auto min_height = 8 + header.getHeight() + bottom.getHeight() + game_bounds_dim.getHeight() + 40; //TODO hack ? why doesn't it work ?
+        resizable_window->setResizeLimits (400, min_height, 
+                                           10000, 10000);
+    }
 
     void resized() override 
     {
@@ -227,8 +237,7 @@ struct CompressorGame_UI : public juce::Component
         auto bottom_bounds = bounds.removeFromBottom(bottom.getHeight());
         bottom.setBounds(bottom_bounds);
 
-        auto game_bounds = juce::Rectangle < int > (200, 200); 
-        game_bounds.setCentre(bounds.getCentre());
+        auto game_bounds = game_bounds_dim.withCentre(bounds.getCentre());
         
         auto threshold_bounds = game_bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
         auto ratio_bounds = game_bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
@@ -244,10 +253,10 @@ struct CompressorGame_UI : public juce::Component
         ratio_slider.setBounds(ratio_bounds);
         attack_slider.setBounds(attack_bounds);
         release_slider.setBounds(release_bounds);
-
     }
 
     GameUI_Header header;
+    juce::Rectangle < int > game_bounds_dim { 0, 0, 200, 200 };
 #if 0
     std::unique_ptr<CompressorWidget> compressor_widget;
     std::unique_ptr<CompressorGame_Results_Panel> results_panel;
