@@ -597,7 +597,7 @@ FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)
 
 FilePlayer::~FilePlayer()
 {
-    transport_source  .setSource (nullptr);
+    transport_source.setSource (nullptr);
     source_player.setSource (nullptr);
 
     device_manager.removeAudioCallback (&source_player);

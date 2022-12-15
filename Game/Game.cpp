@@ -97,7 +97,6 @@ GameUI_Bottom::GameUI_Bottom()
     }
     
     {
-        target_mix_button.setButtonText("Target mix");
         target_mix_button.onClick = [this] {
             juce::String str = target_mix_button.getToggleState() ? juce::String{ "on" } : juce::String{ "off" };
             
@@ -106,7 +105,6 @@ GameUI_Bottom::GameUI_Bottom()
         };
         addAndMakeVisible(target_mix_button);
             
-        user_mix_button.setButtonText("My mix");
         
         user_mix_button.onClick = [this] {
             juce::String str = user_mix_button.getToggleState() ?  juce::String{ "on" } :  juce::String{ "off" };

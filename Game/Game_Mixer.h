@@ -148,6 +148,10 @@ struct MixerGameUI : public juce::Component
             };
             mixer_game_post_event(io, event);
         };
+        
+        bottom.target_mix_button.setButtonText("Target mix");
+        bottom.user_mix_button.setButtonText("Your mix");
+
         addAndMakeVisible(header);
         addAndMakeVisible(fader_viewport);
         addAndMakeVisible(bottom);

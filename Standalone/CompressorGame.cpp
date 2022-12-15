@@ -579,7 +579,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             } break;
             case GameStep_Question :
             {
-                effects.ui->header_center_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_center_text = "Listen and reproduce";
                 effects.ui->header_right_text = "Round " + juce::String(state.current_round) + " / " + juce::String(state.config.total_rounds);
                 
                 switch (state.config.variant)
@@ -593,7 +593,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                     {
                         if (state.mix == Mix_Target)
                         {
-                            effects.ui->header_center_text = "Listen";
                             effects.ui->bottom_button_text = "Go";
                             effects.ui->bottom_button_event = Event_Click_Done_Listening;
                         }

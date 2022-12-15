@@ -215,7 +215,10 @@ struct CompressorGame_UI : public juce::Component
             compressor_game_post_event(io, event);
         };
         setup_slider(release_slider, release_label, "Release", std::move(onReleaseMoved));
-
+        
+        
+        bottom.target_mix_button.setButtonText("Target settings");
+        bottom.user_mix_button.setButtonText("Your settings");
         addAndMakeVisible(bottom);
     }
     
