@@ -350,8 +350,7 @@ public:
         {
             assert(last_row_selected >= 0);
             assert(static_cast<size_t>(last_row_selected) < files.size());
-            const auto &file = files[last_row_selected].file;
-            selected_file_changed_callback(file);
+            selected_file_changed_callback(files[last_row_selected]);
         }
         else
         {
@@ -360,7 +359,7 @@ public:
     }
     std::function < bool(juce::File file) > insert_file_callback;
     std::function < void(const juce::SparseSet<int>&) > remove_files_callback;
-    std::function< void(juce::File) > selected_file_changed_callback;
+    std::function< void(std::optional<Audio_File>)> selected_file_changed_callback;
 
 private:
     std::vector<Audio_File> &files;
@@ -477,14 +476,14 @@ public:
         }
 
         {
-            file_list_component.selected_file_changed_callback = [&] (juce::File new_file)
+            file_list_component.selected_file_changed_callback = [&] (std::optional<Audio_File> new_selected_file)
             {
-                if (new_file != juce::File{})
+                if (new_selected_file)
                 {
-                    auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = new_file });
+                    auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = *new_selected_file });
                     assert(ret.value_b); //file still exists on drive ?
                     player.post_command( { .type = Audio_Command_Play });
-                    thumbnail.setFile(new_file);
+                    thumbnail.setFile(new_selected_file->file);
                 }
                 else
                 {
@@ -563,9 +562,9 @@ private:
     void selectionChanged() override
     {
         thumbnail.setFile(explorer.getSelectedFile());
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = explorer.getSelectedFile() });
-        if (ret.value_b)
-            player.post_command({ .type = Audio_Command_Play });
+        //auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = explorer.getSelectedFile() });
+        //if (ret.value_b)
+        //    player.post_command({ .type = Audio_Command_Play });
     }
 
     void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
@@ -993,48 +992,6 @@ struct Config_Panel : public juce::Component
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Config_Panel)
 };
-
-
-
-
-//==============================================================================
-class Demo_Panel  : 
-    public juce::Component
-{
-public:
-    Demo_Panel(FilePlayer &audioFilePlayer) :
-        player(audioFilePlayer)
-    {
-#if 0
-            followTransportButton.onClick = [this] { thumbnail->setFollowsTransport (true); };  
-            zoomSlider.onValueChange = [this] { thumbnail->setZoomFactor (zoomSlider.getValue()); };
-
-            startStopButton.onClick = [&player] { 
-                if (player.transport_state.step == Transport_Playing)
-                    player.post_command( { .type = Audio_Command_Stop });
-                else 
-                    player.post_command( { .type = Audio_Command_Play });
-            };
-            thumbnail = std::make_unique < Thumbnail > (player.formatManager, player.transportSource, zoomSlider);
-#endif   
-    }
-
-private:
-    FilePlayer &player;
-    std::unique_ptr<Thumbnail> thumbnail;
-
-    void showAudioResource (juce::File resource)
-    {
-        auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = resource });
-        if (ret.value_b)
-        {
-            //zoomSlider.setValue (0, juce::dontSendNotification);
-            thumbnail->setFile (resource);
-        }
-    }
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Demo_Panel)
-};
-
 
 class Empty : public juce::Component {
 public :

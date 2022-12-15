@@ -226,7 +226,7 @@ Application_Standalone::~Application_Standalone()
     auto store_directory = app_data.getChildFile("MixTrainer");
     //save audio file list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");;
+        auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");
         auto stream = file_RENAME.createOutputStream();
         if (!stream->openedOk())
         {
@@ -603,14 +603,14 @@ FilePlayer::~FilePlayer()
     device_manager.removeAudioCallback (&source_player);
 }
 
-bool FilePlayer::load_file_into_transport (const juce::File& audio_file)
+bool FilePlayer::load_file_into_transport (const Audio_File& audio_file)
 {
     // unload the previous file source and delete it..
     transport_source.stop();
     transport_source.setSource (nullptr);
     current_reader_source.reset();
 
-    const auto source = makeInputSource (audio_file);
+    const auto source = makeInputSource (audio_file.file);
 
     if (source == nullptr)
         return false;
@@ -627,6 +627,9 @@ bool FilePlayer::load_file_into_transport (const juce::File& audio_file)
 
     current_reader_source = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
     current_reader_source->setLooping(true);
+
+    
+    dsp_callback.push_normalization_volume(1.0f / audio_file.max_level);
 
     // ..and plug it into our transport source
     transport_source.setSource (current_reader_source.get(),
@@ -666,7 +669,7 @@ Return_Value FilePlayer::post_command(Audio_Command command)
         } break;
         case Audio_Command_Load :
         {
-            DBG("Load : "<<command.value_file.getFileName());
+            DBG("Load : "<<command.value_file.title);
             bool success = load_file_into_transport(command.value_file);
             transport_state.step = Transport_Stopped;
             return { .value_b = success };

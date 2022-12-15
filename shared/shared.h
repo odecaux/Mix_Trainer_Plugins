@@ -81,7 +81,7 @@ struct Audio_File
     juce::String title;
     juce::Range<juce::int64> loop_bounds;
     juce::Range<int> freq_bounds;
-    float max_gain;
+    float max_level;
 };
 
 Channel_DSP_State ChannelDSP_on();
@@ -123,13 +123,9 @@ struct Channel_DSP_Callback : public juce::AudioSource
             juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
             juce::dsp::ProcessContextReplacing<float> context (block);
             juce::ScopedLock processLock (lock);
-            dsp_chain.process (context);
-        }
-
-        {
-            juce::dsp::AudioBlock<float> block(*bufferToFill.buffer, (size_t) bufferToFill.startSample);
-            juce::dsp::ProcessContextReplacing<float> context (block);
-            master_volume.process(context);
+            normalization_gain.process(context);
+            dsp_chain.process(context);
+            master_gain.process(context);
         }
     }
     
@@ -138,14 +134,20 @@ struct Channel_DSP_Callback : public juce::AudioSource
         sample_rate = sampleRate;
         input_source->prepareToPlay (blockSize, sampleRate);
 
+        normalization_gain.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
         dsp_chain.prepare({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
         channel_dsp_update_chain(&dsp_chain, state, &lock, sample_rate);
-        master_volume.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
+        master_gain.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
     }
 
     void releaseResources() override
     {
         input_source->releaseResources();
+    }
+
+    void push_normalization_volume(float normalization_level)
+    {
+        normalization_gain.setGainLinear(normalization_level);
     }
 
     void push_new_dsp_state(Channel_DSP_State new_state)
@@ -157,12 +159,13 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
     void push_master_volume_db(double master_volume_db)
     {
-        master_volume.setGainDecibels((float)master_volume_db);
+        master_gain.setGainDecibels((float)master_volume_db);
     }
 
     Channel_DSP_State state;
+    juce::dsp::Gain<float> normalization_gain;
     Channel_DSP_Chain dsp_chain;
-    juce::dsp::Gain<float> master_volume;
+    juce::dsp::Gain<float> master_gain;
 
     double sample_rate = -1.0;
     juce::CriticalSection lock;
@@ -535,7 +538,7 @@ struct Audio_Command
 {
     Audio_Command_Type type;
     float value_f;
-    juce::File value_file;
+    Audio_File value_file;
 };
 
 struct Return_Value

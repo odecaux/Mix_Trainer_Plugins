@@ -16,11 +16,26 @@ struct Audio_File_List
         auto * reader = format_manager.createReaderFor(file);
         if (reader == nullptr)
             return false;
-         
+
+        std::vector<juce::Range<float>> max_by_channel{};
+        
+        max_by_channel.resize(reader->numChannels);
+        reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), reader->numChannels);
+        
+        float max_level = 0.0f;
+        for (juce::Range < float > channel_range : max_by_channel)
+        {
+            DBG(file.getFileNameWithoutExtension() << " : " << channel_range.getStart() << " to " << channel_range.getEnd());
+            max_level = std::max(max_level, std::abs(channel_range.getStart()));
+            max_level = std::max(max_level, std::abs(channel_range.getEnd()));
+        }
+        if (max_level <= 0.0F)
+            return false;
         Audio_File new_audio_file = {
             .file = file,
             .title = file.getFileNameWithoutExtension(),
-            .loop_bounds = { 0, reader->lengthInSamples }
+            .loop_bounds = { 0, reader->lengthInSamples },
+            .max_level = max_level
         };
         files.emplace_back(std::move(new_audio_file));
         selected.emplace_back(false);
@@ -53,7 +68,7 @@ struct FilePlayer : juce::ChangeListener
 
     ~FilePlayer();
 
-    bool load_file_into_transport (const juce::File& audio_file);
+    bool load_file_into_transport (const Audio_File& audio_file);
     Return_Value post_command(Audio_Command command);
     void push_new_dsp_state(Channel_DSP_State new_dsp_state);
 

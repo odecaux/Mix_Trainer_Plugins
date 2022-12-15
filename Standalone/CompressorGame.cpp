@@ -418,7 +418,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.current_file_idx = random_positive_int((int)state.files.size());
             effects.player = Effect_Player {
                 .commands = { 
-                    { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)].file },
+                    { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)] },
                     { .type = Audio_Command_Play },
                 }
             };
