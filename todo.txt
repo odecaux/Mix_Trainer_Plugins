@@ -1,14 +1,13 @@
 #Priority 1 :
 
 Le top et bottom gèrent eux-même leurs hauteur
-Select audio files before an exercice
-unifier les ListBoxes 
-    une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 
 pouvoir selectionner aucune track !
 
 #Priority 2 :
 
+unifier les ListBoxes 
+    une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 Bass game mode
 rising gain
 on doit pouvoir aussi avoir un mix toggle dans le frequency game
@@ -23,7 +22,6 @@ Les freq bounds d'un fichier audio doivent influer sur le score
 Test suite
 Serialization Little Big Planet
 File explorer
-files : active, desactivate
 
 ajouter preview et bounds au file selector panel
     pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/
@@ -35,10 +33,6 @@ ajouter preview et bounds au file selector panel
 Hierarchical FSM ?
 
 when should the timestamp be initialized ?
-unifier les editable_label
-
-
-
 
 #Tracks vs Daw_Tracks
 Refactor pour que j'ai une application standalone avec des fenêtre pour tt les child_plugin

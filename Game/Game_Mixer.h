@@ -156,16 +156,15 @@ struct MixerGameUI : public juce::Component
     void resized() override 
     {
         auto bounds = getLocalBounds();
-        auto bottom_height = 50;
-        auto header_height = 20;
         
-        auto header_bounds = bounds.withHeight(header_height);
-        auto game_bounds = bounds.withTrimmedBottom(bottom_height).withTrimmedTop(header_height);
-        auto bottom_bounds = bounds.withTrimmedTop(bounds.getHeight() - bottom_height);
-        
+        auto header_bounds = bounds.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
-        fader_viewport.setBounds(game_bounds);
+
+        auto bottom_bounds = bounds.removeFromBottom(bottom.getHeight());
         bottom.setBounds(bottom_bounds);
+        
+        auto game_bounds = bounds;
+        fader_viewport.setBounds(game_bounds);
         
         fader_row.setSize(fader_row.getWidth(),
                           fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());

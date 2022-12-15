@@ -86,6 +86,7 @@ GameUI_Header::GameUI_Header()
     };
     addAndMakeVisible(back_button);
     addAndMakeVisible(right_label);
+    setSize(0, 20);
 }
 
 
@@ -119,6 +120,8 @@ GameUI_Bottom::GameUI_Bottom()
         target_mix_button.setRadioGroupId (1000);
         user_mix_button.setRadioGroupId (1000);
     }
+
+    setSize(0, 100);
 }
        
 void GameUI_Header::resized()

@@ -326,10 +326,9 @@ public :
 
     void resized() override
     {
-        auto top_height = 20;
         auto r = getLocalBounds();
             
-        auto header_bounds = r.removeFromTop(top_height);
+        auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
 
         channel_list.setBounds(r);

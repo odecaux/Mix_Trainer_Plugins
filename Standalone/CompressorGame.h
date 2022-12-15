@@ -220,14 +220,15 @@ struct CompressorGame_UI : public juce::Component
     void resized() override 
     {
         auto bounds = getLocalBounds().reduced(4);
-        auto bottom_height = 50;
 
-        auto header_bounds = bounds.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = bounds.removeFromBottom(bottom_height);
+        auto header_bounds = bounds.removeFromTop(header.getHeight());
+        header.setBounds(header_bounds);
+
+        auto bottom_bounds = bounds.removeFromBottom(bottom.getHeight());
+        bottom.setBounds(bottom_bounds);
+
         auto game_bounds = juce::Rectangle < int > (200, 200); 
         game_bounds.setCentre(bounds.getCentre());
-
-        header.setBounds(header_bounds);
         
         auto threshold_bounds = game_bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
         auto ratio_bounds = game_bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
@@ -244,7 +245,6 @@ struct CompressorGame_UI : public juce::Component
         attack_slider.setBounds(attack_bounds);
         release_slider.setBounds(release_bounds);
 
-        bottom.setBounds(bottom_bounds);
     }
 
     GameUI_Header header;

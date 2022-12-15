@@ -148,18 +148,19 @@ struct FrequencyGame_UI : public juce::Component
     void resized() override 
     {
         auto bounds = getLocalBounds().reduced(4);
-        auto bottom_height = 50;
 
-        auto header_bounds = bounds.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = bounds.removeFromBottom(bottom_height);
+        auto header_bounds = bounds.removeFromTop(header.getHeight());
+        header.setBounds(header_bounds);
+
+        auto bottom_bounds = bounds.removeFromBottom(bottom.getHeight());
+        bottom.setBounds(bottom_bounds);
+        
         auto game_bounds = bounds.withTrimmedTop(4).withTrimmedBottom(4);
 
-        header.setBounds(header_bounds);
         if(frequency_widget)
             frequency_widget->setBounds(game_bounds);
         else if(results_panel)
             results_panel->setBounds(game_bounds);
-        bottom.setBounds(bottom_bounds);
     }
 
     GameUI_Header header;

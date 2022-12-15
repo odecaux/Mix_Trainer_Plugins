@@ -77,8 +77,6 @@ struct Event{
     juce::String value_js;
 };
 
-constexpr int game_ui_header_height = 20;
-
 struct GameUI_Header : public juce::Component
 {
     GameUI_Header();

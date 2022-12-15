@@ -404,12 +404,13 @@ public:
 
     void resized() override
     {
-        auto r = getLocalBounds();
-        auto header_bounds = r.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = r.removeFromBottom(50);
+        auto r = getLocalBounds().reduced(4);
+        auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
-        list_comp.setBounds(r);
+        auto bottom_bounds = r.removeFromBottom(bottom.getHeight());
         bottom.setBounds(bottom_bounds);
+
+        list_comp.setBounds(r);
     }
 
 private:
@@ -509,10 +510,10 @@ public:
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
-        auto header_bounds = r.removeFromTop(game_ui_header_height);
-        auto bottom_bounds = r.removeFromBottom(100);
-        
+        auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
+
+        auto bottom_bounds = r.removeFromBottom(100);
 
         auto sub_header_bounds = r.removeFromTop(40);
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
@@ -880,12 +881,12 @@ struct Config_Panel : public juce::Component
     {
         auto r = getLocalBounds().reduced (4);
 
-        auto header_bounds = r.removeFromTop(game_ui_header_height);
+        auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
 
         auto bottom_bounds = r.removeFromBottom(50);
-        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
-        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.4f, 1.0f }).withTrimmedRight(5);
+        auto right_bounds = r.getProportion<float>( { 0.4f, .0f, 0.6f, 1.0f }).withTrimmedLeft(5);
 
         config_list_comp.setBounds(left_bounds);
         scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
@@ -919,6 +920,7 @@ struct Config_Panel : public juce::Component
     
     void onResizeScroller(juce::Rectangle<int> scroller_bounds)
     {
+        scroller_bounds = scroller_bounds.reduced(4);
         auto height = scroller_bounds.getHeight();
         auto param_height = height / 6;
 
