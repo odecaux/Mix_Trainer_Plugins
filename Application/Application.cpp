@@ -160,8 +160,6 @@ void Application::toChannelSettings()
     
     auto channel_settings_menu =
         std::make_unique < ChannelSettingsMenu > (multitrack_model, [this] { toMainMenu(); });
-    channel_settings_menu->selected_channel_changed_callback = [&] {
-    };
     editor->changePanel(std::move(channel_settings_menu));
 }
 
@@ -224,9 +222,6 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case Panel_Channel_Settings : {
             std::unique_ptr<ChannelSettingsMenu> channel_settings_menu = 
                 std::make_unique < ChannelSettingsMenu > (multitrack_model, [this] { toMainMenu(); });
-            channel_settings_menu->selected_channel_changed_callback = [&] {
-                host.broadcastChannelList(multitrack_model);
-            };
             panel = std::move(channel_settings_menu);
         } break;
         case Panel_Settings : {

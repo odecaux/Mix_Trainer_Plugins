@@ -115,181 +115,13 @@ private :
     MuliTrack_Model *multitrack_model;
 };
 
-class Channel_List : public juce::Component,
-                     public juce::ListBoxModel
-{
-public: 
-    Channel_List(MuliTrack_Model &multitrackModel)
-    : model(multitrackModel)
-    {
-        list_comp.setModel(this);
-        list_comp.setMultipleSelectionEnabled(false);
-        addAndMakeVisible(list_comp);
-
-        editable_mouse_down_callback = [&] (int row_idx) {
-            list_comp.selectRow(row_idx);
-        };
-        editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
-            assert(row_idx <= model.game_channels.size());
-            assert(row_idx >= 0);
-            int channel_id = model.order.at(row_idx);
-            auto& channel_to_rename = model.game_channels.at(channel_id);
-            row_text.copyToUTF8(
-                channel_to_rename.name,
-                sizeof(channel_to_rename.name)
-            );
-            channel_list_changed_callback();
-        };
-        editable_create_row_callback = [&] (juce::String new_row_text) {
-            int new_channel_id = random_positive_int();
-            Game_Channel new_channel = {
-                .id = new_channel_id,
-            };
-            new_row_text.copyToUTF8(
-                new_channel.name,
-                sizeof(new_channel.name)
-            );
-            {
-                auto [it, result] = model.game_channels.emplace(new_channel_id, new_channel);
-                assert(result);
-            }
-            model.order.push_back(new_channel_id);
-            channel_list_changed_callback();
-            list_comp.updateContent();
-        };
-    }
-
-    
-    virtual ~Channel_List() override = default;
-
-    void paintOverChildren(juce::Graphics& g) override
-    {
-        if (getNumRows() == 0)
-        {
-            auto r = getLocalBounds();
-            g.setColour(juce::Colours::white);
-            g.drawText("Create game track", r.toFloat(), juce::Justification::centred);
-        }
-    }
-
-    void resized() override
-    {
-        list_comp.setBounds(getLocalBounds());
-    }
-
-    int getNumRows() override { return static_cast<int>(model.game_channels.size()) + 1; }
-
-    void paintListBoxItem (int row,
-                           juce::Graphics& g,
-                           int width, int height,
-                           bool row_is_selected) override
-    {
-        if (row_is_selected && row < getNumRows())
-        {
-            g.setColour(juce::Colours::white);
-            auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawRect(bounds);
-        }
-    }
-
-    void deleteKeyPressed (int) override
-    {
-        auto selected_row = list_comp.getSelectedRow();
-        if(selected_row == -1 || selected_row == getNumRows() - 1) 
-            return;
-        auto id = model.order.at(selected_row);
-        model.order.erase(model.order.begin() + selected_row);
-        {
-            auto deleted_count = model.game_channels.erase(id);
-            assert(deleted_count == 1);
-        }
-
-        auto row_to_select = selected_row == 0 ? 0 : selected_row - 1;
-        list_comp.selectRow(row_to_select);
-        list_comp.updateContent();
-        selected_channel_changed_callback(row_to_select);
-        channel_list_changed_callback();
-    }
-
-    bool keyPressed (const juce::KeyPress &key) override
-    {
-        if (key == key.escapeKey)
-        {
-            list_comp.deselectAllRows();
-            return true;
-        }
-        return false;
-    }
-
-    
-    juce::Component *refreshComponentForRow (int row_number,
-                                             bool,
-                                             Component *existing_component) override
-    {
-        //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
-        //unused row            
-        assert(model.order.size() == model.game_channels.size());
-
-        if (row_number > model.game_channels.size())
-        {
-            if (existing_component != nullptr)
-                delete existing_component;
-            return nullptr;
-        }
-        else
-        {
-            List_Row_Label *label;
-
-            assert(model.order.size() == model.game_channels.size());
-            if (existing_component != nullptr)
-            {
-                label = dynamic_cast<List_Row_Label*>(existing_component);
-                assert(label != nullptr);
-            }
-            else
-            {
-                label = new List_Row_Label("Create new channel",
-                                            editable_mouse_down_callback,
-                                            editable_text_changed_callback,
-                                            editable_create_row_callback);
-            }
-            juce::String row_text = "";
-            if (row_number < model.game_channels.size())
-            {
-                int channel_id = model.order.at(row_number);
-                row_text = model.game_channels.at(channel_id).name;
-            }
-            label->update(row_number, row_text, row_number == model.game_channels.size());
-            return label;
-        } 
-    }
-    
-    
-    void selectedRowsChanged (int last_row_selected) override
-    {   
-        if(last_row_selected != -1 && checked_cast<size_t>(last_row_selected) != model.game_channels.size())
-            selected_channel_changed_callback(0);
-    }
-
-    std::function < void(int) > editable_mouse_down_callback;
-    std::function < void(int, juce::String) > editable_text_changed_callback;
-    std::function < void(juce::String) > editable_create_row_callback;
-
-    std::function < void(int) > selected_channel_changed_callback = {};
-    std::function < void() > channel_list_changed_callback = {};
-    juce::ListBox list_comp;
-private:
-    MuliTrack_Model &model;
-
-};
-
 class ChannelSettingsMenu : public juce::Component
 {
 public :
     ChannelSettingsMenu(MuliTrack_Model &multiTrackModel,
                         std::function<void()> && onBackButtonClick)
     :    multitrack_model(multiTrackModel),
-         channel_list(multiTrackModel)
+         channel_list()
     {
         {
             header.onBackClicked = [click = std::move(onBackButtonClick)] {
@@ -298,17 +130,58 @@ public :
             game_ui_header_update(&header, "Game Tracks Settings", "");
             addAndMakeVisible(header);
         }
+        
+        channel_list.selected_channel_changed_callback = [&](int){
+        };
+        
+        channel_list.create_channel_callback = [&](juce::String new_channel_name){
+            int new_channel_id = random_positive_int();
+            Game_Channel new_channel = {
+                .id = new_channel_id,
+            };
+            new_channel_name.copyToUTF8(new_channel.name, sizeof(new_channel.name));
+            {
+                auto [it, result] = multitrack_model.game_channels.emplace(new_channel_id, new_channel);
+                assert(result);
+            }
+            multitrack_model.order.push_back(new_channel_id);
+            multitrack_model_broadcast_change(&multitrack_model);
+        };
 
-        channel_list.selected_channel_changed_callback = [&] (int) {
-            selected_channel_changed_callback();
+        channel_list.delete_channel_callback = [&](int row_to_delete){
+            auto id = multitrack_model.order.at(row_to_delete);
+            multitrack_model.order.erase(multitrack_model.order.begin() + row_to_delete);
+            {
+                auto deleted_count = multitrack_model.game_channels.erase(id);
+                assert(deleted_count == 1);
+            }
+            multitrack_model_broadcast_change(&multitrack_model);
         };
-        channel_list.channel_list_changed_callback = [&] {
-            multitrack_model_broadcast_change(&multitrack_model, MultiTrack_Observers_Channel_Settings);
+
+        channel_list.rename_channel_callback = [&](int row_idx, juce::String new_channel_name){
+            int channel_id = multitrack_model.order.at(row_idx);
+            auto& channel_to_rename = multitrack_model.game_channels.at(channel_id);
+            new_channel_name.copyToUTF8(channel_to_rename.name, sizeof(channel_to_rename.name));
+            multitrack_model_broadcast_change(&multitrack_model);
         };
+
+        channel_list.customization_point = [&](int, List_Row_Label*){
+        };
+        
+        auto multitrack_observer = [&](MuliTrack_Model *new_model) { 
+            std::vector<juce::String> channel_names{};
+            channel_names.resize(new_model->game_channels.size());
+            auto projection = [new_model] (int id) {
+                return new_model->game_channels.at(id).name;
+            };
+            std::transform(new_model->order.begin(), new_model->order.end(), channel_names.begin(), std::move(projection));
+            channel_list.update(channel_names);
+        };
+        multitrack_observer(&multitrack_model);
         multitrack_model_add_observer(
             &multitrack_model,
             MultiTrack_Observers_Channel_Settings,
-            [ = ](auto *new_model) { juce::ignoreUnused(new_model); }
+            std::move(multitrack_observer)
         );
 
         addAndMakeVisible(channel_list);
@@ -339,10 +212,9 @@ public :
         channel_list.list_comp.updateContent();
     }
 
-    std::function<void()> selected_channel_changed_callback;
 private :
     MuliTrack_Model &multitrack_model;
-    Channel_List channel_list;
+    Insertable_List channel_list;
     GameUI_Header header;
 };
 

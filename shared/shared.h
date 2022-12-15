@@ -730,6 +730,141 @@ private:
     juce::Colour textColour;
 };
 
+
+class Insertable_List : public juce::Component,
+public juce::ListBoxModel
+{
+public: 
+    Insertable_List()
+    {
+        list_comp.setModel(this);
+        list_comp.setMultipleSelectionEnabled(false);
+        addAndMakeVisible(list_comp);
+
+        editable_mouse_down_callback = [&] (int row_idx) {
+            list_comp.selectRow(row_idx);
+        };
+        editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
+            assert(row_idx <= rows_text.size());
+            assert(row_idx >= 0);
+            rename_channel_callback(row_idx, row_text);
+        };
+        editable_create_row_callback = [&] (juce::String new_row_text) {
+            create_channel_callback(new_row_text);
+        };
+    }
+
+    virtual ~Insertable_List() override = default;
+
+    void resized() override
+    {
+        list_comp.setBounds(getLocalBounds());
+    }
+
+    int getNumRows() override { return static_cast<int>(rows_text.size()) + 1; }
+
+    void paintListBoxItem (int row,
+                           juce::Graphics& g,
+                           int width, int height,
+                           bool row_is_selected) override
+    {
+        if (row_is_selected && row < getNumRows())
+        {
+            g.setColour(juce::Colours::white);
+            auto bounds = juce::Rectangle { 0, 0, width, height };
+            g.drawRect(bounds);
+        }
+    }
+
+    void deleteKeyPressed (int) override
+    {
+        auto row_to_delete = list_comp.getSelectedRow();
+        if(row_to_delete == -1 || row_to_delete == getNumRows() - 1) 
+            return;
+
+        auto row_to_select = row_to_delete == 0 ? 0 : row_to_delete - 1;
+        list_comp.selectRow(row_to_select);
+        delete_channel_callback(row_to_delete);
+    }
+
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.escapeKey)
+        {
+            list_comp.deselectAllRows();
+            return true;
+        }
+        return false;
+    }
+
+    
+    juce::Component *refreshComponentForRow (int row_number,
+                                             bool,
+                                             juce::Component *existing_component) override
+    {
+        if (row_number > rows_text.size())
+        {
+            if (existing_component != nullptr)
+                delete existing_component;
+            return nullptr;
+        }
+        else
+        {
+            List_Row_Label *label;
+
+            if (existing_component != nullptr)
+            {
+                label = dynamic_cast<List_Row_Label*>(existing_component);
+                assert(label != nullptr);
+            }
+            else
+            {
+                label = new List_Row_Label("Create new channel",
+                                           editable_mouse_down_callback,
+                                           editable_text_changed_callback,
+                                           editable_create_row_callback);
+            }
+            juce::String row_text = row_number < rows_text.size() 
+                ? rows_text[row_number] 
+                : "";
+            label->update(row_number, row_text, row_number == rows_text.size());
+            if(row_number < rows_text.size())
+                customization_point(row_number, label);
+            return label;
+        } 
+    }
+    
+    
+    void selectedRowsChanged (int last_row_selected) override
+    {   
+        if(last_row_selected != -1 && 
+            checked_cast<size_t>(last_row_selected) != rows_text.size())
+            selected_channel_changed_callback(last_row_selected);
+    }
+
+    void update(std::vector<juce::String> new_rows_text)
+    {
+        rows_text = new_rows_text;
+        list_comp.updateContent();
+    }
+
+
+
+    std::function<void(int)> selected_channel_changed_callback = {};
+    std::function<void(juce::String)> create_channel_callback = {};
+    std::function<void(int)> delete_channel_callback = {};
+    std::function<void(int, juce::String)> rename_channel_callback = {};
+    std::function<void(int, List_Row_Label*)> customization_point = {};
+
+    juce::ListBox list_comp;
+private:
+    std::function<void(int)> editable_mouse_down_callback;
+    std::function<void(int, juce::String)> editable_text_changed_callback;
+    std::function<void(juce::String)> editable_create_row_callback;
+
+    std::vector<juce::String> rows_text;
+};
+
 #if 0
 class DumbRow  : public juce::Component
 {
