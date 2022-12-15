@@ -63,6 +63,7 @@ struct CompressorGame_Config
     Compressor_Game_Variant variant;
     int listens;
     int timeout_ms;
+    int total_rounds;
 };
 
 
@@ -71,7 +72,6 @@ struct CompressorGame_State
     GameStep step;
     Mix mix;
     int score;
-    int lives;
     //compressor
     int target_threshold_pos;
     int target_ratio_pos;
@@ -82,6 +82,7 @@ struct CompressorGame_State
     int input_ratio_pos;
     int input_attack_pos;
     int input_release_pos;
+
     //
     int current_file_idx;
     std::vector<Audio_File> files;
@@ -92,6 +93,7 @@ struct CompressorGame_State
     bool can_still_listen;
     juce::int64 timestamp_start;
     juce::int64 current_timestamp;
+    int current_round;
 };
 
 struct Compressor_Game_Effects {
