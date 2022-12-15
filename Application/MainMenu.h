@@ -165,7 +165,13 @@ public :
             multitrack_model_broadcast_change(&multitrack_model);
         };
 
-        channel_list.customization_point = [&](int, List_Row_Label*){
+        channel_list.customization_point = [&](int row_idx, List_Row_Label* label){
+            int channel_id = multitrack_model.order.at(row_idx);
+            bool only_one_daw_track = multitrack_model.assigned_daw_track_count.at(channel_id) == 1;
+            juce::Colour colour = only_one_daw_track 
+                ? juce::Colours::white
+                : juce::Colours::red;
+            label->setColour(juce::Label::textColourId, colour);
         };
         
         auto multitrack_observer = [&](MuliTrack_Model *new_model) { 
