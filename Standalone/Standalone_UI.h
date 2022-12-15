@@ -380,9 +380,20 @@ public:
                        Audio_File_List *fileList)
     : list_comp(true)
     {
-        list_comp.selection_changed_callback = [fileList] (const auto& new_selection)
+        auto update_ui = [&] (const std::vector<bool> & new_selection)
+        {
+            if (std::ranges::any_of(new_selection, [](bool val) { return val; }))
+                bottom.next_button.setEnabled(true);
+            else
+                bottom.next_button.setEnabled(false);
+        };
+        update_ui(fileList->selected);
+
+        list_comp.selection_changed_callback = 
+            [fileList, selection_changed = std::move(update_ui)] (const std::vector<bool> & new_selection)
         {
             fileList->selected = new_selection;
+            selection_changed(new_selection);
         };
         std::vector<juce::String> file_names{};
         for (const Audio_File& file : fileList->files)
