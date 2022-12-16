@@ -300,7 +300,6 @@ struct Frequency_Config_Panel : public juce::Component
                 scroller.addAndMakeVisible(toggle);
             }
 
-            scroller.setSize(0, 6 * 60);
             viewport.setScrollBarsShown(true, false);
             viewport.setViewedComponent(&scroller, false);
             addAndMakeVisible(viewport);
@@ -365,9 +364,11 @@ struct Frequency_Config_Panel : public juce::Component
         auto right_bounds = r.getProportion<float>( { 0.4f, .0f, 0.6f, 1.0f }).withTrimmedLeft(5);
 
         config_list_comp.setBounds(left_bounds);
-        scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
-        onResizeScroller(scroller.getBounds());
+
+        auto scroller_height = onResizeScroller(right_bounds.getWidth());
+        scroller.setSize(right_bounds.getWidth(), scroller_height);
         viewport.setBounds(right_bounds);
+
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
@@ -395,35 +396,43 @@ struct Frequency_Config_Panel : public juce::Component
         result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
     }
     
-    void onResizeScroller(juce::Rectangle<int> scroller_bounds)
+    int onResizeScroller(int width)
     {
-        scroller_bounds = scroller_bounds.reduced(4);
-        auto height = scroller_bounds.getHeight();
-        auto param_height = height / 6;
+        //scroller_bounds = scroller_bounds.reduced(4);
+        int total_height = 0;
 
-        auto same_bounds = [&] {
-            return scroller_bounds.removeFromTop(param_height / 2);
+        auto bounds = [&](int height) {
+            auto new_bounds = juce::Rectangle < int > {
+                0, total_height, width, height
+            };
+            total_height += height;
+            return new_bounds;
         };
 
-        eq_gain_label.setBounds(same_bounds());
-        eq_gain.setBounds(same_bounds());
-        
-        eq_quality_label.setBounds(same_bounds());
-        eq_quality.setBounds(same_bounds());
+        int label_height = 35;
+        int slider_height = 35;
 
-        initial_correct_answer_window_label.setBounds(same_bounds());
-        initial_correct_answer_window.setBounds(same_bounds());
+        eq_gain_label.setBounds(bounds(label_height));
+        eq_gain.setBounds(bounds(slider_height));
         
-        auto prelisten_top_bounds = same_bounds();
+        eq_quality_label.setBounds(bounds(label_height));
+        eq_quality.setBounds(bounds(slider_height));
+
+        initial_correct_answer_window_label.setBounds(bounds(label_height));
+        initial_correct_answer_window.setBounds(bounds(slider_height));
+        
+        auto prelisten_top_bounds = bounds(label_height);
         prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
         prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
-        prelisten_timeout_ms.setBounds(same_bounds());
+        prelisten_timeout_ms.setBounds(bounds(slider_height));
 
-        question_timeout_enabled.setBounds(same_bounds());
-        question_timeout_ms.setBounds(same_bounds());
+        question_timeout_enabled.setBounds(bounds(label_height));
+        question_timeout_ms.setBounds(bounds(slider_height));
 
-        result_timeout_enabled.setBounds(same_bounds());
-        result_timeout_ms.setBounds(same_bounds());
+        result_timeout_enabled.setBounds(bounds(label_height));
+        result_timeout_ms.setBounds(bounds(slider_height));
+
+        return total_height;
     }
 
     std::vector<FrequencyGame_Config> &configs;

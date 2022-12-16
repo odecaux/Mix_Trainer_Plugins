@@ -392,7 +392,6 @@ struct Compressor_Config_Panel : public juce::Component
                 scroller.addAndMakeVisible(toggle);
             }
 
-            scroller.setSize(0, 6 * 60);
             viewport.setScrollBarsShown(true, false);
             viewport.setViewedComponent(&scroller, false);
             addAndMakeVisible(viewport);
@@ -459,11 +458,11 @@ struct Compressor_Config_Panel : public juce::Component
         auto right_bounds = r.getProportion<float>( { 0.4f, .0f, 0.6f, 1.0f }).withTrimmedLeft(5);
 
         config_list_comp.setBounds(left_bounds);
-        scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
 
-        onResizeScroller(scroller.getBounds());
-
+        auto scroller_height = onResizeScroller(right_bounds.getWidth());
+        scroller.setSize(right_bounds.getWidth(), scroller_height);
         viewport.setBounds(right_bounds);
+
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
     }
@@ -494,36 +493,41 @@ struct Compressor_Config_Panel : public juce::Component
 #endif
     }
     
-    void onResizeScroller(juce::Rectangle<int> scroller_bounds)
+    int onResizeScroller(int width)
     {
-        scroller_bounds.reduce(4, 4);
-        scroller_bounds.removeFromRight(5);
-        auto height = scroller_bounds.getHeight();
-        auto param_height = height / 4;
+        //scroller_bounds = scroller_bounds.reduced(4);
+        int total_height = 0;
 
-
-        auto same_bounds = [&] {
-            return scroller_bounds.removeFromTop(param_height / 2);
+        auto bounds = [&](int height) {
+            auto new_bounds = juce::Rectangle < int > {
+                0, total_height, width, height
+            };
+            total_height += height;
+            return new_bounds;
         };
 
-        thresholds_label.setBounds(same_bounds());
-        thresholds.setBounds(same_bounds().withHeight(20));
+        int label_height = 35;
+        int textedit_height = 20;
+
+        thresholds_label.setBounds(bounds(label_height));
+        thresholds.setBounds(bounds(textedit_height));
         
-        ratios_label.setBounds(same_bounds());
-        ratios.setBounds(same_bounds().withHeight(20));
+        ratios_label.setBounds(bounds(label_height));
+        ratios.setBounds(bounds(textedit_height));
         
-        attacks_label.setBounds(same_bounds());
-        attacks.setBounds(same_bounds().withHeight(20));
+        attacks_label.setBounds(bounds(label_height));
+        attacks.setBounds(bounds(textedit_height));
         
-        releases_label.setBounds(same_bounds());
-        releases.setBounds(same_bounds().withHeight(20));
+        releases_label.setBounds(bounds(label_height));
+        releases.setBounds(bounds(textedit_height));
         
 #if 0
-        auto prelisten_top_bounds = same_bounds();
+        auto prelisten_top_bounds = bounds();
         prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
         prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
-        prelisten_timeout_ms.setBounds(same_bounds());
+        prelisten_timeout_ms.setBounds(bounds());
 #endif
+        return total_height;
     }
 
     std::vector<CompressorGame_Config> &configs;
