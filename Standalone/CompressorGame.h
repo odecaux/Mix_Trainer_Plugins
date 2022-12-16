@@ -368,6 +368,8 @@ struct Compressor_Config_Panel : public juce::Component
             addAndMakeVisible(header);
         }
 
+        scroller.setWantsKeyboardFocus(true);
+
         {
             auto threshold_validate = [&] {
                 auto str = thresholds.getText();
