@@ -1,5 +1,7 @@
 #Priority 1 :
 
+Moved the rotary to their own widget, so we can hide them all at once
+
 assert we have a vaild config selected
 
 We should not be reading every audio track on loading

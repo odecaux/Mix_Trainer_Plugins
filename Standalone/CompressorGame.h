@@ -66,6 +66,15 @@ struct CompressorGame_Config
     int total_rounds;
 };
 
+static inline CompressorGame_Config compressor_game_config_validate(CompressorGame_Config config)
+{
+    std::sort(config.threshold_values_db.begin(), config.threshold_values_db.end());
+    std::sort(config.ratio_values.begin(), config.ratio_values.end());
+    std::sort(config.attack_values.begin(), config.attack_values.end());
+    std::sort(config.release_values.begin(), config.release_values.end());
+    return config;
+}
+
 
 struct CompressorGame_State
 {
@@ -325,31 +334,74 @@ struct Compressor_Config_Panel : public juce::Component
         }
 
         {
-#if 0
-            eq_gain.onValueChange = [&] {
-                configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+            thresholds.onReturnKey = [&] {
+                juce::StringArray tokens = juce::StringArray::fromTokens(thresholds.getText(), false);
+                if (tokens.isEmpty())
+                {
+                    selectConfig(current_config_idx);
+                    return;
+                }
+                CompressorGame_Config &current_config = configs[current_config_idx];            
+                current_config.threshold_values_db.clear();
+                for (const auto& token : tokens)
+                {
+                    current_config.threshold_values_db.emplace_back(token.getFloatValue());
+                }
+                current_config = compressor_game_config_validate(current_config);
+                selectConfig(current_config_idx);
             };
-
-            prelisten_type.setEditableText(false);
-            prelisten_type.setJustificationType(juce::Justification::left);
-            prelisten_type.addItem("None", PreListen_None + 1);
-            prelisten_type.addItem("Timeout", PreListen_Timeout + 1);
-            prelisten_type.addItem("Free", PreListen_Free + 1);
-         
-            prelisten_type.onChange = [&] {
-                PreListen_Type new_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
-                configs[current_config_idx].prelisten_type = new_type;
-                prelisten_timeout_ms.setEnabled(new_type == PreListen_Timeout);
-            };
-
-            scroller.addAndMakeVisible(prelisten_type);
-
-            question_timeout_enabled.onClick = [&] {
-                bool new_toggle_state = question_timeout_enabled.getToggleState();
-                configs[current_config_idx].question_timeout_enabled = new_toggle_state;
-                question_timeout_ms.setEnabled(new_toggle_state);
             
-#endif
+            ratios.onReturnKey = [&] {
+                juce::StringArray tokens = juce::StringArray::fromTokens(ratios.getText(), false);
+                if (tokens.isEmpty())
+                {
+                    selectConfig(current_config_idx);
+                    return;
+                }
+                CompressorGame_Config &current_config = configs[current_config_idx];            
+                current_config.ratio_values.clear();
+                for (const auto& token : tokens)
+                {
+                    current_config.ratio_values.emplace_back(token.getFloatValue());
+                }
+                current_config = compressor_game_config_validate(current_config);
+                selectConfig(current_config_idx);
+            };
+
+            
+            attacks.onReturnKey = [&] {
+                juce::StringArray tokens = juce::StringArray::fromTokens(attacks.getText(), false);
+                if (tokens.isEmpty())
+                {
+                    selectConfig(current_config_idx);
+                    return;
+                }
+                CompressorGame_Config &current_config = configs[current_config_idx];            
+                current_config.attack_values.clear();
+                for (const auto& token : tokens)
+                {
+                    current_config.attack_values.emplace_back(token.getFloatValue());
+                }
+                current_config = compressor_game_config_validate(current_config);
+                selectConfig(current_config_idx);
+            };
+
+            releases.onReturnKey = [&] {
+                juce::StringArray tokens = juce::StringArray::fromTokens(releases.getText(), false);
+                if (tokens.isEmpty())
+                {
+                    selectConfig(current_config_idx);
+                    return;
+                }
+                CompressorGame_Config &current_config = configs[current_config_idx];            
+                current_config.release_values.clear();
+                for (const auto& token : tokens)
+                {
+                    current_config.release_values.emplace_back(token.getFloatValue());
+                }
+                current_config = compressor_game_config_validate(current_config);
+                selectConfig(current_config_idx);
+            };
         
             textedit_and_label_t textedit_and_label = {
                 { thresholds, thresholds_label },
@@ -361,6 +413,9 @@ struct Compressor_Config_Panel : public juce::Component
             for (auto &[textedit, label] : textedit_and_label)
             {
                 textedit.setMultiLine(false);
+                textedit.onEscapeKey = [&] {
+                    selectConfig(current_config_idx);
+                };
                 //textedit.setScrollWheelEnabled(false);
                 //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
                 //textedit.setRange(range, interval);
@@ -381,10 +436,7 @@ struct Compressor_Config_Panel : public juce::Component
             for (auto &[textedit, toggle] : textedit_and_toggle)
             {
                 textedit.setMultiLine(false);
-                //textedit.setScrollWheelEnabled(false);
-                //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-                //textedit.setRange(range, interval);
-
+                textedit.setJustification(juce::Justification::centredLeft);
                 //toggle.setBorderSize( juce::BorderSize<int>{ 0 });
                 //toggle.setJustificationType(juce::Justification::left);
             
@@ -473,6 +525,45 @@ struct Compressor_Config_Panel : public juce::Component
         current_config_idx = new_config_idx;
         CompressorGame_Config &current_config = configs[current_config_idx];
       
+        {
+            juce::String thresholds_str{};
+            for (const float threshold : current_config.threshold_values_db)
+            {
+                thresholds_str += juce::String(threshold) + " ";
+            }
+            thresholds_str = thresholds_str.dropLastCharacters(1);
+            thresholds.setText(thresholds_str, juce::dontSendNotification);
+        }
+        
+        {
+            juce::String ratios_str{};
+            for (const float ratio : current_config.ratio_values)
+            {
+                ratios_str += juce::String(ratio) + " ";
+            }
+            ratios_str = ratios_str.dropLastCharacters(1);
+            ratios.setText(ratios_str, juce::dontSendNotification);
+        }
+        
+        {
+            juce::String attacks_str{};
+            for (const float attack : current_config.attack_values)
+            {
+                attacks_str += juce::String(attack) + " ";
+            }
+            attacks_str = attacks_str.dropLastCharacters(1);
+            attacks.setText(attacks_str, juce::dontSendNotification);
+        }
+        
+        {
+            juce::String releases_str{};
+            for (const float release : current_config.release_values)
+            {
+                releases_str += juce::String(release) + " ";
+            }
+            releases_str = releases_str.dropLastCharacters(1);
+            releases.setText(releases_str, juce::dontSendNotification);
+        }
 #if 0
         float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
@@ -507,7 +598,7 @@ struct Compressor_Config_Panel : public juce::Component
         };
 
         int label_height = 35;
-        int textedit_height = 20;
+        int textedit_height = 25;
 
         thresholds_label.setBounds(bounds(label_height));
         thresholds.setBounds(bounds(textedit_height));
