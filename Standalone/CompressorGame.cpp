@@ -23,8 +23,28 @@ CompressorGame_Config compressor_game_config_default(juce::String name)
 void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition)
 {
     juce::ignoreUnused(ui);
+    if (transition.in_transition == GameStep_Begin)
+    {
+        ui.previewer_file_list.setVisible(true);
+        ui.resized();
+#if 0  
+        ui.previewer_file_list.selection_changed_callback = 
+            [fileList, selection_changed = std::move(update_ui)] (const std::vector<bool> & new_selection)
+        {
+            fileList->selected = new_selection;
+            selection_changed(new_selection);
+        };
+        std::vector<juce::String> file_names{};
+        for (const Audio_File& file : fileList->files)
+        {
+            file_names.push_back(file.title);
+        }
+        list_comp.set_rows(file_names, fileList->selected);
+#endif
+    }
     if (transition.out_transition == GameStep_Begin)
     {
+        ui.previewer_file_list.setVisible(false);
 #if 0
         ui.compressor_widget = std::make_unique < CompressorWidget > ();
         ui.compressor_widget->onClick = [state = ui.game_state, io = ui.game_io] (int compressor) {
@@ -35,8 +55,8 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
             compressor_game_post_event(state, io, event);
         };
         ui.addAndMakeVisible(*ui.compressor_widget);
-        ui.resized();
 #endif
+        ui.resized();
     }
     if (transition.in_transition == GameStep_EndResults)
     {

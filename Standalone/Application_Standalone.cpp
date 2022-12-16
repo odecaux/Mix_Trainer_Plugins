@@ -168,7 +168,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         }
     }();
     
-    if (compressor_game_configs.empty())
+    //if (compressor_game_configs.empty())
     {
         compressor_game_configs = { 
             compressor_game_config_default("Default")

@@ -137,8 +137,12 @@ void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Ef
 struct CompressorGame_UI : public juce::Component
 {
     
-    CompressorGame_UI(CompressorGame_IO *gameIO) : game_io(gameIO)
+    CompressorGame_UI(CompressorGame_IO *gameIO)
+    : game_io(gameIO),
+      previewer_file_list(false)
     {
+        addChildComponent(previewer_file_list);
+
         bottom.onNextClicked = [io = this->game_io] (Event_Type e) {
             Event event = {
                 .type = e
@@ -216,7 +220,6 @@ struct CompressorGame_UI : public juce::Component
         };
         setup_slider(release_slider, release_label, "Release", std::move(onReleaseMoved));
         
-        
         bottom.target_mix_button.setButtonText("Target settings");
         bottom.user_mix_button.setButtonText("Your settings");
         addAndMakeVisible(bottom);
@@ -242,8 +245,16 @@ struct CompressorGame_UI : public juce::Component
         auto bottom_bounds = bounds.removeFromBottom(bottom.getHeight());
         bottom.setBounds(bottom_bounds);
 
+        //TODO temporary, should not depend on internal state
         auto game_bounds = game_bounds_dim.withCentre(bounds.getCentre());
-        
+        if (previewer_file_list.isVisible())
+        {
+            game_bounds.setX(bounds.getRight() - game_bounds.getWidth());
+            auto previewer_bounds = game_bounds;
+            previewer_bounds.setX(0);
+            previewer_bounds.setRight(game_bounds.getX());
+            previewer_file_list.setBounds(previewer_bounds);
+        }
         auto threshold_bounds = game_bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
         auto ratio_bounds = game_bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
         auto attack_bounds = game_bounds.getProportion<float>( { 0.0f, 0.5f, 0.5f, 0.5f }).reduced(5);
@@ -261,6 +272,7 @@ struct CompressorGame_UI : public juce::Component
     }
 
     GameUI_Header header;
+    Selection_List previewer_file_list;
     juce::Rectangle < int > game_bounds_dim { 0, 0, 200, 200 };
 #if 0
     std::unique_ptr<CompressorWidget> compressor_widget;
