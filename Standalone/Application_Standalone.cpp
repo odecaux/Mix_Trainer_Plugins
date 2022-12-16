@@ -413,7 +413,7 @@ void Application_Standalone::to_freq_game_settings()
         main_component->changePanel(std::move(selector_panel));
     };
 
-    auto config_panel = std::make_unique < Config_Panel > (
+    auto config_panel = std::make_unique < Frequency_Config_Panel > (
         frequency_game_configs, 
         current_config_idx, 
         std::move(to_main_menu), 

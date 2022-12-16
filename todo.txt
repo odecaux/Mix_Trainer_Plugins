@@ -1,13 +1,9 @@
 #Priority 1 :
 
-Le top et bottom gèrent eux-même leurs hauteur
-
 pouvoir selectionner aucune track !
 
 #Priority 2 :
 
-unifier les ListBoxes 
-    une qui permet d'en créer des nouvelles, avec le TextEdit machin bidule
 Bass game mode
 rising gain
 on doit pouvoir aussi avoir un mix toggle dans le frequency game
@@ -58,5 +54,3 @@ séparer les deux
 
 
 Si il y a deconnexion : jeu mis en pause, takeover prompt : "fix or Quit"
-
-save/load des multitracks
