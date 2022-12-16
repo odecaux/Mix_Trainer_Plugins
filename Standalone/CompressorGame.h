@@ -68,10 +68,20 @@ struct CompressorGame_Config
 
 static inline CompressorGame_Config compressor_game_config_validate(CompressorGame_Config config)
 {
-    std::sort(config.threshold_values_db.begin(), config.threshold_values_db.end());
-    std::sort(config.ratio_values.begin(), config.ratio_values.end());
-    std::sort(config.attack_values.begin(), config.attack_values.end());
-    std::sort(config.release_values.begin(), config.release_values.end());
+    auto sort_clamp_and_filter = [] (std::vector<float> &vec, float min, float max)
+    {
+        std::sort(vec.begin(), vec.end());
+        auto clamping = [min, max] (float in)
+        {
+            return std::clamp(in, min, max);
+        };
+        std::transform(vec.begin(), vec.end(), vec.begin(), clamping);
+        vec.erase( std::unique( vec.begin(), vec.end() ), vec.end() );
+    };
+    sort_clamp_and_filter(config.threshold_values_db, -90, 0);
+    sort_clamp_and_filter(config.ratio_values, 1, 10);
+    sort_clamp_and_filter(config.attack_values, 1, 1000);
+    sort_clamp_and_filter(config.release_values, 1, 1000);
     return config;
 }
 
