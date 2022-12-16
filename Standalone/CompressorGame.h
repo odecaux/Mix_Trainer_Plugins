@@ -305,23 +305,8 @@ private:
 //------------------------------------------------------------------------
 struct Compressor_Config_Panel : public juce::Component
 {
-    using slider_and_label_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
-    using slider_and_toggle_t = std::vector<std::tuple < juce::Slider&, juce::ToggleButton&, juce::Range<double>, double> >;
-    
-    class Scroller : public juce::Component
-    {
-    public:
-        Scroller(std::function<void(juce::Rectangle<int>)> onResize) 
-        : on_resized_callback(std::move(onResize))
-        {}
-
-        void resized() override
-        {
-            on_resized_callback(getLocalBounds());
-        }
-    private:
-        std::function < void(juce::Rectangle<int>) > on_resized_callback;
-    };
+    using textedit_and_label_t = std::vector<std::tuple<juce::TextEditor&, juce::Label&>>;
+    using textedit_and_toggle_t = std::vector<std::tuple<juce::TextEditor&, juce::ToggleButton&>>;
 
     Compressor_Config_Panel(std::vector<CompressorGame_Config> &gameConfigs,
                            size_t &currentConfigIdx,
@@ -339,21 +324,11 @@ struct Compressor_Config_Panel : public juce::Component
             addAndMakeVisible(header);
         }
 
-#if 0
         {
-            eq_gain.setTextValueSuffix (" dB");
+#if 0
             eq_gain.onValueChange = [&] {
                 configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
             };
-
-            eq_quality.onValueChange = [&] {
-                configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
-            };
-
-            initial_correct_answer_window.onValueChange = [&] {
-                configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
-            };
-
 
             prelisten_type.setEditableText(false);
             prelisten_type.setJustificationType(juce::Justification::left);
@@ -368,79 +343,52 @@ struct Compressor_Config_Panel : public juce::Component
             };
 
             scroller.addAndMakeVisible(prelisten_type);
-            scroller.addAndMakeVisible(prelisten_type_label);
-            scroller.addAndMakeVisible(prelisten_timeout_ms);
 
-            prelisten_timeout_ms.setTextValueSuffix(" ms");
-            prelisten_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
-            };
-            prelisten_timeout_ms.setNumDecimalPlacesToDisplay(0);
-        
-            prelisten_timeout_ms.setScrollWheelEnabled(false);
-            prelisten_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-            prelisten_timeout_ms.setRange( { 1000, 4000 }, 500);
-
-            question_timeout_ms.setTextValueSuffix(" ms");
-            question_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
-            };
-            question_timeout_ms.setNumDecimalPlacesToDisplay(0);
-        
             question_timeout_enabled.onClick = [&] {
                 bool new_toggle_state = question_timeout_enabled.getToggleState();
                 configs[current_config_idx].question_timeout_enabled = new_toggle_state;
                 question_timeout_ms.setEnabled(new_toggle_state);
-            };
-
-            result_timeout_ms.setTextValueSuffix(" ms");
-            result_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
-            };
-            result_timeout_ms.setNumDecimalPlacesToDisplay(0);
+            
+#endif
         
-            result_timeout_enabled.onClick = [&] {
-                bool new_toggle_state = result_timeout_enabled.getToggleState();
-                configs[current_config_idx].result_timeout_enabled = new_toggle_state;
-                result_timeout_ms.setEnabled(new_toggle_state);
+            textedit_and_label_t textedit_and_label = {
+                { thresholds, thresholds_label },
+                { ratios, ratios_label },
+                { attacks, attacks_label },
+                { releases, releases_label }
             };
 
-        
-            slider_and_label_t slider_and_label = {
-                { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0 },
-                { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 },
-                { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }
-            };
-
-            for (auto &[slider, label, range, interval] : slider_and_label)
+            for (auto &[textedit, label] : textedit_and_label)
             {
-                slider.setScrollWheelEnabled(false);
-                slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-                slider.setRange(range, interval);
+                textedit.setMultiLine(false);
+                //textedit.setScrollWheelEnabled(false);
+                //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+                //textedit.setRange(range, interval);
 
                 label.setBorderSize(juce::BorderSize < int > { 0 });
                 label.setJustificationType(juce::Justification::left);
             
-                scroller.addAndMakeVisible(slider);
+                scroller.addAndMakeVisible(textedit);
                 scroller.addAndMakeVisible(label);
             }
 
-            slider_and_toggle_t slider_and_toggle = {
-                { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
-                { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
+            textedit_and_toggle_t textedit_and_toggle = {
+               // { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
+               // { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
             };
 
         
-            for (auto &[slider, toggle, range, interval] : slider_and_toggle)
+            for (auto &[textedit, toggle] : textedit_and_toggle)
             {
-                slider.setScrollWheelEnabled(false);
-                slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-                slider.setRange(range, interval);
+                textedit.setMultiLine(false);
+                //textedit.setScrollWheelEnabled(false);
+                //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+                //textedit.setRange(range, interval);
 
                 //toggle.setBorderSize( juce::BorderSize<int>{ 0 });
                 //toggle.setJustificationType(juce::Justification::left);
             
-                scroller.addAndMakeVisible(slider);
+                scroller.addAndMakeVisible(textedit);
                 scroller.addAndMakeVisible(toggle);
             }
 
@@ -449,7 +397,6 @@ struct Compressor_Config_Panel : public juce::Component
             viewport.setViewedComponent(&scroller, false);
             addAndMakeVisible(viewport);
         }
-#endif
 
         //Next Button
         {
@@ -513,6 +460,9 @@ struct Compressor_Config_Panel : public juce::Component
 
         config_list_comp.setBounds(left_bounds);
         scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
+
+        onResizeScroller(scroller.getBounds());
+
         viewport.setBounds(right_bounds);
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
@@ -546,34 +496,33 @@ struct Compressor_Config_Panel : public juce::Component
     
     void onResizeScroller(juce::Rectangle<int> scroller_bounds)
     {
-        scroller_bounds = scroller_bounds.reduced(4);
+        scroller_bounds.reduce(4, 4);
+        scroller_bounds.removeFromRight(5);
         auto height = scroller_bounds.getHeight();
-        auto param_height = height / 6;
+        auto param_height = height / 4;
 
 
         auto same_bounds = [&] {
             return scroller_bounds.removeFromTop(param_height / 2);
         };
-#if 0
-        eq_gain_label.setBounds(same_bounds());
-        eq_gain.setBounds(same_bounds());
-        
-        eq_quality_label.setBounds(same_bounds());
-        eq_quality.setBounds(same_bounds());
 
-        initial_correct_answer_window_label.setBounds(same_bounds());
-        initial_correct_answer_window.setBounds(same_bounds());
+        thresholds_label.setBounds(same_bounds());
+        thresholds.setBounds(same_bounds().withHeight(20));
         
+        ratios_label.setBounds(same_bounds());
+        ratios.setBounds(same_bounds().withHeight(20));
+        
+        attacks_label.setBounds(same_bounds());
+        attacks.setBounds(same_bounds().withHeight(20));
+        
+        releases_label.setBounds(same_bounds());
+        releases.setBounds(same_bounds().withHeight(20));
+        
+#if 0
         auto prelisten_top_bounds = same_bounds();
         prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
         prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
         prelisten_timeout_ms.setBounds(same_bounds());
-
-        question_timeout_enabled.setBounds(same_bounds());
-        question_timeout_ms.setBounds(same_bounds());
-
-        result_timeout_enabled.setBounds(same_bounds());
-        result_timeout_ms.setBounds(same_bounds());
 #endif
     }
 
@@ -583,16 +532,19 @@ struct Compressor_Config_Panel : public juce::Component
     
     GameUI_Header header;
 
+    juce::TextEditor thresholds;
+    juce::Label thresholds_label { {}, "Thresholds" };
+
+    juce::TextEditor ratios;
+    juce::Label ratios_label { {}, "Ratios" };
+    
+    juce::TextEditor attacks;
+    juce::Label attacks_label { {}, "Attacks" };
+
+    juce::TextEditor releases;
+    juce::Label releases_label { {}, "Releases" };
+    
 #if 0
-    juce::Slider eq_gain;
-    juce::Label eq_gain_label { {}, "Gain"};
-    
-    juce::Slider eq_quality;
-    juce::Label eq_quality_label { {}, "Q" };
-    
-    juce::Slider initial_correct_answer_window;
-    juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
-    
     juce::ComboBox prelisten_type;
     juce::Label prelisten_type_label { {}, "Pre-Listen : " };
     juce::Slider prelisten_timeout_ms;
@@ -604,7 +556,7 @@ struct Compressor_Config_Panel : public juce::Component
     juce::Slider result_timeout_ms;
 #endif
     juce::Viewport viewport;
-    Scroller scroller { [this] (auto bounds) { onResizeScroller(bounds); } };
+    juce::Component scroller;
    
     juce::TextButton nextButton { "Next" };
    

@@ -177,23 +177,8 @@ private:
 //------------------------------------------------------------------------
 struct Frequency_Config_Panel : public juce::Component
 {
-    using slider_and_label_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
-    using slider_and_toggle_t = std::vector<std::tuple < juce::Slider&, juce::ToggleButton&, juce::Range<double>, double> >;
-    
-    class Scroller : public juce::Component
-    {
-    public:
-        Scroller(std::function<void(juce::Rectangle<int>)> onResize) 
-        : on_resized_callback(std::move(onResize))
-        {}
-
-        void resized() override
-        {
-            on_resized_callback(getLocalBounds());
-        }
-    private:
-        std::function < void(juce::Rectangle<int>) > on_resized_callback;
-    };
+    using slider_and_label_t = std::vector<std::tuple<juce::Slider&, juce::Label&, juce::Range < double>, double> >;
+    using slider_and_toggle_t = std::vector<std::tuple<juce::Slider&, juce::ToggleButton&, juce::Range < double>, double> >;
 
     Frequency_Config_Panel(std::vector<FrequencyGame_Config> &gameConfigs,
                  size_t &currentConfigIdx,
@@ -381,6 +366,7 @@ struct Frequency_Config_Panel : public juce::Component
 
         config_list_comp.setBounds(left_bounds);
         scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
+        onResizeScroller(scroller.getBounds());
         viewport.setBounds(right_bounds);
         auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
         nextButton.setBounds(button_bounds);
@@ -466,7 +452,7 @@ struct Frequency_Config_Panel : public juce::Component
     juce::Slider result_timeout_ms;
 
     juce::Viewport viewport;
-    Scroller scroller { [this] (auto bounds) { onResizeScroller(bounds); } };
+    juce::Component scroller;
    
     juce::TextButton nextButton { "Next" };
    
