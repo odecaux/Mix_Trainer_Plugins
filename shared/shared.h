@@ -819,7 +819,7 @@ public:
             }
             else
             {
-                label = new List_Row_Label("Create new channel",
+                label = new List_Row_Label(insert_row_text,
                                            editable_mouse_down_callback,
                                            editable_text_changed_callback,
                                            editable_create_row_callback);
@@ -848,6 +848,10 @@ public:
         list_comp.updateContent();
     }
 
+    void select_row(int row_idx)
+    {
+        list_comp.selectRow(row_idx);
+    }
 
 
     std::function<void(int)> selected_channel_changed_callback = {};
@@ -857,6 +861,7 @@ public:
     std::function<void(int, List_Row_Label*)> customization_point = {};
 
     juce::ListBox list_comp;
+    juce::String insert_row_text = {};
 private:
     std::function<void(int)> editable_mouse_down_callback;
     std::function<void(int, juce::String)> editable_text_changed_callback;
@@ -1033,6 +1038,12 @@ public:
         }
         list_comp.updateContent();
         list_comp.setSelectedRows (selected_set, juce::dontSendNotification);
+    }
+
+    
+    void select_row(int new_row)
+    {
+        list_comp.selectRow(new_row);
     }
 
     std::function < void(const std::vector<bool> &) > selection_changed_callback;

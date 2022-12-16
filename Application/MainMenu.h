@@ -173,6 +173,8 @@ public :
                 : juce::Colours::red;
             label->setColour(juce::Label::textColourId, colour);
         };
+
+        channel_list.insert_row_text = "Create new channel";
         
         auto multitrack_observer = [&](MuliTrack_Model *new_model) { 
             std::vector<juce::String> channel_names{};

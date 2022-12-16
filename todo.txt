@@ -1,5 +1,9 @@
 #Priority 1 :
 
+We should not be reading every audio track on loading
+    last_write_time field
+    save to xml
+    read through only if changed
 pouvoir selectionner aucune track !
 
 #Priority 2 :
