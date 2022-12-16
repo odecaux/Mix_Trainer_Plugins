@@ -1,6 +1,17 @@
 static const juce::Identifier id_config_root = "configs";
 static const juce::Identifier id_config = "config";
 static const juce::Identifier id_config_title = "title";
+
+static const juce::Identifier id_config_variant = "variant";
+
+static const juce::Identifier id_config_total_rounds = "total_rounds";
+static const juce::Identifier id_config_listen_count = "listen_count";
+
+static const juce::Identifier id_config_thresholds = "thresholds";
+static const juce::Identifier id_config_ratios = "ratios";
+static const juce::Identifier id_config_attacks = "attacks";
+static const juce::Identifier id_config_releases = "releases";
+
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
 static const juce::Identifier id_config_window = "window";
@@ -59,7 +70,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         }
     }();
 
-    //load config list
+    //load frequency config list
     [&] {
         auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
         if (!file_RENAME.existsAsFile())
@@ -139,7 +150,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         }
     }();
     
-    //load config list
+    //load compressor config list
     [&] {
         auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
         if (!file_RENAME.existsAsFile())
@@ -162,13 +173,26 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             juce::ValueTree node = root_node.getChild(i);
             if(node.getType() != id_config)
                 continue;
+
             CompressorGame_Config config = {
+                .title = node.getProperty(id_config_title, ""),
+
+                .threshold_values_db = deserialize_floats(node.getProperty(id_config_thresholds, "")),
+                .ratio_values = deserialize_floats(node.getProperty(id_config_ratios, "")),
+                .attack_values = deserialize_floats(node.getProperty(id_config_attacks, "")),
+                .release_values = deserialize_floats(node.getProperty(id_config_releases, "")),
+
+                .variant = (Compressor_Game_Variant)(int)node.getProperty(id_config_variant, 0),
+                .listens = node.getProperty(id_config_listen_count, 0),
+                .timeout_ms = node.getProperty(id_config_question_timeout_ms, 0),
+                .total_rounds = node.getProperty(id_config_total_rounds, 0),
             };
-            compressor_game_configs.push_back(config);
+
+            compressor_game_configs.push_back(compressor_game_config_validate(config));
         }
     }();
     
-    //if (compressor_game_configs.empty())
+    if (compressor_game_configs.empty())
     {
         compressor_game_configs = { 
             compressor_game_config_default("Default")
@@ -241,7 +265,7 @@ Application_Standalone::~Application_Standalone()
         }
     }();
 
-    //save config list
+    //save frequency config list
     [&] {
         auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
         auto stream = file_RENAME.createOutputStream();
@@ -269,7 +293,7 @@ Application_Standalone::~Application_Standalone()
 
                 { id_config_result_timeout_enabled, config.result_timeout_enabled },
                 { id_config_result_timeout_ms, config.result_timeout_ms },
-            }};
+            } };
             root_node.addChild(node, -1, nullptr);
         }
         auto xml_string = root_node.toXmlString();
@@ -277,7 +301,7 @@ Application_Standalone::~Application_Standalone()
     }();
 
     
-    //save previous results
+    //save frequency results
     [&] {
         auto file_RENAME = store_directory.getChildFile("frequency_game_results.xml");
         auto stream = file_RENAME.createOutputStream();
@@ -293,7 +317,7 @@ Application_Standalone::~Application_Standalone()
         {
             juce::ValueTree node = { id_result, {
                 { id_result_score,  result.score }
-            }};
+            } };
             root_node.addChild(node, -1, nullptr);
         }
         auto xml_string = root_node.toXmlString();
@@ -302,7 +326,7 @@ Application_Standalone::~Application_Standalone()
 
 
     
-    //save config list
+    //save compressor config list
     [&] {
         auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
         auto stream = file_RENAME.createOutputStream();
@@ -318,19 +342,16 @@ Application_Standalone::~Application_Standalone()
         {
             juce::ValueTree node = { id_config, {
                 { id_config_title,  config.title },
-#if 0
-                { id_config_gain, config.eq_gain },
-                { id_config_quality, config.eq_quality },
-                { id_config_window, config.initial_correct_answer_window },
-                { id_config_prelisten_type, config.prelisten_type },
-                { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
 
-                { id_config_question_timeout_enabled, config.question_timeout_enabled },
-                { id_config_question_timeout_ms, config.question_timeout_ms },
+                { id_config_thresholds, serialize_floats(config.threshold_values_db) },
+                { id_config_ratios, serialize_floats(config.ratio_values) },
+                { id_config_attacks, serialize_floats(config.attack_values) },
+                { id_config_releases, serialize_floats(config.release_values) },
 
-                { id_config_result_timeout_enabled, config.result_timeout_enabled },
-                { id_config_result_timeout_ms, config.result_timeout_ms },
-#endif
+                { id_config_variant, (int) config.variant },
+                { id_config_listen_count, config.listens },
+                { id_config_question_timeout_ms, config.timeout_ms },
+                { id_config_total_rounds, config.total_rounds }
             }};
             root_node.addChild(node, -1, nullptr);
         }

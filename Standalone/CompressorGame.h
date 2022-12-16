@@ -66,18 +66,43 @@ struct CompressorGame_Config
     int total_rounds;
 };
 
+static void sort_clamp_and_filter(std::vector<float> &vec, float min, float max)
+{
+    std::sort(vec.begin(), vec.end());
+    auto clamping = [min, max] (float in)
+    {
+        return std::clamp(in, min, max);
+    };
+    std::transform(vec.begin(), vec.end(), vec.begin(), clamping);
+    vec.erase( std::unique( vec.begin(), vec.end() ), vec.end() );
+}
+
+static std::vector<float> deserialize_floats(juce::String str)
+{
+    juce::StringArray tokens = juce::StringArray::fromTokens(str, false);
+           
+    std::vector<float> values{};
+    for (const auto& token : tokens)
+    {
+        values.emplace_back(token.getFloatValue());
+    }
+    return values;
+}
+
+static juce::String serialize_floats(std::vector<float> values)
+{
+    juce::String str{};
+    for (const float value : values)
+    {
+        str += juce::String(value) + " ";
+    }
+    str = str.dropLastCharacters(1);
+    return str;
+}
+
+
 static inline CompressorGame_Config compressor_game_config_validate(CompressorGame_Config config)
 {
-    auto sort_clamp_and_filter = [] (std::vector<float> &vec, float min, float max)
-    {
-        std::sort(vec.begin(), vec.end());
-        auto clamping = [min, max] (float in)
-        {
-            return std::clamp(in, min, max);
-        };
-        std::transform(vec.begin(), vec.end(), vec.begin(), clamping);
-        vec.erase( std::unique( vec.begin(), vec.end() ), vec.end() );
-    };
     sort_clamp_and_filter(config.threshold_values_db, -90, 0);
     sort_clamp_and_filter(config.ratio_values, 1, 10);
     sort_clamp_and_filter(config.attack_values, 1, 1000);
@@ -344,74 +369,72 @@ struct Compressor_Config_Panel : public juce::Component
         }
 
         {
-            thresholds.onReturnKey = [&] {
-                juce::StringArray tokens = juce::StringArray::fromTokens(thresholds.getText(), false);
-                if (tokens.isEmpty())
+            auto threshold_validate = [&] {
+                auto str = thresholds.getText();
+                if (str.isEmpty())
                 {
                     selectConfig(current_config_idx);
                     return;
                 }
-                CompressorGame_Config &current_config = configs[current_config_idx];            
-                current_config.threshold_values_db.clear();
-                for (const auto& token : tokens)
+                CompressorGame_Config &current_config = configs[current_config_idx]; 
+                current_config.threshold_values_db = deserialize_floats(str);
+                current_config = compressor_game_config_validate(current_config);
+                selectConfig(current_config_idx);
+            };
+            thresholds.onReturnKey = threshold_validate;
+            thresholds.onEscapeKey = threshold_validate;
+            thresholds.onFocusLost = threshold_validate;
+            
+            auto ratio_validate = [&] {
+                auto str = ratios.getText();
+                if (str.isEmpty())
                 {
-                    current_config.threshold_values_db.emplace_back(token.getFloatValue());
+                    selectConfig(current_config_idx);
+                    return;
                 }
+                CompressorGame_Config &current_config = configs[current_config_idx]; 
+                current_config.ratio_values = deserialize_floats(str);
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
             
-            ratios.onReturnKey = [&] {
-                juce::StringArray tokens = juce::StringArray::fromTokens(ratios.getText(), false);
-                if (tokens.isEmpty())
-                {
-                    selectConfig(current_config_idx);
-                    return;
-                }
-                CompressorGame_Config &current_config = configs[current_config_idx];            
-                current_config.ratio_values.clear();
-                for (const auto& token : tokens)
-                {
-                    current_config.ratio_values.emplace_back(token.getFloatValue());
-                }
-                current_config = compressor_game_config_validate(current_config);
-                selectConfig(current_config_idx);
-            };
-
+            ratios.onReturnKey = ratio_validate;
+            ratios.onEscapeKey = ratio_validate;
+            ratios.onFocusLost = ratio_validate;
             
-            attacks.onReturnKey = [&] {
-                juce::StringArray tokens = juce::StringArray::fromTokens(attacks.getText(), false);
-                if (tokens.isEmpty())
+            auto attack_validate = [&] {
+                auto str = attacks.getText();
+                if (str.isEmpty())
                 {
                     selectConfig(current_config_idx);
                     return;
                 }
-                CompressorGame_Config &current_config = configs[current_config_idx];            
-                current_config.attack_values.clear();
-                for (const auto& token : tokens)
-                {
-                    current_config.attack_values.emplace_back(token.getFloatValue());
-                }
+                CompressorGame_Config &current_config = configs[current_config_idx]; 
+                current_config.attack_values = deserialize_floats(str);
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
 
-            releases.onReturnKey = [&] {
-                juce::StringArray tokens = juce::StringArray::fromTokens(releases.getText(), false);
-                if (tokens.isEmpty())
+            attacks.onReturnKey = attack_validate;
+            attacks.onEscapeKey = attack_validate;
+            attacks.onFocusLost = attack_validate;
+
+            auto release_validate = [&] {
+                auto str = releases.getText();
+                if (str.isEmpty())
                 {
                     selectConfig(current_config_idx);
                     return;
                 }
-                CompressorGame_Config &current_config = configs[current_config_idx];            
-                current_config.release_values.clear();
-                for (const auto& token : tokens)
-                {
-                    current_config.release_values.emplace_back(token.getFloatValue());
-                }
+                CompressorGame_Config &current_config = configs[current_config_idx]; 
+                current_config.release_values = deserialize_floats(str);
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
+
+            releases.onReturnKey = release_validate;
+            releases.onEscapeKey = release_validate;
+            releases.onFocusLost = release_validate;
         
             textedit_and_label_t textedit_and_label = {
                 { thresholds, thresholds_label },
@@ -423,9 +446,6 @@ struct Compressor_Config_Panel : public juce::Component
             for (auto &[textedit, label] : textedit_and_label)
             {
                 textedit.setMultiLine(false);
-                textedit.onEscapeKey = [&] {
-                    selectConfig(current_config_idx);
-                };
                 //textedit.setScrollWheelEnabled(false);
                 //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
                 //textedit.setRange(range, interval);
@@ -535,45 +555,10 @@ struct Compressor_Config_Panel : public juce::Component
         current_config_idx = new_config_idx;
         CompressorGame_Config &current_config = configs[current_config_idx];
       
-        {
-            juce::String thresholds_str{};
-            for (const float threshold : current_config.threshold_values_db)
-            {
-                thresholds_str += juce::String(threshold) + " ";
-            }
-            thresholds_str = thresholds_str.dropLastCharacters(1);
-            thresholds.setText(thresholds_str, juce::dontSendNotification);
-        }
-        
-        {
-            juce::String ratios_str{};
-            for (const float ratio : current_config.ratio_values)
-            {
-                ratios_str += juce::String(ratio) + " ";
-            }
-            ratios_str = ratios_str.dropLastCharacters(1);
-            ratios.setText(ratios_str, juce::dontSendNotification);
-        }
-        
-        {
-            juce::String attacks_str{};
-            for (const float attack : current_config.attack_values)
-            {
-                attacks_str += juce::String(attack) + " ";
-            }
-            attacks_str = attacks_str.dropLastCharacters(1);
-            attacks.setText(attacks_str, juce::dontSendNotification);
-        }
-        
-        {
-            juce::String releases_str{};
-            for (const float release : current_config.release_values)
-            {
-                releases_str += juce::String(release) + " ";
-            }
-            releases_str = releases_str.dropLastCharacters(1);
-            releases.setText(releases_str, juce::dontSendNotification);
-        }
+        thresholds.setText(serialize_floats(current_config.threshold_values_db), juce::dontSendNotification);
+        ratios.setText(serialize_floats(current_config.ratio_values), juce::dontSendNotification);
+        attacks.setText(serialize_floats(current_config.attack_values), juce::dontSendNotification);
+        releases.setText(serialize_floats(current_config.release_values), juce::dontSendNotification);
 #if 0
         float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
         eq_gain.setValue(gain_db);
