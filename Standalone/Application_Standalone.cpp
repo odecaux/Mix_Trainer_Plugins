@@ -415,7 +415,7 @@ void Application_Standalone::to_freq_game_settings()
 
     auto config_panel = std::make_unique < Frequency_Config_Panel > (
         frequency_game_configs, 
-        current_config_idx, 
+        current_frequency_game_config_idx, 
         std::move(to_main_menu), 
         std::move(to_selector)
     );
@@ -469,7 +469,7 @@ void Application_Standalone::to_frequency_game()
         if(audio_file_list.selected[i])
             selected_audio_files.push_back(audio_file_list.files[i]);
     }
-    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_config_idx], 
+    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_frequency_game_config_idx], 
                                                     selected_audio_files);
     frequency_game_io = frequency_game_io_init(new_game_state);
 
@@ -504,14 +504,26 @@ void Application_Standalone::to_comp_game_settings()
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
     auto to_main_menu = [&] { this->to_main_menu(); };
+    auto to_selector = [&] {
+        auto back_to_config = [&] { 
+            to_comp_game_settings();
+        };
+        auto to_game = [&] { to_compressor_game(); };
+        auto selector_panel = std::make_unique < Audio_File_Chooser > (
+            std::move(back_to_config),
+            std::move(to_game),
+            &audio_file_list
+        );
+        main_component->changePanel(std::move(selector_panel));
+    };
 
-    auto to_game = [&] { to_compressor_game(); };
-    auto selector_panel = std::make_unique < Audio_File_Chooser > (
-        std::move(to_main_menu),
-        std::move(to_game),
-        &audio_file_list
+    auto config_panel = std::make_unique < Compressor_Config_Panel > (
+        compressor_game_configs, 
+        current_compressor_game_config_idx, 
+        std::move(to_main_menu), 
+        std::move(to_selector)
     );
-    main_component->changePanel(std::move(selector_panel));
+    main_component->changePanel(std::move(config_panel));
 }
 
 void Application_Standalone::to_compressor_game()

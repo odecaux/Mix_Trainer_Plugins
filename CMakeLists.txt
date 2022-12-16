@@ -62,7 +62,7 @@ target_sources(MixTrainer_Host
         shared/shared.cpp)
         
 if(MSVC)
-  target_compile_options(MixTrainer_Host PRIVATE /W4 /WX /wd4505)
+  target_compile_options(MixTrainer_Host PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
 else()
   target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
 endif()
@@ -106,7 +106,7 @@ target_sources(MixTrainer_Track
         shared/shared.cpp)
         
 if(MSVC)
-  target_compile_options(MixTrainer_Track PRIVATE /W4 /WX /wd4505)
+  target_compile_options(MixTrainer_Track PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
 else()
   target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
 endif()
@@ -140,7 +140,7 @@ target_sources(MixTrainer_Standalone
         shared/shared.cpp)
 
 if(MSVC)
-  target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX /wd4505)
+  target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
   message("msvc")
 else()
   target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )

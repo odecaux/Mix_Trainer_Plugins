@@ -289,3 +289,313 @@ private:
 };
 
 
+
+//------------------------------------------------------------------------
+struct Compressor_Config_Panel : public juce::Component
+{
+    using slider_and_label_t = std::vector<std::tuple < juce::Slider&, juce::Label&, juce::Range<double>, double> >;
+    using slider_and_toggle_t = std::vector<std::tuple < juce::Slider&, juce::ToggleButton&, juce::Range<double>, double> >;
+    
+    class Scroller : public juce::Component
+    {
+    public:
+        Scroller(std::function<void(juce::Rectangle<int>)> onResize) 
+        : on_resized_callback(std::move(onResize))
+        {}
+
+        void resized() override
+        {
+            on_resized_callback(getLocalBounds());
+        }
+    private:
+        std::function < void(juce::Rectangle<int>) > on_resized_callback;
+    };
+
+    Compressor_Config_Panel(std::vector<CompressorGame_Config> &gameConfigs,
+                           size_t &currentConfigIdx,
+                           std::function < void() > onClickBack,
+                           std::function < void() > onClickNext)
+    :        configs(gameConfigs),
+             current_config_idx(currentConfigIdx)
+    {
+        //Header
+        {
+            header.onBackClicked = [click = std::move(onClickBack)] {
+                click();
+            };
+            game_ui_header_update(&header, "Config", {});
+            addAndMakeVisible(header);
+        }
+
+#if 0
+        {
+            eq_gain.setTextValueSuffix (" dB");
+            eq_gain.onValueChange = [&] {
+                configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+            };
+
+            eq_quality.onValueChange = [&] {
+                configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
+            };
+
+            initial_correct_answer_window.onValueChange = [&] {
+                configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+            };
+
+
+            prelisten_type.setEditableText(false);
+            prelisten_type.setJustificationType(juce::Justification::left);
+            prelisten_type.addItem("None", PreListen_None + 1);
+            prelisten_type.addItem("Timeout", PreListen_Timeout + 1);
+            prelisten_type.addItem("Free", PreListen_Free + 1);
+         
+            prelisten_type.onChange = [&] {
+                PreListen_Type new_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
+                configs[current_config_idx].prelisten_type = new_type;
+                prelisten_timeout_ms.setEnabled(new_type == PreListen_Timeout);
+            };
+
+            scroller.addAndMakeVisible(prelisten_type);
+            scroller.addAndMakeVisible(prelisten_type_label);
+            scroller.addAndMakeVisible(prelisten_timeout_ms);
+
+            prelisten_timeout_ms.setTextValueSuffix(" ms");
+            prelisten_timeout_ms.onValueChange = [&] {
+                configs[current_config_idx].prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
+            };
+            prelisten_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+            prelisten_timeout_ms.setScrollWheelEnabled(false);
+            prelisten_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+            prelisten_timeout_ms.setRange( { 1000, 4000 }, 500);
+
+            question_timeout_ms.setTextValueSuffix(" ms");
+            question_timeout_ms.onValueChange = [&] {
+                configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
+            };
+            question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+            question_timeout_enabled.onClick = [&] {
+                bool new_toggle_state = question_timeout_enabled.getToggleState();
+                configs[current_config_idx].question_timeout_enabled = new_toggle_state;
+                question_timeout_ms.setEnabled(new_toggle_state);
+            };
+
+            result_timeout_ms.setTextValueSuffix(" ms");
+            result_timeout_ms.onValueChange = [&] {
+                configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
+            };
+            result_timeout_ms.setNumDecimalPlacesToDisplay(0);
+        
+            result_timeout_enabled.onClick = [&] {
+                bool new_toggle_state = result_timeout_enabled.getToggleState();
+                configs[current_config_idx].result_timeout_enabled = new_toggle_state;
+                result_timeout_ms.setEnabled(new_toggle_state);
+            };
+
+        
+            slider_and_label_t slider_and_label = {
+                { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0 },
+                { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 },
+                { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }
+            };
+
+            for (auto &[slider, label, range, interval] : slider_and_label)
+            {
+                slider.setScrollWheelEnabled(false);
+                slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+                slider.setRange(range, interval);
+
+                label.setBorderSize(juce::BorderSize < int > { 0 });
+                label.setJustificationType(juce::Justification::left);
+            
+                scroller.addAndMakeVisible(slider);
+                scroller.addAndMakeVisible(label);
+            }
+
+            slider_and_toggle_t slider_and_toggle = {
+                { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
+                { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
+            };
+
+        
+            for (auto &[slider, toggle, range, interval] : slider_and_toggle)
+            {
+                slider.setScrollWheelEnabled(false);
+                slider.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+                slider.setRange(range, interval);
+
+                //toggle.setBorderSize( juce::BorderSize<int>{ 0 });
+                //toggle.setJustificationType(juce::Justification::left);
+            
+                scroller.addAndMakeVisible(slider);
+                scroller.addAndMakeVisible(toggle);
+            }
+
+            scroller.setSize(0, 6 * 60);
+            viewport.setScrollBarsShown(true, false);
+            viewport.setViewedComponent(&scroller, false);
+            addAndMakeVisible(viewport);
+        }
+#endif
+
+        //Next Button
+        {
+            nextButton.onClick = [onClickNext = std::move(onClickNext)] {
+                onClickNext();
+            };
+            addAndMakeVisible(nextButton);
+        }
+        
+        //List
+        {
+            
+            auto configs_to_names = [] (const std::vector<CompressorGame_Config>& configs) {
+                std::vector<juce::String> config_names{};
+                config_names.resize(configs.size());
+                auto projection = [] (const CompressorGame_Config& config) { 
+                    return config.title; 
+                };
+                std::transform(configs.begin(), configs.end(), config_names.begin(), projection);
+                return config_names;
+            };
+            config_list_comp.selected_channel_changed_callback = [&](int config_idx) {
+                selectConfig(config_idx);
+            };
+        
+            config_list_comp.create_channel_callback = [&, configs_to_names](juce::String new_config_name) {
+                configs.push_back(compressor_game_config_default(new_config_name));
+                config_list_comp.update(configs_to_names(configs));
+            };
+
+            config_list_comp.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
+                configs.erase(configs.begin() + row_to_delete);
+                config_list_comp.update(configs_to_names(configs));
+            };
+
+            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, juce::String new_config_name) {
+                configs[row_idx].title = new_config_name;
+                config_list_comp.update(configs_to_names(configs));
+            };
+
+            config_list_comp.customization_point = [&](int, List_Row_Label*) {
+            };
+
+            config_list_comp.insert_row_text = "Create new config";
+            config_list_comp.update(configs_to_names(configs));
+            config_list_comp.select_row(static_cast<int>(current_config_idx));
+            addAndMakeVisible(config_list_comp);
+        }
+    }
+
+    void resized()
+    {
+        auto r = getLocalBounds().reduced (4);
+
+        auto header_bounds = r.removeFromTop(header.getHeight());
+        header.setBounds(header_bounds);
+
+        auto bottom_bounds = r.removeFromBottom(50);
+        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.4f, 1.0f }).withTrimmedRight(5);
+        auto right_bounds = r.getProportion<float>( { 0.4f, .0f, 0.6f, 1.0f }).withTrimmedLeft(5);
+
+        config_list_comp.setBounds(left_bounds);
+        scroller.setSize(right_bounds.getWidth(), scroller.getHeight());
+        viewport.setBounds(right_bounds);
+        auto button_bounds = bottom_bounds.withSizeKeepingCentre(100, 50);
+        nextButton.setBounds(button_bounds);
+    }
+
+    void selectConfig(size_t new_config_idx)
+    {
+        assert(new_config_idx < configs.size());
+        current_config_idx = new_config_idx;
+        CompressorGame_Config &current_config = configs[current_config_idx];
+      
+#if 0
+        float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
+        eq_gain.setValue(gain_db);
+        eq_quality.setValue(current_config.eq_quality);
+        initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
+        
+        prelisten_timeout_ms.setValue(static_cast<double>(current_config.prelisten_timeout_ms));
+        prelisten_timeout_ms.setEnabled(current_config.prelisten_type == PreListen_Timeout);
+        prelisten_type.setSelectedId(current_config.prelisten_type + 1);
+
+        question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
+        question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
+        question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
+        
+        result_timeout_ms.setValue(static_cast<double>(current_config.result_timeout_ms));
+        result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
+        result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
+#endif
+    }
+    
+    void onResizeScroller(juce::Rectangle<int> scroller_bounds)
+    {
+        scroller_bounds = scroller_bounds.reduced(4);
+        auto height = scroller_bounds.getHeight();
+        auto param_height = height / 6;
+
+
+        auto same_bounds = [&] {
+            return scroller_bounds.removeFromTop(param_height / 2);
+        };
+#if 0
+        eq_gain_label.setBounds(same_bounds());
+        eq_gain.setBounds(same_bounds());
+        
+        eq_quality_label.setBounds(same_bounds());
+        eq_quality.setBounds(same_bounds());
+
+        initial_correct_answer_window_label.setBounds(same_bounds());
+        initial_correct_answer_window.setBounds(same_bounds());
+        
+        auto prelisten_top_bounds = same_bounds();
+        prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
+        prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
+        prelisten_timeout_ms.setBounds(same_bounds());
+
+        question_timeout_enabled.setBounds(same_bounds());
+        question_timeout_ms.setBounds(same_bounds());
+
+        result_timeout_enabled.setBounds(same_bounds());
+        result_timeout_ms.setBounds(same_bounds());
+#endif
+    }
+
+    std::vector<CompressorGame_Config> &configs;
+    size_t &current_config_idx;
+    Insertable_List config_list_comp;
+    
+    GameUI_Header header;
+
+#if 0
+    juce::Slider eq_gain;
+    juce::Label eq_gain_label { {}, "Gain"};
+    
+    juce::Slider eq_quality;
+    juce::Label eq_quality_label { {}, "Q" };
+    
+    juce::Slider initial_correct_answer_window;
+    juce::Label initial_correct_answer_window_label { {}, "Initial answer window" };
+    
+    juce::ComboBox prelisten_type;
+    juce::Label prelisten_type_label { {}, "Pre-Listen : " };
+    juce::Slider prelisten_timeout_ms;
+
+    juce::ToggleButton question_timeout_enabled { "Question timeout" };
+    juce::Slider question_timeout_ms;
+
+    juce::ToggleButton result_timeout_enabled { "Post answer timeout" };
+    juce::Slider result_timeout_ms;
+#endif
+    juce::Viewport viewport;
+    Scroller scroller { [this] (auto bounds) { onResizeScroller(bounds); } };
+   
+    juce::TextButton nextButton { "Next" };
+   
+private:
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Compressor_Config_Panel)
+};

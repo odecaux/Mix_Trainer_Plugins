@@ -1,5 +1,7 @@
 #Priority 1 :
 
+assert we have a vaild config selected
+
 We should not be reading every audio track on loading
     last_write_time field
     save to xml

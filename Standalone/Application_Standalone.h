@@ -114,8 +114,9 @@ class Application_Standalone
     CompressorGame_UI *compressor_game_ui;
     
     std::vector<FrequencyGame_Config> frequency_game_configs = {};
+    size_t current_frequency_game_config_idx = 0;
     std::vector<FrequencyGame_Results> frequency_game_results_history = {};
     std::vector<CompressorGame_Config> compressor_game_configs = {};
+    size_t current_compressor_game_config_idx = 0;
     std::vector<CompressorGame_Results> compressor_game_results_history = {};
-    size_t current_config_idx = 0;
 };

@@ -200,8 +200,7 @@ struct Frequency_Config_Panel : public juce::Component
                  std::function < void() > onClickBack,
                  std::function < void() > onClickNext)
     :        configs(gameConfigs),
-             current_config_idx(currentConfigIdx),
-             config_list_comp {}
+             current_config_idx(currentConfigIdx)
     {
         //Header
         {
