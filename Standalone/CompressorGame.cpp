@@ -101,26 +101,30 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
     //TODO rename range
     for (auto &[slider, position, range, text_from_value] : bundle)
     {
-        slider.setValue(static_cast<double>(position), juce::dontSendNotification);
-        slider.setRange(0.0, (double)(range - 1), 1.0);
-        slider.get_text_from_value = std::move(text_from_value);
+        slider.setVisible(true);
+        if (new_ui.widget_visibility != Widget_Hiding)
+        {
+            slider.get_text_from_value = std::move(text_from_value);
+            slider.setRange(0.0, (double)(range - 1), 1.0);
+            slider.setValue(static_cast<double>(position), juce::dontSendNotification);
+        }
+        else
+        {
+            slider.get_text_from_value = [](auto ...) { return ""; };
+            slider.setRange(0.0, 1.0, 1.0);
+            slider.setValue(0.0, juce::dontSendNotification);
+        }
 
         switch (new_ui.widget_visibility)
         {
             case Widget_Editing :
             {
                 slider.setEnabled(true);
-                slider.setVisible(true);
             } break;
             case Widget_Hiding :
-            {
-                slider.setEnabled(false);
-                slider.setVisible(false);
-            } break;
             case Widget_Showing :
             {
                 slider.setEnabled(false);
-                slider.setVisible(true);
             } break;
         }
     }
