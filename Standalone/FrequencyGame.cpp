@@ -14,7 +14,7 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
         .initial_correct_answer_window = 0.15f,
         .prelisten_type = PreListen_None,
         .prelisten_timeout_ms = 1000,
-        .question_timeout_enabled = false,
+        .question_type = Frequency_Question_Free,
         .question_timeout_ms = 1000,
         .result_timeout_enabled = true,
         .result_timeout_ms = 1000
@@ -155,7 +155,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         case Event_Timer_Tick :
         {
             state.current_timestamp = event.value_i64;
-            if (state.step == GameStep_Question && state.config.question_timeout_enabled)
+            if (state.step == GameStep_Question && state.config.question_type != Frequency_Question_Free)
             {
                 if (state.current_timestamp >=
                     state.timestamp_start + state.config.question_timeout_ms)
@@ -303,7 +303,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 }
             };
             
-            if (state.config.question_timeout_enabled)
+            if (state.config.question_type != Frequency_Question_Free)
             {
                 state.timestamp_start = state.current_timestamp;
             }

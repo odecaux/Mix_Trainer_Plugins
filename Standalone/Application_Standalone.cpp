@@ -19,7 +19,7 @@ static const juce::Identifier id_config_window = "window";
 static const juce::Identifier id_config_prelisten_type = "prelisten_type";
 static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
 
-static const juce::Identifier id_config_question_timeout_enabled = "question_timeout_enabled";
+static const juce::Identifier id_config_question_type = "question_type";
 static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
 
 static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
@@ -102,7 +102,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
                 .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
 
-                .question_timeout_enabled = node.getProperty(id_config_question_timeout_enabled, false),
+                .question_type = (Frequency_Question_Type)(int)node.getProperty(id_config_question_type, false),
                 .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
 
                 .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
@@ -288,7 +288,7 @@ Application_Standalone::~Application_Standalone()
                 { id_config_prelisten_type, config.prelisten_type },
                 { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
 
-                { id_config_question_timeout_enabled, config.question_timeout_enabled },
+                { id_config_question_type, config.question_type },
                 { id_config_question_timeout_ms, config.question_timeout_ms },
 
                 { id_config_result_timeout_enabled, config.result_timeout_enabled },

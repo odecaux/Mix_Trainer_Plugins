@@ -43,6 +43,12 @@ struct Frequency_Game_Effect_UI {
 
 
 
+enum Frequency_Question_Type
+{
+    Frequency_Question_Free = 0,
+    Frequency_Question_Timeout = 1,
+    Frequency_Question_Rising = 2
+};
 
 struct FrequencyGame_Config
 {
@@ -55,7 +61,7 @@ struct FrequencyGame_Config
     PreListen_Type prelisten_type;
     int prelisten_timeout_ms;
 
-    bool question_timeout_enabled;
+    Frequency_Question_Type question_type;
     int question_timeout_ms;
 
     bool result_timeout_enabled;
@@ -237,17 +243,42 @@ struct Frequency_Config_Panel : public juce::Component
             prelisten_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
             prelisten_timeout_ms.setRange( { 1000, 4000 }, 500);
 
+            question_type.setEditableText(false);
+            question_type.setJustificationType(juce::Justification::left);
+            question_type.addItem("Free", Frequency_Question_Free + 1);
+            question_type.addItem("Timeout", Frequency_Question_Timeout + 1);
+            question_type.addItem("Rising", Frequency_Question_Rising + 1);
+         
+            question_type.onChange = [&] {
+                Frequency_Question_Type new_type = static_cast<Frequency_Question_Type>(question_type.getSelectedId() - 1);
+                configs[current_config_idx].question_type = new_type;
+                question_timeout_ms.setEnabled(new_type != Frequency_Question_Free);
+            };
+
+
             question_timeout_ms.setTextValueSuffix(" ms");
             question_timeout_ms.onValueChange = [&] {
                 configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
             };
             question_timeout_ms.setNumDecimalPlacesToDisplay(0);
+           
+            
+            question_timeout_ms.setScrollWheelEnabled(false);
+            question_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
+            question_timeout_ms.setRange( { 1000, 4000 }, 500);
+
         
+            scroller.addAndMakeVisible(question_type);
+            scroller.addAndMakeVisible(question_type_label);
+            scroller.addAndMakeVisible(question_timeout_ms);
+
+#if 0
             question_timeout_enabled.onClick = [&] {
                 bool new_toggle_state = question_timeout_enabled.getToggleState();
                 configs[current_config_idx].question_timeout_enabled = new_toggle_state;
                 question_timeout_ms.setEnabled(new_toggle_state);
             };
+#endif
 
             result_timeout_ms.setTextValueSuffix(" ms");
             result_timeout_ms.onValueChange = [&] {
@@ -282,8 +313,7 @@ struct Frequency_Config_Panel : public juce::Component
             }
 
             slider_and_toggle_t slider_and_toggle = {
-                { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
-                { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
+                { result_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 }
             };
 
         
@@ -388,9 +418,9 @@ struct Frequency_Config_Panel : public juce::Component
         prelisten_type.setSelectedId(current_config.prelisten_type + 1);
 
         question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
-        question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
-        question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
-        
+        question_timeout_ms.setEnabled(current_config.question_type != Frequency_Question_Free);
+        question_type.setSelectedId(current_config.question_type + 1);
+
         result_timeout_ms.setValue(static_cast<double>(current_config.result_timeout_ms));
         result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
         result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
@@ -426,7 +456,9 @@ struct Frequency_Config_Panel : public juce::Component
         prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
         prelisten_timeout_ms.setBounds(bounds(slider_height));
 
-        question_timeout_enabled.setBounds(bounds(label_height));
+        auto question_top_bounds = bounds(label_height);
+        question_type_label.setBounds(question_top_bounds.removeFromLeft(80));
+        question_type.setBounds(question_top_bounds.removeFromLeft(80));
         question_timeout_ms.setBounds(bounds(slider_height));
 
         result_timeout_enabled.setBounds(bounds(label_height));
@@ -454,7 +486,8 @@ struct Frequency_Config_Panel : public juce::Component
     juce::Label prelisten_type_label { {}, "Pre-Listen : " };
     juce::Slider prelisten_timeout_ms;
 
-    juce::ToggleButton question_timeout_enabled { "Question timeout" };
+    juce::ComboBox question_type;
+    juce::Label question_type_label { {}, "Question : " };
     juce::Slider question_timeout_ms;
 
     juce::ToggleButton result_timeout_enabled { "Post answer timeout" };
