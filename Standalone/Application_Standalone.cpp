@@ -95,7 +95,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 continue;
             FrequencyGame_Config config = {
                 .title = node.getProperty(id_config_title, ""),
-                .eq_gain = node.getProperty(id_config_gain, -1.0f),
+                .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
                 .eq_quality = node.getProperty(id_config_quality, -1.0f),
                 .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
 
@@ -281,7 +281,7 @@ Application_Standalone::~Application_Standalone()
         {
             juce::ValueTree node = { id_config, {
                 { id_config_title,  config.title },
-                { id_config_gain, config.eq_gain },
+                { id_config_gain, config.eq_gain_db },
                 { id_config_quality, config.eq_quality },
                 { id_config_window, config.initial_correct_answer_window },
 

@@ -69,7 +69,7 @@ struct Compressor_DSP_State {
 };
 
 struct Channel_DSP_State {
-    double gain;
+    double gain_db;
     DSP_EQ_Band eq_bands[1];
     Compressor_DSP_State comp;
 };

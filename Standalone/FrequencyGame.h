@@ -54,7 +54,7 @@ struct FrequencyGame_Config
 {
     juce::String title;
     //frequency
-    float eq_gain;
+    float eq_gain_db;
     float eq_quality;
     float initial_correct_answer_window;
     //
@@ -205,7 +205,7 @@ struct Frequency_Config_Panel : public juce::Component
         {
             eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
-                configs[current_config_idx].eq_gain = juce::Decibels::decibelsToGain((float) eq_gain.getValue());
+                configs[current_config_idx].eq_gain_db = (float)eq_gain.getValue();
             };
 
             eq_quality.onValueChange = [&] {
@@ -247,7 +247,7 @@ struct Frequency_Config_Panel : public juce::Component
             question_type.setJustificationType(juce::Justification::left);
             question_type.addItem("Free", Frequency_Question_Free + 1);
             question_type.addItem("Timeout", Frequency_Question_Timeout + 1);
-            question_type.addItem("Rising", Frequency_Question_Rising + 1);
+            question_type.addItem("Rising Gain", Frequency_Question_Rising + 1);
          
             question_type.onChange = [&] {
                 Frequency_Question_Type new_type = static_cast<Frequency_Question_Type>(question_type.getSelectedId() - 1);
@@ -295,7 +295,7 @@ struct Frequency_Config_Panel : public juce::Component
         
             slider_and_label_t slider_and_label = {
                 { eq_gain, eq_gain_label, { -15.0, 15.0 }, 3.0 },
-                { eq_quality, eq_quality_label, { 0.5, 4 }, 0.1 },
+                { eq_quality, eq_quality_label, { 0.5, 8.0 }, 0.1 },
                 { initial_correct_answer_window, initial_correct_answer_window_label, { 0.01, 0.4 }, 0.01 }
             };
 
@@ -408,8 +408,7 @@ struct Frequency_Config_Panel : public juce::Component
         assert(new_config_idx < configs.size());
         current_config_idx = new_config_idx;
         FrequencyGame_Config &current_config = configs[current_config_idx];
-        float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
-        eq_gain.setValue(gain_db);
+        eq_gain.setValue(current_config.eq_gain_db);
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
         

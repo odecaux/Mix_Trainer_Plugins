@@ -9,7 +9,7 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
 {
     return {
         .title = name,
-        .eq_gain = 4.0f,
+        .eq_gain_db = 6.0f,
         .eq_quality = 0.7f,
         .initial_correct_answer_window = 0.15f,
         .prelisten_type = PreListen_None,
@@ -183,6 +183,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 
                 if (state.timestamp_start != -1) return { .error = 1 };
             }
+            if (state.step == GameStep_Question && state.config.question_type == Frequency_Question_Rising)
+                update_audio = true;
         } break;
         case Event_Click_Begin :
         {
@@ -350,10 +352,10 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     {
         Channel_DSP_State dsp = ChannelDSP_on();
 
-        float compensation_gain = state.config.eq_gain > 1.0f ? 
-            1.0f / state.config.eq_gain :
-            1.0f;
-        dsp.gain = compensation_gain;
+        float compensation_gain_db = state.config.eq_gain_db > 0.0f ? 
+            - state.config.eq_gain_db :
+            0.0f;
+        dsp.gain_db = compensation_gain_db;
 
         switch (state.step)
         {
@@ -361,9 +363,19 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             {
             } break;
             case GameStep_Question :
+            {
+                float ratio = 1.0f;
+                if (state.config.question_type == Frequency_Question_Rising)
+                {
+                    ratio = float(state.current_timestamp - state.timestamp_start) / float(state.config.question_timeout_ms);
+                    assert(ratio >= 0.0f && ratio < 1.0f);
+                    DBG("ratio " << ratio);
+                }
+                dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, juce::Decibels::decibelsToGain(state.config.eq_gain_db * ratio));
+            } break;
             case GameStep_Result :
             {
-                dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, state.config.eq_gain);
+                dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, juce::Decibels::decibelsToGain(state.config.eq_gain_db));
             } break;
             case GameStep_EndResults :
             {

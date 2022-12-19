@@ -4,7 +4,7 @@
 Channel_DSP_State ChannelDSP_on()
 {
     Channel_DSP_State state = {
-        .gain = 1.0,
+        .gain_db = 0.0,
     };
     assert(state.eq_bands[0].type == Filter_None);
     return state;
@@ -13,17 +13,17 @@ Channel_DSP_State ChannelDSP_on()
 Channel_DSP_State ChannelDSP_off()
 {
     Channel_DSP_State state = {
-        .gain = 0.0,
+        .gain_db = -100.0,
     };
     assert(state.eq_bands[0].type == Filter_None);
     return state;
 }
 
 
-Channel_DSP_State ChannelDSP_gain(double gain)
+Channel_DSP_State ChannelDSP_gain_db(double gain_db)
 {
     Channel_DSP_State state = {
-        .gain = gain,
+        .gain_db = gain_db,
     };
     assert(state.eq_bands[0].type == Filter_None);
     return state;
@@ -96,10 +96,10 @@ void channel_dsp_update_chain(Channel_DSP_Chain *dsp_chain,
         dsp_chain->get<1>().setAttack(state.comp.attack);
         dsp_chain->get<1>().setRelease(state.comp.release);
         //makeup gain
-        dsp_chain->get<2>().setGainLinear ((float)state.gain);
+        dsp_chain->get<2>().setGainLinear ((float)state.comp.makeup_gain);
     }
     //gain
-    dsp_chain->get<3>().setGainLinear ((float)state.gain);
+    dsp_chain->get<3>().setGainDecibels ((float)state.gain_db);
 }
 
 bool equal_double(double a, double b, double theta)
