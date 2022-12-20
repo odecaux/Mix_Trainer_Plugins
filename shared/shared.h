@@ -639,10 +639,10 @@ public:
         const std::function < void(int, juce::String) > &onTextChanged,
         const std::function < void(juce::String) > &onCreateRow
     )
-    : new_row_text(newRowText),
-      mouse_down_callback(onMouseDown),
+    : mouse_down_callback(onMouseDown),
       text_changed_callback(onTextChanged),
-      create_row_callback(onCreateRow)
+      create_row_callback(onCreateRow),
+      new_row_text(newRowText)
     {
         // double click to edit the label text; single click handled below
         setEditable (false, true, true);
@@ -743,7 +743,7 @@ public:
             list_comp.selectRow(row_idx);
         };
         editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
-            assert(row_idx <= rows_text.size());
+            assert(row_idx <= checked_cast<int>(rows_text.size()));
             assert(row_idx >= 0);
             rename_channel_callback(row_idx, row_text);
         };
@@ -800,7 +800,8 @@ public:
                                              bool,
                                              juce::Component *existing_component) override
     {
-        if (row_number > rows_text.size())
+        int num_rows = checked_cast<int>(rows_text.size());
+        if (row_number > num_rows)
         {
             if (existing_component != nullptr)
                 delete existing_component;
@@ -822,11 +823,11 @@ public:
                                            editable_text_changed_callback,
                                            editable_create_row_callback);
             }
-            juce::String row_text = row_number < rows_text.size() 
+            juce::String row_text = row_number < num_rows
                 ? rows_text[row_number] 
                 : "";
-            label->update(row_number, row_text, row_number == rows_text.size());
-            if(row_number < rows_text.size())
+            label->update(row_number, row_text, row_number == num_rows);
+            if(row_number < num_rows)
                 customization_point(row_number, label);
             return label;
         } 

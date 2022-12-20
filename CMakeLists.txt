@@ -65,7 +65,7 @@ target_sources(MixTrainer_Host
 if(MSVC)
   target_compile_options(MixTrainer_Host PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
 else()
-  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
+  target_compile_options(MixTrainer_Host PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function -Wno-unused-variable)
 endif()
 
 target_precompile_headers(MixTrainer_Host
@@ -109,7 +109,7 @@ target_sources(MixTrainer_Track
 if(MSVC)
   target_compile_options(MixTrainer_Track PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
 else()
-  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
+  target_compile_options(MixTrainer_Track PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function -Wno-unused-variable)
 endif()
 
 target_precompile_headers(MixTrainer_Track
@@ -144,7 +144,7 @@ if(MSVC)
   target_compile_options(MixTrainer_Standalone PRIVATE /W4 /WX /wd4505 /wd4100 /wd4101 /wd4189)
   message("msvc")
 else()
-  target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function )
+  target_compile_options(MixTrainer_Standalone PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-function -Wno-unused-variable)
   message("gcc")
 endif()
 
