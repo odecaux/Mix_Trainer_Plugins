@@ -12,6 +12,11 @@ static const juce::Identifier id_config_ratios = "ratios";
 static const juce::Identifier id_config_attacks = "attacks";
 static const juce::Identifier id_config_releases = "releases";
 
+static const juce::Identifier id_config_threshold_active = "threshold_active";
+static const juce::Identifier id_config_ratio_active = "ratio_active";
+static const juce::Identifier id_config_attack_active = "attack_active";
+static const juce::Identifier id_config_release_active = "release_active";
+
 static const juce::Identifier id_config_input = "input";
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
@@ -184,6 +189,11 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
             CompressorGame_Config config = {
                 .title = node.getProperty(id_config_title, ""),
 
+                .threshold_active = node.getProperty(id_config_threshold_active, true),
+                .ratio_active = node.getProperty(id_config_ratio_active, true),
+                .attack_active = node.getProperty(id_config_attack_active, true),
+                .release_active = node.getProperty(id_config_release_active, true),
+
                 .threshold_values_db = deserialize_floats(node.getProperty(id_config_thresholds, "")),
                 .ratio_values = deserialize_floats(node.getProperty(id_config_ratios, "")),
                 .attack_values = deserialize_floats(node.getProperty(id_config_attacks, "")),
@@ -194,8 +204,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 .timeout_ms = node.getProperty(id_config_question_timeout_ms, 0),
                 .total_rounds = node.getProperty(id_config_total_rounds, 0),
             };
-
-            compressor_game_configs.push_back(compressor_game_config_validate(config));
+            compressor_game_configs.push_back(config);
         }
     }();
     
@@ -353,6 +362,11 @@ Application_Standalone::~Application_Standalone()
         {
             juce::ValueTree node = { id_config, {
                 { id_config_title,  config.title },
+                
+                { id_config_threshold_active, config.threshold_active },
+                { id_config_ratio_active, config.ratio_active },
+                { id_config_attack_active, config.attack_active },
+                { id_config_release_active, config.release_active },
 
                 { id_config_thresholds, serialize_floats(config.threshold_values_db) },
                 { id_config_ratios, serialize_floats(config.ratio_values) },

@@ -89,20 +89,20 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
-    using bundle_t = std::tuple<TextSlider&, int, int,  std::function < juce::String(double)> >;
+    using bundle_t = std::tuple<TextSlider&, Widget_Interaction_Type, int, int, std::function < juce::String(double)> >;
 
     auto bundle = std::vector<bundle_t>{
-        { ui.compressor_widget.threshold_slider, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_text) },
-        { ui.compressor_widget.ratio_slider, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_text) },
-        { ui.compressor_widget.attack_slider, new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_text) },
-        { ui.compressor_widget.release_slider, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_text) }
+        { ui.compressor_widget.threshold_slider, new_ui.comp_widget.threshold_visibility, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_text) },
+        { ui.compressor_widget.ratio_slider, new_ui.comp_widget.ratio_visibility, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_text) },
+        { ui.compressor_widget.attack_slider, new_ui.comp_widget.attack_visibility,  new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_text) },
+        { ui.compressor_widget.release_slider, new_ui.comp_widget.release_visibility, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_text) }
     };
 
     //TODO rename range
-    for (auto &[slider, position, range, text_from_value] : bundle)
+    for (auto &[slider, visibility, position, range, text_from_value] : bundle)
     {
         slider.setVisible(true);
-        if (new_ui.widget_visibility != Widget_Hiding)
+        if (visibility != Widget_Hiding)
         {
             slider.get_text_from_value = std::move(text_from_value);
             slider.setRange(0.0, (double)(range - 1), 1.0);
@@ -115,7 +115,7 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
             slider.setValue(0.0, juce::dontSendNotification);
         }
 
-        switch (new_ui.widget_visibility)
+        switch (visibility)
         {
             case Widget_Editing :
             {
@@ -574,8 +574,14 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 .release_values = state.config.release_values
             }
         };
-        if(state.step != GameStep_EndResults)
-            effects.ui->widget_visibility = gameStepToFaderStep(state.step, state.mix);
+        if (state.step != GameStep_EndResults)
+        {
+            auto visibility = gameStepToFaderStep(state.step, state.mix);
+            effects.ui->comp_widget.threshold_visibility = visibility;
+            effects.ui->comp_widget.ratio_visibility = visibility;
+            effects.ui->comp_widget.attack_visibility = visibility;
+            effects.ui->comp_widget.release_visibility = visibility;
+        }
         
         switch (state.config.variant)
         {

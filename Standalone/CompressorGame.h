@@ -28,6 +28,11 @@ struct Compressor_Game_Effect_UI {
     juce::String header_right_text;
     //int score;
     struct {
+        Widget_Interaction_Type threshold_visibility;
+        Widget_Interaction_Type ratio_visibility;
+        Widget_Interaction_Type attack_visibility;
+        Widget_Interaction_Type release_visibility;
+
         int threshold_pos;
         int ratio_pos;
         int attack_pos;
@@ -38,7 +43,6 @@ struct Compressor_Game_Effect_UI {
         std::vector < float > attack_values;
         std::vector < float > release_values;
     } comp_widget;
-    Widget_Interaction_Type widget_visibility;
     Mix mix_toggles;
     juce::String bottom_button_text;
     Event_Type bottom_button_event;
@@ -55,10 +59,15 @@ struct CompressorGame_Config
 {
     juce::String title;
     //compressor
-    std::vector < float > threshold_values_db;
-    std::vector < float > ratio_values;
-    std::vector < float > attack_values;
-    std::vector < float > release_values;
+    bool threshold_active;
+    bool ratio_active;
+    bool attack_active;
+    bool release_active;
+
+    std::vector<float> threshold_values_db;
+    std::vector<float> ratio_values;
+    std::vector<float> attack_values;
+    std::vector<float> release_values;
     //
     Compressor_Game_Variant variant;
     int listens;
@@ -101,13 +110,17 @@ static juce::String serialize_floats(std::vector<float> values)
 }
 
 
-static inline CompressorGame_Config compressor_game_config_validate(CompressorGame_Config config)
+static inline bool compressor_game_config_validate(CompressorGame_Config &config)
 {
     sort_clamp_and_filter(config.threshold_values_db, -90, 0);
     sort_clamp_and_filter(config.ratio_values, 1, 10);
     sort_clamp_and_filter(config.attack_values, 1, 1000);
     sort_clamp_and_filter(config.release_values, 1, 1000);
-    return config;
+
+    return config.threshold_active
+        || config.ratio_active
+        || config.attack_active
+        || config.release_active;
 }
 
 
@@ -384,21 +397,25 @@ struct Compressor_Config_Panel : public juce::Component
             auto update = [&] {
                 updateConfig();
             };
+            thresholds_label.onStateChange = update;
             thresholds.setInputRestrictions(0, "0123456789,. -");
             thresholds.onReturnKey = update;
             thresholds.onEscapeKey = update;
             thresholds.onFocusLost = update;
             
+            ratios_label.onStateChange = update;
             ratios.setInputRestrictions(0, "0123456789,. ");
             ratios.onReturnKey = update;
             ratios.onEscapeKey = update;
             ratios.onFocusLost = update;
             
+            attacks_label.onStateChange = update;
             attacks.setInputRestrictions(0, "0123456789,. ");
             attacks.onReturnKey = update;
             attacks.onEscapeKey = update;
             attacks.onFocusLost = update;
 
+            releases_label.onStateChange = update;
             releases.setInputRestrictions(0, "0123456789,. ");
             releases.onReturnKey = update;
             releases.onEscapeKey = update;
@@ -497,32 +514,38 @@ struct Compressor_Config_Panel : public juce::Component
     void updateConfig()
     {
         CompressorGame_Config &current_config = configs[current_config_idx]; 
-    
+        
+        current_config.threshold_active = thresholds_label.getToggleState();
         auto thresholds_str = thresholds.getText();
         if (!thresholds_str.isEmpty())
         {
             current_config.threshold_values_db = deserialize_floats(thresholds_str);
         }
     
+        current_config.ratio_active = ratios_label.getToggleState();
         auto ratios_str = ratios.getText();
         if (!ratios_str.isEmpty())
         {
             current_config.ratio_values = deserialize_floats(ratios_str);
         }
 
+        current_config.attack_active = attacks_label.getToggleState();
         auto attacks_str = attacks.getText();
         if (!attacks_str.isEmpty())
         {
             current_config.attack_values = deserialize_floats(attacks_str);
         }
         
+        current_config.release_active = releases_label.getToggleState();
         auto releases_str = releases.getText();
         if (!releases_str.isEmpty())
         {
             current_config.release_values = deserialize_floats(releases_str);
         }
 
-        current_config = compressor_game_config_validate(current_config);
+        bool is_config_valid = compressor_game_config_validate(current_config);
+        nextButton.setEnabled(is_config_valid);
+
         selectConfig(current_config_idx);
     }
 
@@ -532,6 +555,11 @@ struct Compressor_Config_Panel : public juce::Component
         current_config_idx = new_config_idx;
         CompressorGame_Config &current_config = configs[current_config_idx];
       
+        thresholds_label.setToggleState(current_config.threshold_active, juce::dontSendNotification);
+        ratios_label.setToggleState(current_config.ratio_active, juce::dontSendNotification);
+        attacks_label.setToggleState(current_config.attack_active, juce::dontSendNotification);
+        releases_label.setToggleState(current_config.release_active, juce::dontSendNotification);
+
         thresholds.setText(serialize_floats(current_config.threshold_values_db), juce::dontSendNotification);
         ratios.setText(serialize_floats(current_config.ratio_values), juce::dontSendNotification);
         attacks.setText(serialize_floats(current_config.attack_values), juce::dontSendNotification);

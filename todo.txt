@@ -4,7 +4,6 @@ look and feel
 
 compressor : make each parameter optional
 propagate the changes from frquency game to compressor game
-    no next until valid state
     transition inside ui_update
 
 We should not be reading every audio track on loading
