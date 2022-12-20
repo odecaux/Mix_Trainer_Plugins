@@ -383,6 +383,7 @@ struct Compressor_Config_Panel : public juce::Component
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
+            thresholds.setInputRestrictions(0, "0123456789,. -");
             thresholds.onReturnKey = threshold_validate;
             thresholds.onEscapeKey = threshold_validate;
             thresholds.onFocusLost = threshold_validate;
@@ -400,6 +401,7 @@ struct Compressor_Config_Panel : public juce::Component
                 selectConfig(current_config_idx);
             };
             
+            ratios.setInputRestrictions(0, "0123456789,. ");
             ratios.onReturnKey = ratio_validate;
             ratios.onEscapeKey = ratio_validate;
             ratios.onFocusLost = ratio_validate;
@@ -416,7 +418,7 @@ struct Compressor_Config_Panel : public juce::Component
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
-
+            attacks.setInputRestrictions(0, "0123456789,. ");
             attacks.onReturnKey = attack_validate;
             attacks.onEscapeKey = attack_validate;
             attacks.onFocusLost = attack_validate;
@@ -433,7 +435,7 @@ struct Compressor_Config_Panel : public juce::Component
                 current_config = compressor_game_config_validate(current_config);
                 selectConfig(current_config_idx);
             };
-
+            releases.setInputRestrictions(0, "0123456789,. ");
             releases.onReturnKey = release_validate;
             releases.onEscapeKey = release_validate;
             releases.onFocusLost = release_validate;
