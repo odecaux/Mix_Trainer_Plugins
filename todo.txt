@@ -2,7 +2,10 @@
 
 Moved the rotary to their own widget, so we can hide them all at once
 
-assert we have a vaild config selected
+compressor : make each parameter optional
+propagate the changes from frquency game to compressor game
+    move the update to one function -> vaildate on next
+    no next until valid state
 
 We should not be reading every audio track on loading
     last_write_time field
@@ -21,10 +24,7 @@ Les freq bounds d'un fichier audio doivent influer sur le score
 
 #Priority 3 :
 
-
-Test suite
-Serialization Little Big Planet
-File explorer
+Remove the file explorer
 
 ajouter preview et bounds au file selector panel
     pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/

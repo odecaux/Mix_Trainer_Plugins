@@ -8,9 +8,9 @@
 		<IsVirtual>false</IsVirtual>
 		<IsFolder>false</IsFolder>
 		<BuildCommand>build_all.bat</BuildCommand>
-		<RebuildCommand></RebuildCommand>
+		<RebuildCommand>reset.bat</RebuildCommand>
 		<BuildFileCommand></BuildFileCommand>
-		<CleanCommand></CleanCommand>
+		<CleanCommand>rmdir /S cmake-build</CleanCommand>
 		<BuildWorkingDirectory></BuildWorkingDirectory>
 		<RunCommand></RunCommand>
 		<DebugCommand>reaper.rdbg</DebugCommand>
@@ -53,8 +53,17 @@
 				<Defines></Defines>
 				<ForceIncludes></ForceIncludes>
 			</ConfigAndPlatform>
+			<ConfigAndPlatform>
+				<Name>Release:x64</Name>
+				<Defines></Defines>
+				<ForceIncludes></ForceIncludes>
+			</ConfigAndPlatform>
 			<Config>
 				<Name>Debug</Name>
+				<Defines></Defines>
+			</Config>
+			<Config>
+				<Name>Release</Name>
 				<Defines></Defines>
 			</Config>
 			<Platform>
