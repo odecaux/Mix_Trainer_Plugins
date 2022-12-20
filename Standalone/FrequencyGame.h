@@ -24,6 +24,7 @@ struct FrequencyGame_Results
 
 
 struct Frequency_Game_Effect_UI {
+    int ui_target;
     struct {
         bool display_target;
         int target_frequency;
@@ -44,6 +45,11 @@ struct Frequency_Game_Effect_UI {
 };
 
 
+enum Frequency_Input
+{
+    Frequency_Input_Widget,
+    Frequency_Input_Text
+};
 
 enum Frequency_Question_Type
 {
@@ -56,6 +62,7 @@ struct FrequencyGame_Config
 {
     juce::String title;
     //frequency
+    Frequency_Input input;
     float eq_gain_db;
     float eq_quality;
     float initial_correct_answer_window;
@@ -168,15 +175,12 @@ struct FrequencyGame_UI : public juce::Component
         
         auto game_bounds = bounds.withTrimmedTop(4).withTrimmedBottom(4);
 
-        if(frequency_widget)
-            frequency_widget->setBounds(game_bounds);
-        else if(results_panel)
-            results_panel->setBounds(game_bounds);
+        if(center_panel)
+            center_panel->setBounds(game_bounds);
     }
 
     GameUI_Header header;
-    std::unique_ptr<FrequencyWidget> frequency_widget;
-    std::unique_ptr<FrequencyGame_Results_Panel> results_panel;
+    std::unique_ptr<juce::Component> center_panel;
     GameUI_Bottom bottom;
     FrequencyGame_IO *game_io;
     
@@ -218,6 +222,16 @@ struct Frequency_Config_Panel : public juce::Component
             };
             scroller.addAndMakeVisible(mode);
             scroller.addAndMakeVisible(mode_label);
+            
+            input.setEditableText(false);
+            input.setJustificationType(juce::Justification::left);
+            input.addItem("Normal", Frequency_Input_Widget + 1);
+            input.addItem("Text", Frequency_Input_Text + 1);
+            input.onChange = [&] {
+                updateConfig();
+            };
+            scroller.addAndMakeVisible(input);
+            scroller.addAndMakeVisible(input_label);
 
             eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
@@ -418,6 +432,10 @@ struct Frequency_Config_Panel : public juce::Component
             configs[current_config_idx].min_f = 35;
             configs[current_config_idx].num_octaves = 2;
         }
+    
+        Frequency_Input input_type = static_cast<Frequency_Input>(input.getSelectedId() - 1);
+        configs[current_config_idx].input = input_type;
+        
         configs[current_config_idx].eq_gain_db = (float)eq_gain.getValue();
         configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
         configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
@@ -438,7 +456,7 @@ struct Frequency_Config_Panel : public juce::Component
         bool new_toggle_state = result_timeout_enabled.getToggleState();
         configs[current_config_idx].result_timeout_enabled = new_toggle_state;
         result_timeout_ms.setEnabled(new_toggle_state);
-           
+        
     }
 
     void selectConfig(size_t new_config_idx)
@@ -451,6 +469,8 @@ struct Frequency_Config_Panel : public juce::Component
             mode.setSelectedId(2);
         else
             mode.setSelectedId(1);
+        
+        input.setSelectedId(static_cast<int>(current_config.input) + 1);
 
         eq_gain.setValue(current_config.eq_gain_db);
         eq_quality.setValue(current_config.eq_quality);
@@ -484,10 +504,14 @@ struct Frequency_Config_Panel : public juce::Component
 
         int label_height = 35;
         int slider_height = 35;
-        
+
         auto mode_bounds = bounds(label_height);
         mode_label.setBounds(mode_bounds.removeFromLeft(80));
-        mode.setBounds(mode_bounds.removeFromLeft(80));
+        mode.setBounds(mode_bounds.removeFromLeft(80).reduced(0, 4));
+
+        auto input_bounds = bounds(label_height);
+        input_label.setBounds(input_bounds.removeFromLeft(80));
+        input.setBounds(input_bounds.removeFromLeft(80).reduced(0, 4));
 
         eq_gain_label.setBounds(bounds(label_height));
         eq_gain.setBounds(bounds(slider_height));
@@ -500,12 +524,12 @@ struct Frequency_Config_Panel : public juce::Component
         
         auto prelisten_top_bounds = bounds(label_height);
         prelisten_type_label.setBounds(prelisten_top_bounds.removeFromLeft(80));
-        prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80));
+        prelisten_type.setBounds(prelisten_top_bounds.removeFromLeft(80).reduced(0, 4));
         prelisten_timeout_ms.setBounds(bounds(slider_height));
 
         auto question_top_bounds = bounds(label_height);
         question_type_label.setBounds(question_top_bounds.removeFromLeft(80));
-        question_type.setBounds(question_top_bounds.removeFromLeft(80));
+        question_type.setBounds(question_top_bounds.removeFromLeft(80).reduced(0, 4));
         question_timeout_ms.setBounds(bounds(slider_height));
 
         result_timeout_enabled.setBounds(bounds(label_height));
@@ -522,6 +546,9 @@ struct Frequency_Config_Panel : public juce::Component
     
     juce::ComboBox mode;
     juce::Label mode_label { {}, "Mode : " };
+
+    juce::ComboBox input;
+    juce::Label input_label { {}, "Input : " };
 
     juce::Slider eq_gain;
     juce::Label eq_gain_label { {}, "Gain"};

@@ -12,6 +12,7 @@ static const juce::Identifier id_config_ratios = "ratios";
 static const juce::Identifier id_config_attacks = "attacks";
 static const juce::Identifier id_config_releases = "releases";
 
+static const juce::Identifier id_config_input = "input";
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
 static const juce::Identifier id_config_window = "window";
@@ -97,6 +98,8 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 continue;
             FrequencyGame_Config config = {
                 .title = node.getProperty(id_config_title, ""),
+
+                .input = (Frequency_Input)(int)node.getProperty(id_config_input, (int)Frequency_Input_Widget),
                 .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
                 .eq_quality = node.getProperty(id_config_quality, -1.0f),
                 .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
@@ -285,6 +288,8 @@ Application_Standalone::~Application_Standalone()
         {
             juce::ValueTree node = { id_config, {
                 { id_config_title,  config.title },
+
+                { id_config_input, config.input },
                 { id_config_gain, config.eq_gain_db },
                 { id_config_quality, config.eq_quality },
                 { id_config_window, config.initial_correct_answer_window },
