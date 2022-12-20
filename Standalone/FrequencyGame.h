@@ -265,7 +265,7 @@ struct Frequency_Config_Panel : public juce::Component
             
             question_timeout_ms.setScrollWheelEnabled(false);
             question_timeout_ms.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-            question_timeout_ms.setRange( { 1000, 4000 }, 500);
+            question_timeout_ms.setRange( { 1000, 10000 }, 500);
 
         
             scroller.addAndMakeVisible(question_type);
