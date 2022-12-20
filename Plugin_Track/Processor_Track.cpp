@@ -29,7 +29,7 @@ ProcessorTrack::ProcessorTrack()
 ,
     daw_channel_id { random_positive_int() },
     name { daw_channel_id },
-    gain { 0.0f },
+    gain_db { 0.0f },
     minFrequency { 20 },
     maxFrequency { 20000 }
 {
@@ -155,7 +155,8 @@ void ProcessorTrack::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBu
     juce::ScopedNoDenormals noDenormals;
     //auto totalNumInputChannels = getTotalNumInputChannels();
     //auto totalNumOutputChannels = getTotalNumOutputChannels();
-    buffer.applyGain(static_cast<float>(gain));
+    auto gain = juce::Decibels::decibelsToGain(static_cast<float>(gain_db));
+    buffer.applyGain(gain);
 }
 
 //==============================================================================
@@ -225,7 +226,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
         size_t dsp_state_size = sizeof(Channel_DSP_State);
         assert(blob_size == dsp_state_size);
         Channel_DSP_State state = *(Channel_DSP_State*)blob.getData();
-        gain = state.gain;
+        gain_db = state.gain_db;
     }
     else if(tokens[0] == "name_from_ui")
     {

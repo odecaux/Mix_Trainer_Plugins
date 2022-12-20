@@ -86,7 +86,7 @@ struct Audio_File
 
 Channel_DSP_State ChannelDSP_on();
 Channel_DSP_State ChannelDSP_off();
-Channel_DSP_State ChannelDSP_gain(double gain);
+Channel_DSP_State ChannelDSP_gain_db(double gain_db);
 DSP_EQ_Band eq_band_peak(float frequency, float quality, float gain);
 
 
@@ -301,8 +301,6 @@ struct Stats {
 
 bool equal_double(double a, double b, double theta);
 size_t db_to_slider_pos(double db, const std::vector<double> &db_values);
-size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values);
-double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values);
 
 struct TextSlider : public juce::Slider
 {

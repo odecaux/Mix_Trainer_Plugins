@@ -116,13 +116,3 @@ size_t db_to_slider_pos(double db, const std::vector<double> &db_values)
     jassertfalse;
     return 0;
 }
-
-size_t gain_to_slider_pos(double gain, const std::vector<double> &db_values)
-{ 
-    return db_to_slider_pos(juce::Decibels::gainToDecibels(gain), db_values);
-}
-
-double slider_pos_to_gain(size_t pos, const std::vector<double> &db_values)
-{
-    return juce::Decibels::decibelsToGain(db_values[pos]);
-}

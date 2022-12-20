@@ -325,8 +325,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         std::transform(slider_pos->begin(), slider_pos->end(), 
                        std::inserter(dsp, dsp.end()), 
                        [state](const auto &a) -> std::pair<int, Channel_DSP_State> {
-                           double gain = slider_pos_to_gain(static_cast<size_t>(a.second), state.config.db_slider_values);
-                           return { a.first, ChannelDSP_gain(gain) };
+                           double gain_db = state.config.db_slider_values[static_cast<size_t>(a.second)];
+                           return { a.first, ChannelDSP_gain_db(gain_db) };
                        });
         effects.dsp = Game_Mixer_Effect_DSP { std::move(dsp) };
     }

@@ -53,8 +53,7 @@ static void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &ds
         assert(id == channel.id);
         assert(dsps.contains(id));
         const auto &dsp = dsps.at(id);
-        double db = juce::Decibels::gainToDecibels(dsp.gain);
-        juce::String db_str = juce::Decibels::toString(db);
+        juce::String db_str = juce::Decibels::toString(dsp.gain_db);
         juce::String output_str = juce::String(id) + " " + channel.name + " " + db_str;
 #if 0
         printf("%s", output_str);

@@ -96,7 +96,7 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     int game_channel_id = -1;
     int daw_channel_id;
     juce::String name;
-    double gain;
+    double gain_db;
     float minFrequency;
     float maxFrequency;
     private:
