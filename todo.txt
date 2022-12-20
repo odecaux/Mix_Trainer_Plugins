@@ -2,8 +2,7 @@
 
 look and feel
 
-propagate the changes from frquency game to compressor game
-    transition inside ui_update
+bug si les sliders on une seule valeur !
 
 We should not be reading every audio track on loading
     last_write_time field
@@ -19,7 +18,8 @@ on doit pouvoir aussi avoir un mix toggle dans le frequency game
 
 #Priority 3 :
 
-Remove the file explorer
+Separation entre le PreviewPlayer et notre vrai Player
+    le notre va cacher les fichiers, etc
 
 ajouter preview et bounds au file selector panel
     pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/

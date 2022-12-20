@@ -23,6 +23,7 @@ struct CompressorGame_Results
 };
 
 struct Compressor_Game_Effect_UI {
+    Effect_Transition transition;
     CompressorGame_Results results;
     juce::String header_center_text;
     juce::String header_right_text;

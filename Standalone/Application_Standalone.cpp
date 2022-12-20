@@ -583,8 +583,6 @@ void Application_Standalone::to_compressor_game()
                 compressor_game_ui = new_game_ui.get();
                 main_component->changePanel(std::move(new_game_ui));
             }
-            if(compressor_game_ui)
-                compressor_game_ui_transitions(*compressor_game_ui, *effects.transition);
         }
         if (effects.dsp)
         {

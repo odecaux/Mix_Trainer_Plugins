@@ -71,6 +71,8 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
 
 void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui)
 {
+    compressor_game_ui_transitions(ui, new_ui.transition);
+
 	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     
     auto threshold_text = [values = new_ui.comp_widget.threshold_values_db] (double new_pos) {
@@ -569,6 +571,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
     {
         effects.ui = Compressor_Game_Effect_UI
         {
+            .transition = {
+                .in_transition = in_transition,
+                .out_transition = out_transition
+            },
             .comp_widget = {
                 .threshold_pos = threshold_pos,
                 .ratio_pos = ratio_pos,
