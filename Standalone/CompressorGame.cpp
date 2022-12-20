@@ -73,29 +73,29 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
 {
 	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
     
-    auto threshold_callback = [values = new_ui.comp_widget.threshold_values_db] (double new_pos)
-    {
+    auto threshold_text = [values = new_ui.comp_widget.threshold_values_db] (double new_pos) {
         return juce::Decibels::toString(values[static_cast<size_t>(new_pos)], 0);
     };
-    auto ratio_callback = [values = new_ui.comp_widget.ratio_values] (double new_pos)
-    {
+
+    auto ratio_text = [values = new_ui.comp_widget.ratio_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]);
     };
-    auto attack_callback = [values = new_ui.comp_widget.attack_values] (double new_pos)
-    {
+
+    auto attack_text = [values = new_ui.comp_widget.attack_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
-    auto release_callback = [values = new_ui.comp_widget.release_values] (double new_pos)
-    {
+
+    auto release_text = [values = new_ui.comp_widget.release_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
+
     using bundle_t = std::tuple<TextSlider&, int, int,  std::function < juce::String(double)> >;
 
     auto bundle = std::vector<bundle_t>{
-        { ui.threshold_slider, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_callback) },
-        { ui.ratio_slider, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_callback) },
-        { ui.attack_slider, new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_callback) },
-        { ui.release_slider, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_callback) }
+        { ui.compressor_widget.threshold_slider, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_text) },
+        { ui.compressor_widget.ratio_slider, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_text) },
+        { ui.compressor_widget.attack_slider, new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_text) },
+        { ui.compressor_widget.release_slider, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_text) }
     };
 
     //TODO rename range

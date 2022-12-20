@@ -163,6 +163,7 @@ struct CompressorGame_IO
 };
 
 struct CompressorGame_UI;
+struct CompressorGame_Widget;
 
 CompressorGame_Config compressor_game_config_default(juce::String name);
 CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
@@ -173,41 +174,14 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event);
 Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event event);
 void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition);
 void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui);
-#if 0
-void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Effect_UI &new_ui);
-#endif
+void compressor_widget_update(CompressorGame_Widget *widget, const Compressor_Game_Effect_UI &new_ui);
 
 
-struct CompressorGame_UI : public juce::Component
+struct CompressorGame_Widget : public juce::Component
 {
-    
-    CompressorGame_UI(CompressorGame_IO *gameIO)
-    : game_io(gameIO),
-      previewer_file_list(false)
+    CompressorGame_Widget(CompressorGame_IO *gameIO)
+    : game_io(gameIO)
     {
-        addChildComponent(previewer_file_list);
-
-        bottom.onNextClicked = [io = this->game_io] (Event_Type e) {
-            Event event = {
-                .type = e
-            };
-            compressor_game_post_event(io, event);
-        };
-        header.onBackClicked = [io = this->game_io] {
-            Event event = {
-                .type = Event_Click_Back
-            };
-            compressor_game_post_event(io, event);
-        };
-        bottom.onToggleClicked = [io = this->game_io] (bool a) {
-            Event event = {
-                .type = Event_Toggle_Input_Target,
-                .value_b = a
-            };
-            compressor_game_post_event(io, event);
-        };
-        addAndMakeVisible(header);
-        
         auto setup_slider = [&] (TextSlider &slider, juce::Label &label, juce::String name, std::function<void(int)> onEdit) {
             label.setText(name, juce::NotificationType::dontSendNotification);
             label.setJustificationType(juce::Justification::centred);
@@ -264,6 +238,74 @@ struct CompressorGame_UI : public juce::Component
         };
         setup_slider(release_slider, release_label, "Release", std::move(onReleaseMoved));
         
+    }
+
+    void resized() override
+    {
+        auto bounds = getLocalBounds();
+        auto threshold_bounds = bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
+        auto ratio_bounds = bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
+        auto attack_bounds = bounds.getProportion<float>( { 0.0f, 0.5f, 0.5f, 0.5f }).reduced(5);
+        auto release_bounds = bounds.getProportion<float>( { 0.5f, 0.5f, 0.5f, 0.5f }).reduced(5);
+
+        threshold_label.setBounds(threshold_bounds.removeFromTop(15));
+        ratio_label.setBounds(ratio_bounds.removeFromTop(15));
+        attack_label.setBounds(attack_bounds.removeFromTop(15));
+        release_label.setBounds(release_bounds.removeFromTop(15));
+        
+        threshold_slider.setBounds(threshold_bounds);
+        ratio_slider.setBounds(ratio_bounds);
+        attack_slider.setBounds(attack_bounds);
+        release_slider.setBounds(release_bounds);
+    }
+    
+    TextSlider threshold_slider;
+    TextSlider ratio_slider;
+    TextSlider attack_slider;
+    TextSlider release_slider;
+    
+    juce::Label threshold_label;
+    juce::Label ratio_label;
+    juce::Label attack_label;
+    juce::Label release_label;
+
+    CompressorGame_IO *game_io;
+};
+
+struct CompressorGame_UI : public juce::Component
+{
+    
+    CompressorGame_UI(CompressorGame_IO *gameIO)
+    : previewer_file_list(false),
+      compressor_widget(gameIO),
+      game_io(gameIO)
+    {
+        addChildComponent(previewer_file_list);
+
+        bottom.onNextClicked = [io = this->game_io] (Event_Type e) {
+            Event event = {
+                .type = e
+            };
+            compressor_game_post_event(io, event);
+        };
+        header.onBackClicked = [io = this->game_io] {
+            Event event = {
+                .type = Event_Click_Back
+            };
+            compressor_game_post_event(io, event);
+        };
+        bottom.onToggleClicked = [io = this->game_io] (bool a) {
+            Event event = {
+                .type = Event_Toggle_Input_Target,
+                .value_b = a
+            };
+            compressor_game_post_event(io, event);
+        };
+        addAndMakeVisible(header);
+        
+        compressor_widget.setSize(200, 200);
+        addAndMakeVisible(compressor_widget);
+        
         bottom.target_mix_button.setButtonText("Target settings");
         bottom.user_mix_button.setButtonText("Your settings");
         addAndMakeVisible(bottom);
@@ -274,7 +316,7 @@ struct CompressorGame_UI : public juce::Component
         auto * top_level_window = getTopLevelComponent();
         auto * resizable_window = dynamic_cast<juce::ResizableWindow*>(top_level_window);
         assert(resizable_window);
-        auto min_height = 8 + header.getHeight() + bottom.getHeight() + game_bounds_dim.getHeight() + 40; //TODO hack ? why doesn't it work ?
+        auto min_height = 8 + header.getHeight() + bottom.getHeight() + compressor_widget.getHeight() + 40; //TODO hack ? why doesn't it work ?
         resizable_window->setResizeLimits (400, min_height, 
                                            10000, 10000);
     }
@@ -290,54 +332,23 @@ struct CompressorGame_UI : public juce::Component
         bottom.setBounds(bottom_bounds);
 
         //TODO temporary, should not depend on internal state
-        auto game_bounds = game_bounds_dim.withCentre(bounds.getCentre());
+        compressor_widget.setCentrePosition(bounds.getCentre());
         if (previewer_file_list.isVisible())
         {
-            game_bounds.setX(bounds.getRight() - game_bounds.getWidth());
-            auto previewer_bounds = game_bounds;
+            auto game_bounds = compressor_widget.getBounds();
+            auto previewer_bounds = game_bounds.withX(bounds.getRight() - game_bounds.getWidth());
             previewer_bounds.setX(0);
             previewer_bounds.setRight(game_bounds.getX());
             previewer_file_list.setBounds(previewer_bounds);
         }
-        auto threshold_bounds = game_bounds.getProportion<float>( { 0.0f, 0.0f, 0.5f, 0.5f }).reduced(5);
-        auto ratio_bounds = game_bounds.getProportion<float>( { 0.5f, 0.0f, 0.5f, 0.5f }).reduced(5);
-        auto attack_bounds = game_bounds.getProportion<float>( { 0.0f, 0.5f, 0.5f, 0.5f }).reduced(5);
-        auto release_bounds = game_bounds.getProportion<float>( { 0.5f, 0.5f, 0.5f, 0.5f }).reduced(5);
-
-        threshold_label.setBounds(threshold_bounds.removeFromTop(15));
-        ratio_label.setBounds(ratio_bounds.removeFromTop(15));
-        attack_label.setBounds(attack_bounds.removeFromTop(15));
-        release_label.setBounds(release_bounds.removeFromTop(15));
-        
-        threshold_slider.setBounds(threshold_bounds);
-        ratio_slider.setBounds(ratio_bounds);
-        attack_slider.setBounds(attack_bounds);
-        release_slider.setBounds(release_bounds);
     }
 
     GameUI_Header header;
     Selection_List previewer_file_list;
-    juce::Rectangle < int > game_bounds_dim { 0, 0, 200, 200 };
-#if 0
-    std::unique_ptr<CompressorWidget> compressor_widget;
-    std::unique_ptr<CompressorGame_Results_Panel> results_panel;
-#endif
-    TextSlider threshold_slider;
-    TextSlider ratio_slider;
-    TextSlider attack_slider;
-    TextSlider release_slider;
-    
-    juce::Label threshold_label;
-    juce::Label ratio_label;
-    juce::Label attack_label;
-    juce::Label release_label;
 
-#if 0
-    std::vector < float > threshold_values;
-    std::vector < float > ratio_values;
-    std::vector < float > attack_values;
-    std::vector < float > release_values;
-#endif
+    CompressorGame_Widget compressor_widget;
+    //std::unique_ptr<CompressorGame_Results_Panel> results_panel;
+
     GameUI_Bottom bottom;
     CompressorGame_IO *game_io;
 private:
