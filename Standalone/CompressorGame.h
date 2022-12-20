@@ -360,7 +360,6 @@ private:
 //------------------------------------------------------------------------
 struct Compressor_Config_Panel : public juce::Component
 {
-    using textedit_and_label_t = std::vector<std::tuple<juce::TextEditor&, juce::Label&>>;
     using textedit_and_toggle_t = std::vector<std::tuple<juce::TextEditor&, juce::ToggleButton&>>;
 
     Compressor_Config_Panel(std::vector<CompressorGame_Config> &gameConfigs,
@@ -382,76 +381,30 @@ struct Compressor_Config_Panel : public juce::Component
         scroller.setWantsKeyboardFocus(true);
 
         {
-            auto threshold_validate = [&] {
-                auto str = thresholds.getText();
-                if (str.isEmpty())
-                {
-                    selectConfig(current_config_idx);
-                    return;
-                }
-                CompressorGame_Config &current_config = configs[current_config_idx]; 
-                current_config.threshold_values_db = deserialize_floats(str);
-                current_config = compressor_game_config_validate(current_config);
-                selectConfig(current_config_idx);
+            auto update = [&] {
+                updateConfig();
             };
             thresholds.setInputRestrictions(0, "0123456789,. -");
-            thresholds.onReturnKey = threshold_validate;
-            thresholds.onEscapeKey = threshold_validate;
-            thresholds.onFocusLost = threshold_validate;
-            
-            auto ratio_validate = [&] {
-                auto str = ratios.getText();
-                if (str.isEmpty())
-                {
-                    selectConfig(current_config_idx);
-                    return;
-                }
-                CompressorGame_Config &current_config = configs[current_config_idx]; 
-                current_config.ratio_values = deserialize_floats(str);
-                current_config = compressor_game_config_validate(current_config);
-                selectConfig(current_config_idx);
-            };
+            thresholds.onReturnKey = update;
+            thresholds.onEscapeKey = update;
+            thresholds.onFocusLost = update;
             
             ratios.setInputRestrictions(0, "0123456789,. ");
-            ratios.onReturnKey = ratio_validate;
-            ratios.onEscapeKey = ratio_validate;
-            ratios.onFocusLost = ratio_validate;
+            ratios.onReturnKey = update;
+            ratios.onEscapeKey = update;
+            ratios.onFocusLost = update;
             
-            auto attack_validate = [&] {
-                auto str = attacks.getText();
-                if (str.isEmpty())
-                {
-                    selectConfig(current_config_idx);
-                    return;
-                }
-                CompressorGame_Config &current_config = configs[current_config_idx]; 
-                current_config.attack_values = deserialize_floats(str);
-                current_config = compressor_game_config_validate(current_config);
-                selectConfig(current_config_idx);
-            };
             attacks.setInputRestrictions(0, "0123456789,. ");
-            attacks.onReturnKey = attack_validate;
-            attacks.onEscapeKey = attack_validate;
-            attacks.onFocusLost = attack_validate;
+            attacks.onReturnKey = update;
+            attacks.onEscapeKey = update;
+            attacks.onFocusLost = update;
 
-            auto release_validate = [&] {
-                auto str = releases.getText();
-                if (str.isEmpty())
-                {
-                    selectConfig(current_config_idx);
-                    return;
-                }
-                CompressorGame_Config &current_config = configs[current_config_idx]; 
-                current_config.release_values = deserialize_floats(str);
-                current_config = compressor_game_config_validate(current_config);
-                selectConfig(current_config_idx);
-            };
             releases.setInputRestrictions(0, "0123456789,. ");
-            releases.onReturnKey = release_validate;
-            releases.onEscapeKey = release_validate;
-            releases.onFocusLost = release_validate;
+            releases.onReturnKey = update;
+            releases.onEscapeKey = update;
+            releases.onFocusLost = update;
         
-            textedit_and_label_t textedit_and_label = {
+            textedit_and_toggle_t textedit_and_label = {
                 { thresholds, thresholds_label },
                 { ratios, ratios_label },
                 { attacks, attacks_label },
@@ -461,32 +414,9 @@ struct Compressor_Config_Panel : public juce::Component
             for (auto &[textedit, label] : textedit_and_label)
             {
                 textedit.setMultiLine(false);
-                //textedit.setScrollWheelEnabled(false);
-                //textedit.setTextBoxStyle(juce::Slider::TextBoxLeft, true, 50, 20);
-                //textedit.setRange(range, interval);
 
-                label.setBorderSize(juce::BorderSize < int > { 0 });
-                label.setJustificationType(juce::Justification::left);
-            
                 scroller.addAndMakeVisible(textedit);
                 scroller.addAndMakeVisible(label);
-            }
-
-            textedit_and_toggle_t textedit_and_toggle = {
-               // { question_timeout_ms , result_timeout_enabled, { 1000, 4000 }, 500 },
-               // { result_timeout_ms , question_timeout_enabled, { 1000, 4000 }, 500 }
-            };
-
-        
-            for (auto &[textedit, toggle] : textedit_and_toggle)
-            {
-                textedit.setMultiLine(false);
-                textedit.setJustification(juce::Justification::centredLeft);
-                //toggle.setBorderSize( juce::BorderSize<int>{ 0 });
-                //toggle.setJustificationType(juce::Justification::left);
-            
-                scroller.addAndMakeVisible(textedit);
-                scroller.addAndMakeVisible(toggle);
             }
 
             viewport.setScrollBarsShown(true, false);
@@ -564,6 +494,38 @@ struct Compressor_Config_Panel : public juce::Component
         nextButton.setBounds(button_bounds);
     }
 
+    void updateConfig()
+    {
+        CompressorGame_Config &current_config = configs[current_config_idx]; 
+    
+        auto thresholds_str = thresholds.getText();
+        if (!thresholds_str.isEmpty())
+        {
+            current_config.threshold_values_db = deserialize_floats(thresholds_str);
+        }
+    
+        auto ratios_str = ratios.getText();
+        if (!ratios_str.isEmpty())
+        {
+            current_config.ratio_values = deserialize_floats(ratios_str);
+        }
+
+        auto attacks_str = attacks.getText();
+        if (!attacks_str.isEmpty())
+        {
+            current_config.attack_values = deserialize_floats(attacks_str);
+        }
+        
+        auto releases_str = releases.getText();
+        if (!releases_str.isEmpty())
+        {
+            current_config.release_values = deserialize_floats(releases_str);
+        }
+
+        current_config = compressor_game_config_validate(current_config);
+        selectConfig(current_config_idx);
+    }
+
     void selectConfig(size_t new_config_idx)
     {
         assert(new_config_idx < configs.size());
@@ -574,24 +536,6 @@ struct Compressor_Config_Panel : public juce::Component
         ratios.setText(serialize_floats(current_config.ratio_values), juce::dontSendNotification);
         attacks.setText(serialize_floats(current_config.attack_values), juce::dontSendNotification);
         releases.setText(serialize_floats(current_config.release_values), juce::dontSendNotification);
-#if 0
-        float gain_db = juce::Decibels::gainToDecibels(current_config.eq_gain);
-        eq_gain.setValue(gain_db);
-        eq_quality.setValue(current_config.eq_quality);
-        initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
-        
-        prelisten_timeout_ms.setValue(static_cast<double>(current_config.prelisten_timeout_ms));
-        prelisten_timeout_ms.setEnabled(current_config.prelisten_type == PreListen_Timeout);
-        prelisten_type.setSelectedId(current_config.prelisten_type + 1);
-
-        question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
-        question_timeout_ms.setEnabled(current_config.question_timeout_enabled);
-        question_timeout_enabled.setToggleState(current_config.question_timeout_enabled, juce::dontSendNotification);
-        
-        result_timeout_ms.setValue(static_cast<double>(current_config.result_timeout_ms));
-        result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
-        result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
-#endif
     }
     
     int onResizeScroller(int width)
@@ -638,28 +582,17 @@ struct Compressor_Config_Panel : public juce::Component
     GameUI_Header header;
 
     juce::TextEditor thresholds;
-    juce::Label thresholds_label { {}, "Thresholds" };
+    juce::ToggleButton thresholds_label { "Thresholds" };
 
     juce::TextEditor ratios;
-    juce::Label ratios_label { {}, "Ratios" };
+    juce::ToggleButton ratios_label { "Ratios" };
     
     juce::TextEditor attacks;
-    juce::Label attacks_label { {}, "Attacks" };
+    juce::ToggleButton attacks_label { "Attacks" };
 
     juce::TextEditor releases;
-    juce::Label releases_label { {}, "Releases" };
+    juce::ToggleButton releases_label { "Releases" };
     
-#if 0
-    juce::ComboBox prelisten_type;
-    juce::Label prelisten_type_label { {}, "Pre-Listen : " };
-    juce::Slider prelisten_timeout_ms;
-
-    juce::ToggleButton question_timeout_enabled { "Question timeout" };
-    juce::Slider question_timeout_ms;
-
-    juce::ToggleButton result_timeout_enabled { "Post answer timeout" };
-    juce::Slider result_timeout_ms;
-#endif
     juce::Viewport viewport;
     juce::Component scroller;
    
