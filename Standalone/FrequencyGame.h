@@ -24,6 +24,7 @@ struct FrequencyGame_Results
 
 
 struct Frequency_Game_Effect_UI {
+    Effect_Transition transition;
     int ui_target;
     struct {
         bool display_target;
@@ -130,7 +131,7 @@ void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t
 
 void frequency_game_post_event(FrequencyGame_IO *io, Event event);
 Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event event);
-void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition);
+void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition, int ui_target);
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui);
 void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui);
 
@@ -577,4 +578,34 @@ struct Frequency_Config_Panel : public juce::Component
    
 private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Frequency_Config_Panel)
+};
+
+
+
+struct Frequency_Game_Text_Input : public juce::Component
+{
+    Frequency_Game_Text_Input()
+    {
+        text_input.setSize(100, 30);
+        text_input.setInputRestrictions(5, "0123456789");
+        addAndMakeVisible(text_input);
+        addAndMakeVisible(label);
+        text_input.onReturnKey = [&] {
+            auto text = text_input.getText();
+            if(text.isEmpty())
+                return;
+            auto freq = text.getIntValue();
+            onClick(freq);
+        };
+    }
+
+    void resized() override
+    {
+        text_input.setCentrePosition(getLocalBounds().getCentre());
+
+    }
+
+    std::function<void(int)> onClick;
+    juce::TextEditor text_input;
+    juce::Label label;
 };

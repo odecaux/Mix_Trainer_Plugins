@@ -10,7 +10,7 @@
 		<BuildCommand>build_all.bat</BuildCommand>
 		<RebuildCommand>reset.bat</RebuildCommand>
 		<BuildFileCommand></BuildFileCommand>
-		<CleanCommand>rmdir /S cmake-build</CleanCommand>
+		<CleanCommand>rmdir /S /Q cmake-build</CleanCommand>
 		<BuildWorkingDirectory></BuildWorkingDirectory>
 		<RunCommand></RunCommand>
 		<DebugCommand>reaper.rdbg</DebugCommand>

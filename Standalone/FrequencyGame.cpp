@@ -27,24 +27,40 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
 }
 
 
-void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition)
+void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition, int ui_target)
 {
     if (transition.out_transition == GameStep_Begin)
     {
-        auto frequency_widget = std::make_unique<FrequencyWidget>();
-        frequency_widget->onClick = [io = ui.game_io] (int frequency) {
-            Event event = {
-                .type = Event_Click_Frequency,
-                .value_i = frequency
+        if (ui_target == 0)
+        {
+            auto frequency_widget = std::make_unique<FrequencyWidget>();
+            frequency_widget->onClick = [io = ui.game_io] (int frequency) {
+                Event event = {
+                    .type = Event_Click_Frequency,
+                    .value_i = frequency
+                };
+                frequency_game_post_event(io, event);
             };
-            frequency_game_post_event(io, event);
-        };
-        ui.center_panel = std::move(frequency_widget);
+            ui.center_panel = std::move(frequency_widget);
+        }
+        else
+        {
+            auto text_input = std::make_unique<Frequency_Game_Text_Input>();
+            text_input->onClick = [io = ui.game_io] (int frequency) {
+                Event event = {
+                    .type = Event_Click_Frequency,
+                    .value_i = frequency
+                };
+                frequency_game_post_event(io, event);
+            };
+            ui.center_panel = std::move(text_input);
+        }
         ui.addAndMakeVisible(*ui.center_panel);
         ui.resized();
     }
     if (transition.in_transition == GameStep_EndResults)
     {
+        assert(ui_target == 1);
         auto results_panel = std::make_unique < FrequencyGame_Results_Panel > ();
         ui.center_panel = std::move(results_panel);
         ui.addAndMakeVisible(*ui.center_panel);
@@ -54,29 +70,44 @@ void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition trans
 
 void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui)
 {
+    frequency_game_ui_transitions(ui, new_ui.transition, new_ui.ui_target);
     game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
-    switch (new_ui.ui_target)
+    if (ui.center_panel)
     {
-        case 0 :
+        switch (new_ui.ui_target)
         {
-            auto *frequency_widget = dynamic_cast<FrequencyWidget*>(ui.center_panel.get());
-            assert(frequency_widget);
-            frequency_widget_update(frequency_widget, new_ui);
-        } break;
-        case 1 :
-        {
-            auto *result_panel = dynamic_cast<FrequencyGame_Results_Panel*>(ui.center_panel.get());
-            assert(result_panel);
-            result_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.results.score), juce::dontSendNotification);
-        } break;
-        case 2 :
-        {
-#if 0
-            auto *frequency_widget = dynamic_cast<Frequency_Widget*>(ui.center_panel.get());
-            assert(frequency_widget);
-            frequency_widget_update(frequency_widget, new_ui);
-#endif
-        };
+            case 0 :
+            {
+                auto *frequency_widget = dynamic_cast<FrequencyWidget*>(ui.center_panel.get());
+                assert(frequency_widget);
+                frequency_widget_update(frequency_widget, new_ui);
+            } break;
+            case 1 :
+            {
+                auto *result_panel = dynamic_cast<FrequencyGame_Results_Panel*>(ui.center_panel.get());
+                assert(result_panel);
+                result_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.results.score), juce::dontSendNotification);
+            } break;
+            case 2 :
+            {
+                auto *text_input = dynamic_cast<Frequency_Game_Text_Input*>(ui.center_panel.get());
+                assert(text_input);
+                text_input->text_input.setEnabled(!new_ui.freq_widget.is_cursor_locked);
+                if (new_ui.freq_widget.display_target)
+                {
+                    text_input->text_input.setText(juce::String(new_ui.freq_widget.target_frequency));
+                }
+                if (new_ui.transition.in_transition == GameStep_Question)
+                {
+                    text_input->text_input.setText("");
+                    text_input->text_input.grabKeyboardFocus();
+                }
+                if (new_ui.transition.out_transition == GameStep_Question)
+                {
+                    text_input->text_input.giveAwayKeyboardFocus();
+                }
+            };
+        }
     }
     game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
 }
@@ -413,6 +444,11 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     if (update_ui)
     {
         effects.ui = Frequency_Game_Effect_UI{};
+        effects.ui->transition = {
+            .in_transition = in_transition,
+            .out_transition = out_transition
+        };
+
         effects.ui->freq_widget.min_f = state.config.min_f;
         effects.ui->freq_widget.num_octaves = state.config.num_octaves;
         switch (state.step)
@@ -427,7 +463,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             case GameStep_Question :
             {
                 effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
-                effects.ui->ui_target = 0;
+                effects.ui->ui_target = state.config.input == Frequency_Input_Widget ? 0 : 2;
                 effects.ui->freq_widget.display_target = false;
                 effects.ui->freq_widget.is_cursor_locked = false;
                 effects.ui->freq_widget.display_window = true;
@@ -440,7 +476,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             {
                 effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
         
-                effects.ui->ui_target = 0;
+                effects.ui->ui_target = state.config.input == Frequency_Input_Widget ? 0 : 2;
                 effects.ui->freq_widget.display_target = true;
                 effects.ui->freq_widget.target_frequency = state.target_frequency;
                 //TODO remove all that ! should not depend on the event, but on some kind of state 

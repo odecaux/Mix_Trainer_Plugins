@@ -467,8 +467,6 @@ void Application_Standalone::to_frequency_game()
                 frequency_game_ui = new_game_ui.get();
                 main_component->changePanel(std::move(new_game_ui));
             }
-            if(frequency_game_ui)
-                frequency_game_ui_transitions(*frequency_game_ui, *effects.transition);
         }
         if (effects.dsp)
         {
