@@ -15,6 +15,8 @@ static const juce::Identifier id_config_releases = "releases";
 static const juce::Identifier id_config_gain = "gain";
 static const juce::Identifier id_config_quality = "q";
 static const juce::Identifier id_config_window = "window";
+static const juce::Identifier id_config_min_f = "min_f";
+static const juce::Identifier id_config_num_octaves = "num_octaves";
 
 static const juce::Identifier id_config_prelisten_type = "prelisten_type";
 static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
@@ -98,6 +100,8 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
                 .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
                 .eq_quality = node.getProperty(id_config_quality, -1.0f),
                 .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
+                .min_f = node.getProperty(id_config_min_f, -1.0f),
+                .num_octaves = node.getProperty(id_config_num_octaves, -1.0f),
 
                 .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
                 .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
@@ -284,6 +288,8 @@ Application_Standalone::~Application_Standalone()
                 { id_config_gain, config.eq_gain_db },
                 { id_config_quality, config.eq_quality },
                 { id_config_window, config.initial_correct_answer_window },
+                { id_config_min_f, config.min_f },
+                { id_config_num_octaves, config.num_octaves },
 
                 { id_config_prelisten_type, config.prelisten_type },
                 { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },

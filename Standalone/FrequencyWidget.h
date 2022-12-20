@@ -1,25 +1,19 @@
-constexpr int max_f = 12800;
-constexpr int min_f = 50;
-
-static int totalSections = 9;
-
-static int denormalize_frequency(float ratio) 
+static int denormalize_frequency(float ratio, int min_f, int num_octaves) 
 {
-    float exponent = 0.5f + ratio * static_cast<float>(totalSections - 1);
+    float exponent = ratio * static_cast<float>(num_octaves);
     return static_cast<int>(static_cast<float>(min_f) * powf(2, exponent));
 }
 
-static float normalize_frequency(int hz) 
+static float normalize_frequency(int hz, int min_f, int num_octaves) 
 {
     float a = logf(static_cast<float>(hz) / min_f) / logf(2.0f);
-    float ratio = (a - 0.5f) / static_cast<float>(totalSections - 1);
+    float ratio = (a) / static_cast<float>(num_octaves);
     return ratio;
 }
 
-static float frequency_to_x(int frequency, juce::Rectangle<int> bounds)
+static float frequency_to_x(int frequency, juce::Rectangle<int> bounds, int min_f, int num_octaves)
 {
-    //float ratio_x = std::powf((frequency - min_f) / (max_f - min_f), 1.0f / power);
-    float ratio_x = normalize_frequency(frequency);
+    float ratio_x = normalize_frequency(frequency, min_f, num_octaves);
     return ratio_x * static_cast<float>(bounds.getWidth()) + static_cast<float>(bounds.getX());
 }
 
@@ -31,12 +25,12 @@ static float normalize_position(juce::Point<int> position, juce::Rectangle<int> 
     return float(relative.x) / float(bounds.getWidth());
 }
 
-static int x_to_frequency(juce::Point<int> position, juce::Rectangle<int> bounds)
+static int x_to_frequency(juce::Point<int> position, juce::Rectangle<int> bounds, int min_f, int num_octaves)
 {
     auto ratio = normalize_position(position, bounds);
     if(ratio == -1.0f)
         return -1;
-    return denormalize_frequency(ratio);
+    return denormalize_frequency(ratio, min_f, num_octaves);
 }
 
 struct FrequencyWidget : public juce::Component 
@@ -57,9 +51,11 @@ struct FrequencyWidget : public juce::Component
         
         //frequency guide lines
         g.setColour(juce::Colour(170, 170, 170));
-        for (int line_freq : { 100, 200, 400, 800, 1600, 3200, 6400, 12800 })
+        for (int line_freq : { 50, 100, 200, 400, 800, 1600, 3200, 6400, 12800 })
         {
-            auto x = frequency_to_x(line_freq, r);
+            auto x = frequency_to_x(line_freq, r, min_f, num_octaves);
+            if (x <= 0)
+                continue;
             drawLineAt(10.0f, 45.0f, x);
             juce::Point<float> textCentre = { x, 0.0f }; //TODO yolo
             auto textBounds = juce::Rectangle<float> { 40.0f, 40.0f }.withCentre(textCentre).withY((float)r.getBottom() - 45.0f);
@@ -70,11 +66,11 @@ struct FrequencyWidget : public juce::Component
             auto mouse_position = getMouseXYRelative();
             auto mouse_ratio = normalize_position(mouse_position, r);
             float cursor_ratio = is_cursor_locked ?
-                normalize_frequency(locked_cursor_frequency) :
+                normalize_frequency(locked_cursor_frequency, min_f, num_octaves) :
                 mouse_ratio;
             int cursor_frequency = is_cursor_locked ?
                 locked_cursor_frequency :
-                x_to_frequency(mouse_position, r);
+                x_to_frequency(mouse_position, r, min_f, num_octaves);
             
             //juce::Line<int> cursor_line;
     
@@ -97,7 +93,7 @@ struct FrequencyWidget : public juce::Component
                 }
                 g.setOpacity(1.0f);
                 g.setColour(juce::Colours::black);
-                auto cursor_x = frequency_to_x(cursor_frequency, r);
+                auto cursor_x = frequency_to_x(cursor_frequency, r, min_f, num_octaves);
                 drawLineAt(0.0f, 0.0f, cursor_x);
     
                 juce::Rectangle text_bounds = { 200, 200 };
@@ -110,7 +106,7 @@ struct FrequencyWidget : public juce::Component
             if (display_target)
             {
                 g.setColour(juce::Colours::black);
-                auto x = frequency_to_x(target_frequency, r);
+                auto x = frequency_to_x(target_frequency, r, min_f, num_octaves);
                 drawLineAt(0.0f, 0.0f, x);
             }
     #if 0
@@ -152,7 +148,7 @@ private:
     {
         if(is_cursor_locked)
             return;
-        auto clicked_freq = x_to_frequency(getMouseXYRelative(), getLocalBounds());
+        auto clicked_freq = x_to_frequency(getMouseXYRelative(), getLocalBounds(), min_f, num_octaves);
         onClick(clicked_freq);
     }
 
@@ -163,5 +159,7 @@ public:
     int locked_cursor_frequency;
     bool display_window;
     float correct_answer_window;
+    int min_f;
+    int num_octaves;
     std::function < void(int) > onClick;
 };

@@ -31,6 +31,8 @@ struct Frequency_Game_Effect_UI {
         int locked_cursor_frequency;
         bool display_window;
         float correct_answer_window;
+        int min_f;
+        int num_octaves;
     } freq_widget;
     FrequencyGame_Results results;
     juce::String header_center_text;
@@ -57,6 +59,8 @@ struct FrequencyGame_Config
     float eq_gain_db;
     float eq_quality;
     float initial_correct_answer_window;
+    int min_f;
+    int num_octaves;
     //
     PreListen_Type prelisten_type;
     int prelisten_timeout_ms;
@@ -67,6 +71,7 @@ struct FrequencyGame_Config
     bool result_timeout_enabled;
     int result_timeout_ms;
 };
+
 struct FrequencyGame_State
 {
     GameStep step;
@@ -203,17 +208,28 @@ struct Frequency_Config_Panel : public juce::Component
         }
 
         {
+            
+            mode.setEditableText(false);
+            mode.setJustificationType(juce::Justification::left);
+            mode.addItem("Normal", PreListen_None + 1);
+            mode.addItem("Bass", PreListen_Timeout + 1);
+            mode.onChange = [&] {
+                updateConfig();
+            };
+            scroller.addAndMakeVisible(mode);
+            scroller.addAndMakeVisible(mode_label);
+
             eq_gain.setTextValueSuffix (" dB");
             eq_gain.onValueChange = [&] {
-                configs[current_config_idx].eq_gain_db = (float)eq_gain.getValue();
+                updateConfig();
             };
 
             eq_quality.onValueChange = [&] {
-                configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
+                updateConfig();
             };
 
             initial_correct_answer_window.onValueChange = [&] {
-                configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+                updateConfig();
             };
 
 
@@ -224,9 +240,7 @@ struct Frequency_Config_Panel : public juce::Component
             prelisten_type.addItem("Free", PreListen_Free + 1);
          
             prelisten_type.onChange = [&] {
-                PreListen_Type new_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
-                configs[current_config_idx].prelisten_type = new_type;
-                prelisten_timeout_ms.setEnabled(new_type == PreListen_Timeout);
+                updateConfig();
             };
 
             scroller.addAndMakeVisible(prelisten_type);
@@ -235,7 +249,7 @@ struct Frequency_Config_Panel : public juce::Component
 
             prelisten_timeout_ms.setTextValueSuffix(" ms");
             prelisten_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
+                updateConfig();
             };
             prelisten_timeout_ms.setNumDecimalPlacesToDisplay(0);
         
@@ -250,15 +264,13 @@ struct Frequency_Config_Panel : public juce::Component
             question_type.addItem("Rising Gain", Frequency_Question_Rising + 1);
          
             question_type.onChange = [&] {
-                Frequency_Question_Type new_type = static_cast<Frequency_Question_Type>(question_type.getSelectedId() - 1);
-                configs[current_config_idx].question_type = new_type;
-                question_timeout_ms.setEnabled(new_type != Frequency_Question_Free);
+                updateConfig();
             };
 
 
             question_timeout_ms.setTextValueSuffix(" ms");
             question_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
+                updateConfig();
             };
             question_timeout_ms.setNumDecimalPlacesToDisplay(0);
            
@@ -272,24 +284,14 @@ struct Frequency_Config_Panel : public juce::Component
             scroller.addAndMakeVisible(question_type_label);
             scroller.addAndMakeVisible(question_timeout_ms);
 
-#if 0
-            question_timeout_enabled.onClick = [&] {
-                bool new_toggle_state = question_timeout_enabled.getToggleState();
-                configs[current_config_idx].question_timeout_enabled = new_toggle_state;
-                question_timeout_ms.setEnabled(new_toggle_state);
-            };
-#endif
-
             result_timeout_ms.setTextValueSuffix(" ms");
             result_timeout_ms.onValueChange = [&] {
-                configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
+                updateConfig();
             };
             result_timeout_ms.setNumDecimalPlacesToDisplay(0);
         
             result_timeout_enabled.onClick = [&] {
-                bool new_toggle_state = result_timeout_enabled.getToggleState();
-                configs[current_config_idx].result_timeout_enabled = new_toggle_state;
-                result_timeout_ms.setEnabled(new_toggle_state);
+                updateConfig();
             };
 
         
@@ -337,7 +339,8 @@ struct Frequency_Config_Panel : public juce::Component
 
         //Next Button
         {
-            nextButton.onClick = [onClickNext = std::move(onClickNext)] {
+            nextButton.onClick = [&, onClickNext = std::move(onClickNext)] {
+                updateConfig();
                 onClickNext();
             };
             addAndMakeVisible(nextButton);
@@ -403,11 +406,52 @@ struct Frequency_Config_Panel : public juce::Component
         nextButton.setBounds(button_bounds);
     }
 
+    void updateConfig()
+    {
+        if (mode.getSelectedId() == 1)
+        {
+            configs[current_config_idx].min_f = 70;
+            configs[current_config_idx].num_octaves = 8;
+        }
+        else
+        {
+            configs[current_config_idx].min_f = 35;
+            configs[current_config_idx].num_octaves = 2;
+        }
+        configs[current_config_idx].eq_gain_db = (float)eq_gain.getValue();
+        configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
+        configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+        
+        PreListen_Type new_prelisten_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
+        configs[current_config_idx].prelisten_type = new_prelisten_type;
+        prelisten_timeout_ms.setEnabled(new_prelisten_type == PreListen_Timeout);
+
+        configs[current_config_idx].prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
+        
+        Frequency_Question_Type new_question_type = static_cast<Frequency_Question_Type>(question_type.getSelectedId() - 1);
+        configs[current_config_idx].question_type = new_question_type;
+        question_timeout_ms.setEnabled(new_question_type != Frequency_Question_Free);
+        
+        configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
+        configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
+
+        bool new_toggle_state = result_timeout_enabled.getToggleState();
+        configs[current_config_idx].result_timeout_enabled = new_toggle_state;
+        result_timeout_ms.setEnabled(new_toggle_state);
+           
+    }
+
     void selectConfig(size_t new_config_idx)
     {
         assert(new_config_idx < configs.size());
         current_config_idx = new_config_idx;
         FrequencyGame_Config &current_config = configs[current_config_idx];
+
+        if (current_config.min_f == 35)
+            mode.setSelectedId(2);
+        else
+            mode.setSelectedId(1);
+
         eq_gain.setValue(current_config.eq_gain_db);
         eq_quality.setValue(current_config.eq_quality);
         initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
@@ -440,6 +484,10 @@ struct Frequency_Config_Panel : public juce::Component
 
         int label_height = 35;
         int slider_height = 35;
+        
+        auto mode_bounds = bounds(label_height);
+        mode_label.setBounds(mode_bounds.removeFromLeft(80));
+        mode.setBounds(mode_bounds.removeFromLeft(80));
 
         eq_gain_label.setBounds(bounds(label_height));
         eq_gain.setBounds(bounds(slider_height));
@@ -471,6 +519,9 @@ struct Frequency_Config_Panel : public juce::Component
     Insertable_List config_list_comp;
     
     GameUI_Header header;
+    
+    juce::ComboBox mode;
+    juce::Label mode_label { {}, "Mode : " };
 
     juce::Slider eq_gain;
     juce::Label eq_gain_label { {}, "Gain"};

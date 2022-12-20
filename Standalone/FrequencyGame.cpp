@@ -9,9 +9,13 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
 {
     return {
         .title = name,
+
         .eq_gain_db = 6.0f,
         .eq_quality = 0.7f,
         .initial_correct_answer_window = 0.15f,
+        .min_f = 70,
+        .num_octaves = 8,
+
         .prelisten_type = PreListen_None,
         .prelisten_timeout_ms = 1000,
         .question_type = Frequency_Question_Free,
@@ -226,8 +230,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     if (check_answer)
     {
         if (state.step != GameStep_Question) return { .error = 1 };
-        auto clicked_ratio = normalize_frequency(TEMP_answer_frequency);
-        auto target_ratio = normalize_frequency(state.target_frequency);
+        auto clicked_ratio = normalize_frequency(TEMP_answer_frequency, state.config.min_f, state.config.num_octaves);
+        auto target_ratio = normalize_frequency(state.target_frequency, state.config.min_f, state.config.num_octaves);
         auto distance = std::abs(clicked_ratio - target_ratio);
         if (distance < state.correct_answer_window)
         {
@@ -295,7 +299,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         }break;
         case GameStep_Question : {
             state.step = GameStep_Question;
-            state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat());
+            state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat(), state.config.min_f, state.config.num_octaves);
     
             state.current_file_idx = random_positive_int((int)state.files.size());
             effects.player = Effect_Player {
@@ -392,6 +396,8 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     if (update_ui)
     {
         effects.ui = Frequency_Game_Effect_UI{};
+        effects.ui->freq_widget.min_f = state.config.min_f;
+        effects.ui->freq_widget.num_octaves = state.config.num_octaves;
         switch (state.step)
         {
             case GameStep_Begin :
@@ -477,5 +483,7 @@ void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effec
     widget->locked_cursor_frequency = new_ui.freq_widget.locked_cursor_frequency;
     widget->display_window = new_ui.freq_widget.display_window;
     widget->correct_answer_window = new_ui.freq_widget.correct_answer_window;
+    widget->min_f = new_ui.freq_widget.min_f;
+    widget->num_octaves = new_ui.freq_widget.num_octaves;
     widget->repaint();
 }
