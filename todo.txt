@@ -2,7 +2,6 @@
 
 look and feel
 
-compressor : make each parameter optional
 propagate the changes from frquency game to compressor game
     transition inside ui_update
 

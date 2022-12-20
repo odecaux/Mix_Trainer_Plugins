@@ -196,18 +196,24 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         } break;
         case Event_Slider : 
         {
+            assert(state.step == GameStep_Begin || state.step == GameStep_Question);
+
             switch (event.id) 
             {
                 case 0 : {
+                    assert(state.config.threshold_active || state.step == GameStep_Begin);
                     state.input_threshold_pos = event.value_i;
                 } break;
                 case 1 : {
+                    assert(state.config.ratio_active || state.step == GameStep_Begin);
                     state.input_ratio_pos = event.value_i;
                 } break;
                 case 2 : {
+                    assert(state.config.attack_active || state.step == GameStep_Begin);
                     state.input_attack_pos = event.value_i;
                 } break;
                 case 3 : {
+                    assert(state.config.release_active || state.step == GameStep_Begin);
                     state.input_release_pos = event.value_i;
                 } break;
             }
@@ -338,13 +344,17 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         if(state.step != GameStep_Question) assert(false);
 
         int points_awarded = 0;
-        if (state.target_threshold_pos == state.input_threshold_pos) 
+
+        if (state.config.threshold_active && state.target_threshold_pos == state.input_threshold_pos)
             points_awarded++;
-        if (state.target_ratio_pos == state.input_ratio_pos) 
+
+        if (state.config.ratio_active && state.target_ratio_pos == state.input_ratio_pos) 
             points_awarded++;
-        if (state.target_attack_pos == state.input_attack_pos) 
+
+        if (state.config.attack_active && state.target_attack_pos == state.input_attack_pos) 
             points_awarded++;
-        if (state.target_release_pos == state.input_release_pos) 
+
+        if (state.config.release_active && state.target_release_pos == state.input_release_pos) 
             points_awarded++;
 
         state.score += points_awarded;
@@ -433,11 +443,28 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.target_attack_pos = random_positive_int(static_cast<int>(state.config.attack_values.size()));
             state.target_release_pos = random_positive_int(static_cast<int>(state.config.release_values.size()));
 
-            //TODO
-            state.input_threshold_pos = static_cast<int>(state.config.threshold_values_db.size()) - 1;
-            state.input_ratio_pos = 0;
-            state.input_attack_pos = 0;
-            state.input_release_pos = 0;
+            {
+                //TODO
+                if (state.config.threshold_active)
+                    state.input_threshold_pos = static_cast<int>(state.config.threshold_values_db.size()) - 1;
+                else
+                    state.input_threshold_pos = state.target_threshold_pos;
+
+                if (state.config.ratio_active)
+                    state.input_ratio_pos = 0;
+                else
+                    state.input_ratio_pos = state.target_ratio_pos;
+
+                if (state.config.attack_active)
+                    state.input_attack_pos = 0;
+                else
+                    state.input_attack_pos = state.target_attack_pos;
+
+                if (state.config.release_active)
+                    state.input_release_pos = 0;
+                else
+                    state.input_release_pos = state.target_release_pos;
+            }
 
             state.current_file_idx = random_positive_int((int)state.files.size());
             effects.player = Effect_Player {
@@ -459,16 +486,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                 } break;
             }
 
-#if 0
-            if (state.config.question_timeout_enabled)
-            {
-                state.timestamp_start = state.current_timestamp;
-            }
-            else
-            {
-                if (state.timestamp_start != -1) assert(false);
-            }
-#endif
             update_audio = true;
             update_ui = true;
         }break;
@@ -476,16 +493,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         {
             state.step = GameStep_Result;
             state.mix = Mix_Target;
-#if 0
-            if (state.config.result_timeout_enabled)
-            {
-                state.timestamp_start = state.current_timestamp;
-            }
-            else
-            {
-                if (state.timestamp_start != -1) assert(false);
-            }
-#endif
             update_audio = true;
             update_ui = true;
         }break;
@@ -576,11 +583,28 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         };
         if (state.step != GameStep_EndResults)
         {
-            auto visibility = gameStepToFaderStep(state.step, state.mix);
-            effects.ui->comp_widget.threshold_visibility = visibility;
-            effects.ui->comp_widget.ratio_visibility = visibility;
-            effects.ui->comp_widget.attack_visibility = visibility;
-            effects.ui->comp_widget.release_visibility = visibility;
+            Widget_Interaction_Type active_visibility = gameStepToFaderStep(state.step, state.mix);
+            Widget_Interaction_Type inactive_visibility = state.step == GameStep_Begin ? Widget_Editing : Widget_Showing;
+
+            if (state.config.threshold_active)
+                effects.ui->comp_widget.threshold_visibility = active_visibility;
+            else
+                effects.ui->comp_widget.threshold_visibility = inactive_visibility;
+
+            if (state.config.ratio_active)
+                effects.ui->comp_widget.ratio_visibility = active_visibility;
+            else
+                effects.ui->comp_widget.ratio_visibility = inactive_visibility;
+
+            if (state.config.attack_active)
+                effects.ui->comp_widget.attack_visibility = active_visibility;
+            else
+                effects.ui->comp_widget.attack_visibility = inactive_visibility;
+
+            if (state.config.release_active)
+                effects.ui->comp_widget.release_visibility = active_visibility;
+            else
+                effects.ui->comp_widget.release_visibility = inactive_visibility;
         }
         
         switch (state.config.variant)

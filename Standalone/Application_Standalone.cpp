@@ -610,7 +610,7 @@ void Application_Standalone::to_compressor_game()
         juce::ignoreUnused(effects);
     };
     
-    auto new_game_state = compressor_game_state_init(compressor_game_config_default("test"), audio_file_list.files);
+    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], audio_file_list.files);
     compressor_game_io = compressor_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
