@@ -506,15 +506,8 @@ void Application_Standalone::to_frequency_game()
         juce::ignoreUnused(effects);
     };
     
-    std::vector<Audio_File> selected_audio_files{};
-    assert(audio_file_list.files.size() == audio_file_list.selected.size());
-    for (auto i = 0 ; i < audio_file_list.files.size(); i++)
-    {
-        if(audio_file_list.selected[i])
-            selected_audio_files.push_back(audio_file_list.files[i]);
-    }
     auto new_game_state = frequency_game_state_init(frequency_game_configs[current_frequency_game_config_idx], 
-                                                    selected_audio_files);
+                                                    audio_file_list.get_selected_list());
     frequency_game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
@@ -608,7 +601,7 @@ void Application_Standalone::to_compressor_game()
         juce::ignoreUnused(effects);
     };
     
-    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], audio_file_list.files);
+    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], audio_file_list.get_selected_list());
     compressor_game_io = compressor_game_io_init(new_game_state);
 
     auto on_quit = [this] { 

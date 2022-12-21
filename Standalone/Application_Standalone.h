@@ -54,6 +54,19 @@ struct Audio_File_List
             }
         }
     }
+
+    
+    std::vector<Audio_File> get_selected_list()
+    {
+        assert(files.size() == selected.size());
+        std::vector<Audio_File> selected_files;
+        for (auto i = 0; i < files.size(); i++)
+        {
+            if(selected[i])
+                selected_files.push_back(files[i]);
+        }
+        return selected_files;
+    }
     
     juce::AudioFormatManager &format_manager;
     std::vector<Audio_File> files = {};
