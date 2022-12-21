@@ -433,14 +433,13 @@ private:
 //------------------------------------------------------------------------
 class Audio_File_Settings_Panel : 
     public juce::Component,
-    private juce::FileBrowserListener,
     public juce::DragAndDropContainer
 {
 public:
     
     Audio_File_Settings_Panel(FilePlayer &filePlayer,
-                       Audio_File_List &audio_file_list,
-                       std::function < void() > onClickBack)
+                              Audio_File_List &audio_file_list,
+                              std::function < void() > onClickBack)
     :  player(filePlayer),
        file_list_component(audio_file_list.files, &explorer)
     {
@@ -450,29 +449,6 @@ public:
             };
             game_ui_header_update(&header, "Audio Files", {});
             addAndMakeVisible(header);
-        }
-
-        {
-            collapse_explorer_button.setToggleState(false, juce::dontSendNotification);
-            collapse_explorer_button.onStateChange = [&] {
-                auto is_on = collapse_explorer_button.getToggleState();
-                explorer.setVisible(is_on);
-                resized();
-            };
-            addAndMakeVisible(collapse_explorer_button);
-        }
-        {
-            explorer_thread.startThread ();
-
-            directory_list.setDirectory (juce::File::getSpecialLocation (juce::File::userDesktopDirectory), true, true);
-            directory_list.setIgnoresHiddenFiles(true);
-
-            explorer.setTitle ("Files");
-            explorer.setColour (juce::FileTreeComponent::backgroundColourId, juce::Colours::lightgrey.withAlpha (0.6f));
-            explorer.setDragAndDropDescription("drag");
-            explorer.addListener (this);
-            explorer.setMultiSelectEnabled(true);
-            addChildComponent(explorer);
         }
 
         {
@@ -506,8 +482,6 @@ public:
 
         {
             addAndMakeVisible(thumbnail);
-        }
-        {
             addAndMakeVisible(frequency_bounds_slider);
         }
     }
@@ -523,25 +497,9 @@ public:
         auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
 
-        auto bottom_bounds = r.removeFromBottom(100);
+        auto bottom_bounds = r.removeFromBottom(100
 
-        auto sub_header_bounds = r.removeFromTop(40);
-        auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.5f, 1.0f }).withTrimmedRight(5);
-        auto right_bounds = r.getProportion<float>( { 0.5f, .0f, 0.5f, 1.0f }).withTrimmedLeft(5);
-
-        auto collapse_bounds = sub_header_bounds.removeFromLeft(100);
-        collapse_explorer_button.setBounds(collapse_bounds);
-
-        bool explorer_is_on = collapse_explorer_button.getToggleState();
-        if (explorer_is_on)
-        {
-            explorer.setBounds (left_bounds);
-            file_list_component.setBounds (right_bounds);
-        }
-        else
-        {
-            file_list_component.setBounds (r);
-        }
+        file_list_component.setBounds (r);
         
         frequency_bounds_slider.setBounds(bottom_bounds.removeFromBottom(20).reduced(50, 0));
         thumbnail.setBounds(bottom_bounds);
@@ -550,11 +508,6 @@ private:
     FilePlayer &player;
     GameUI_Header header;
     Audio_Files_ListBox file_list_component;
-    
-    juce::ToggleButton collapse_explorer_button { "Show file explorer" };
-    juce::TimeSliceThread explorer_thread  { "File Explorer thread" };
-    juce::DirectoryContentsList directory_list {nullptr, explorer_thread};
-    juce::FileTreeComponent explorer { directory_list };
 
     Thumbnail thumbnail { player.format_manager, player.transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
