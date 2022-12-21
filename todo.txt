@@ -1,6 +1,6 @@
 #Priority 1 :
 
-if last entry in the list is deleted, the new last one is selected
+No config : no "insert congif" text
 No lives mode
 Mixer game takes a vector of channels
 Tables look like shit

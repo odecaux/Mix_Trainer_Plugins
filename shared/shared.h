@@ -780,9 +780,16 @@ public:
         if(row_to_delete == -1 || row_to_delete == getNumRows() - 1) 
             return;
 
-        auto row_to_select = row_to_delete == 0 ? 0 : row_to_delete - 1;
-        list_comp.selectRow(row_to_select);
+        int row_to_select{};
+        if (row_to_delete == 0)
+            row_to_select = 0;
+        else if (row_to_delete == getNumRows() - 2)
+            row_to_select = row_to_delete - 1;
+        else 
+            row_to_select = row_to_delete;
+
         delete_channel_callback(row_to_delete);
+        list_comp.selectRow(row_to_select);
     }
 
     bool keyPressed (const juce::KeyPress &key) override

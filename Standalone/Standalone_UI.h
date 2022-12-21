@@ -293,6 +293,7 @@ public:
     
     void deleteKeyPressed (int) override
     {
+        auto num_rows = getNumRows();
         auto num_selected = file_list_component.getNumSelectedRows();
         if(num_selected == 0)
             return;
@@ -302,9 +303,25 @@ public:
             file_list_component.deselectAllRows();
         }
         
-        const auto &selected_rows = file_list_component.getSelectedRows();
+        auto selected_rows = file_list_component.getSelectedRows();
         remove_files_callback(selected_rows);
         file_list_component.updateContent();
+
+        if (num_selected == 1)
+        {
+            auto row_to_delete = selected_rows[0];
+            if (row_to_delete == -1)
+                return;
+
+            int row_to_select{};
+            if (row_to_delete == 0)
+                row_to_select = 0;
+            else if (row_to_delete == num_rows - 1)
+                row_to_select = row_to_delete - 1;
+            else 
+                row_to_select = row_to_delete;
+            file_list_component.selectRow(row_to_select);
+        }
     }
 
     bool keyPressed (const juce::KeyPress &key) override
