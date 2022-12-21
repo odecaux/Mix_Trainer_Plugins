@@ -4,16 +4,73 @@
             "name": "x64-Debug",
             "generator": "Ninja",
             "configurationType": "Debug",
-            "inheritEnvironments": [ "clang_cl_x64" ],
             "buildRoot": "${projectDir}\\out\\build\\${name}",
             "installRoot": "${projectDir}\\out\\install\\${name}",
             "cmakeCommandArgs": "",
             "buildCommandArgs": "",
             "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
             "variables": [
                 {
                     "name": "JUCE_DIR",
-                    "value": "C:/Users/Octave/Documents/code projects/JUCE/install",
+                    "value": "C:/Users/Octave/Documents/code projects/JUCE_install",
+                    "type": "PATH"
+                }
+            ]
+        },
+        {
+            "name": "x64-Release",
+            "generator": "Ninja",
+            "configurationType": "RelWithDebInfo",
+            "buildRoot": "${projectDir}\\out\\build\\${name}",
+            "installRoot": "${projectDir}\\out\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                {
+                    "name": "JUCE_DIR",
+                    "value": "C:/Users/Octave/Documents/code projects/JUCE_install",
+                    "type": "PATH"
+                }
+            ]
+        },
+
+        {
+            "name": "x64-Debug-Asan",
+            "generator": "Ninja",
+            "configurationType": "Debug",
+            "buildRoot": "${projectDir}\\out\\build\\${name}",
+            "installRoot": "${projectDir}\\out\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "addressSanitizerEnabled": true,
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                {
+                    "name": "JUCE_DIR",
+                    "value": "C:/Users/Octave/Documents/code projects/JUCE_install",
+                    "type": "PATH"
+                }
+            ]
+        },
+        {
+            "name": "x64-Release-Asan",
+            "generator": "Ninja",
+            "configurationType": "RelWithDebInfo",
+            "buildRoot": "${projectDir}\\out\\build\\${name}",
+            "installRoot": "${projectDir}\\out\\install\\${name}",
+            "cmakeCommandArgs": "",
+            "buildCommandArgs": "",
+            "addressSanitizerEnabled": true,
+            "ctestCommandArgs": "",
+            "inheritEnvironments": [ "msvc_x64_x64" ],
+            "variables": [
+                {
+                    "name": "JUCE_DIR",
+                    "value": "C:/Users/Octave/Documents/code projects/JUCE_install",
                     "type": "PATH"
                 }
             ]
