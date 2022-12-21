@@ -774,6 +774,17 @@ public:
         }
     }
 
+    void returnKeyPressed(int) override
+    {
+        auto selected_row = list_comp.getSelectedRow();
+        if(selected_row == -1)
+            return;
+        auto *row_component = list_comp.getComponentForRowNumber(selected_row);
+        auto *label = dynamic_cast<List_Row_Label*>(row_component);
+        assert(label);
+        label->showEditor();
+    }
+
     void deleteKeyPressed (int) override
     {
         auto row_to_delete = list_comp.getSelectedRow();
