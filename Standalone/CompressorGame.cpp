@@ -315,7 +315,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         {
             if (state.step != GameStep_Result) assert(false);
             out_transition = GameStep_Result;
-            in_transition = GameStep_Question;
+            if(state.current_round == state.config.total_rounds)
+                in_transition = GameStep_EndResults;
+            else
+                in_transition = GameStep_Question;
         } break;
         case Event_Click_Back :
         {
@@ -361,10 +364,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
 
         state.score += points_awarded;
         out_transition = GameStep_Question;
-        if(state.current_round == state.config.total_rounds)
-            in_transition = GameStep_EndResults;
-        else
-            in_transition = GameStep_Result;
+        in_transition = GameStep_Result;
     }
     
     if (done_listening)

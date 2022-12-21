@@ -1,10 +1,8 @@
 #Priority 1 :
 
 if last entry in the list is deleted, the new last one is selected
-File selection seems broken , I've unselected behind the yashmak
 No lives mode
 Mixer game takes a vector of channels
-game ends at the end of a question
 Tables look like shit
 look and feel
 bug si les sliders on une seule valeur !

@@ -215,10 +215,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                     state.lives--;
             
                     out_transition = GameStep_Question;
-                    if(state.lives > 0)
-                        in_transition = GameStep_Result;
-                    else
-                        in_transition = GameStep_EndResults;
+                    in_transition = GameStep_Result;
                 }
             }
             else if (state.step == GameStep_Result && state.config.result_timeout_enabled)
@@ -226,8 +223,12 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 if (state.current_timestamp >=
                     state.timestamp_start + state.config.result_timeout_ms)
                 {
+                    
                     out_transition = GameStep_Result;
-                    in_transition = GameStep_Question;
+                    if(state.lives > 0)
+                        in_transition = GameStep_Question;
+                    else
+                        in_transition = GameStep_EndResults;
                 }
             }
             else
@@ -248,7 +249,10 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         {
             if (state.step != GameStep_Result) return { .error = 1 };
             out_transition = GameStep_Result;
-            in_transition = GameStep_Question;
+            if(state.lives > 0)
+                in_transition = GameStep_Question;
+            else
+                in_transition = GameStep_EndResults;
         } break;
         case Event_Click_Back :
         {
@@ -292,10 +296,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.lives--;
         }
             
-        if(state.lives > 0)
-            in_transition = GameStep_Result;
-        else
-            in_transition = GameStep_EndResults;
+        in_transition = GameStep_Result;
         out_transition = GameStep_Question;
     }
     
