@@ -1,38 +1,38 @@
 #Priority 1 :
 
+if last entry in the list is deleted, the new last one is selected
+File selection seems broken , I've unselected behind the yashmak
+No lives mode
+Mixer game takes a vector of channels
+game ends at the end of a question
+Tables look like shit
 look and feel
-
 bug si les sliders on une seule valeur !
-
-We should not be reading every audio track on loading
-    last_write_time field
-    save to xml
-    read through only if changed
 pouvoir selectionner aucune track !
 
 #Priority 2 :
 
+Results system ?
 on doit pouvoir aussi avoir un mix toggle dans le frequency game
     faire un diagramme de la FSM
 
 
 #Priority 3 :
-
-Separation entre le PreviewPlayer et notre vrai Player
-    le notre va cacher les fichiers, etc
-
-ajouter preview et bounds au file selector panel
-    pour ça y faut séparer le cas où on preview un fichier qui fait partie de nos audio_files à un fichier qui est juste dans l'explorer/
-    pcq on va pas afficher les bounds, etc pour un fichier de l'explorer, mais par contre on aimerait l'entendre ?
-
-    workaround : 
-        quand on clique dans l'explorer ça grise la séléction de l'audio file, 
-    
-    Les freq bounds d'un fichier audio doivent influer sur le score
-        sigmoid score ?
         
 Hierarchical FSM ?
 
+#Audio Files
+    Normalize the selected part
+    Remove file explorer
+    ajouter preview et bounds au file selector panel
+        pcq on va pas afficher les bounds, etc pour un fichier de l'explorer, mais par contre on aimerait l'entendre ?
+        Les freq bounds d'un fichier audio doivent influer sur le score
+            sigmoid score ?
+    We should not be reading every audio track on loading
+        last_write_time field
+        save to xml
+        read through only if changed
+        async loading !
 
 #Tracks vs Daw_Tracks
 message : bypass_all

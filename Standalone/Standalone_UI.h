@@ -227,14 +227,11 @@ private:
 class Audio_Files_ListBox : 
     public juce::Component,
     public juce::ListBoxModel,
-    public juce::DragAndDropTarget,
     public juce::FileDragAndDropTarget
 {
 public:
-    Audio_Files_ListBox(std::vector<Audio_File> &audioFiles,
-                  juce::Component *dropSource) :
-        files(audioFiles),
-        drop_source_assert(dropSource)
+    Audio_Files_ListBox(std::vector<Audio_File> &audioFiles) :
+        files(audioFiles)
     {
         file_list_component.setMultipleSelectionEnabled(true);
         file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
@@ -279,32 +276,12 @@ public:
     }
 
     bool isInterestedInFileDrag (const juce::StringArray&) override { return true; }
-
-    bool isInterestedInDragSource (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override 
-    {
-        assert(dragSourceDetails.sourceComponent == drop_source_assert);
-        return true;
-    }
     
     void filesDropped (const juce::StringArray& dropped_files_names, int, int) override
     {
         for (const auto &filename : dropped_files_names)
         {
             if (insert_file_callback(juce::File(filename)))
-                file_list_component.updateContent();
-        }
-    }
-    
-    void itemDropped (const juce::DragAndDropTarget::SourceDetails& dragSourceDetails) override
-    {
-        assert(dragSourceDetails.sourceComponent == drop_source_assert);
-        juce::FileTreeComponent *tree = (juce::FileTreeComponent*)drop_source_assert;
-        auto dropped_file_count = tree->getNumSelectedFiles();
-        for (auto i = 0; i < dropped_file_count; i++)
-        {
-            juce::File file = tree->getSelectedFile(i);
-            
-            if(insert_file_callback(file))
                 file_list_component.updateContent();
         }
     }
@@ -364,8 +341,6 @@ public:
 private:
     std::vector<Audio_File> &files;
     juce::ListBox file_list_component = { {}, this};
-
-    juce::Component *drop_source_assert;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_Files_ListBox)
 };
@@ -441,7 +416,7 @@ public:
                               Audio_File_List &audio_file_list,
                               std::function < void() > onClickBack)
     :  player(filePlayer),
-       file_list_component(audio_file_list.files, &explorer)
+       file_list_component(audio_file_list.files)
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -486,18 +461,13 @@ public:
         }
     }
 
-    ~Audio_File_Settings_Panel() override
-    {
-        explorer.removeListener (this);
-    }
-
     void resized() override 
     {
         auto r = getLocalBounds().reduced (4);
         auto header_bounds = r.removeFromTop(header.getHeight());
         header.setBounds(header_bounds);
 
-        auto bottom_bounds = r.removeFromBottom(100
+        auto bottom_bounds = r.removeFromBottom(100);
 
         file_list_component.setBounds (r);
         
@@ -511,19 +481,7 @@ private:
 
     Thumbnail thumbnail { player.format_manager, player.transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
-
-    void selectionChanged() override
-    {
-        thumbnail.setFile(explorer.getSelectedFile());
-        //auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = explorer.getSelectedFile() });
-        //if (ret.value_b)
-        //    player.post_command({ .type = Audio_Command_Play });
-    }
-
-    void fileClicked (const juce::File&, const juce::MouseEvent&) override          {}
-    void fileDoubleClicked (const juce::File&) override                       {}
-    void browserRootChanged (const juce::File&) override                      {}
-
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };
 
