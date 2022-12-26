@@ -543,3 +543,99 @@ void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effec
     widget->num_octaves = new_ui.freq_widget.num_octaves;
     widget->repaint();
 }
+
+static const juce::Identifier id_config_root = "configs";
+static const juce::Identifier id_config = "config";
+static const juce::Identifier id_config_title = "title";
+
+static const juce::Identifier id_config_variant = "variant";
+
+static const juce::Identifier id_config_total_rounds = "total_rounds";
+static const juce::Identifier id_config_listen_count = "listen_count";
+
+static const juce::Identifier id_config_input = "input";
+static const juce::Identifier id_config_gain = "gain";
+static const juce::Identifier id_config_quality = "q";
+static const juce::Identifier id_config_window = "window";
+static const juce::Identifier id_config_min_f = "min_f";
+static const juce::Identifier id_config_num_octaves = "num_octaves";
+
+static const juce::Identifier id_config_prelisten_type = "prelisten_type";
+static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
+
+static const juce::Identifier id_config_question_type = "question_type";
+static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
+
+static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
+static const juce::Identifier id_config_result_timeout_ms = "result_timeout_ms";
+
+static const juce::Identifier id_results_root = "results_history";
+static const juce::Identifier id_result = "result";
+static const juce::Identifier id_result_score = "score";
+static const juce::Identifier id_result_timestamp = "timestamp";
+
+juce::String frequency_game_serlialize(const std::vector<FrequencyGame_Config> &frequency_game_configs)
+{
+    juce::ValueTree root_node { id_config_root };
+    for (const FrequencyGame_Config& config : frequency_game_configs)
+    {
+        juce::ValueTree node = { id_config, {
+            { id_config_title,  config.title },
+
+            { id_config_input, config.input },
+            { id_config_gain, config.eq_gain_db },
+            { id_config_quality, config.eq_quality },
+            { id_config_window, config.initial_correct_answer_window },
+            { id_config_min_f, config.min_f },
+            { id_config_num_octaves, config.num_octaves },
+
+            { id_config_prelisten_type, config.prelisten_type },
+            { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
+
+            { id_config_question_type, config.question_type },
+            { id_config_question_timeout_ms, config.question_timeout_ms },
+
+            { id_config_result_timeout_enabled, config.result_timeout_enabled },
+            { id_config_result_timeout_ms, config.result_timeout_ms },
+        } };
+        root_node.addChild(node, -1, nullptr);
+    }
+    return root_node.toXmlString();
+}
+
+
+std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_string)
+{
+    std::vector<FrequencyGame_Config> frequency_game_configs{};
+
+    juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+    if (root_node.getType() != id_config_root)
+        return {};
+    for (int i = 0; i < root_node.getNumChildren(); i++)
+    {
+        juce::ValueTree node = root_node.getChild(i);
+        if(node.getType() != id_config)
+            continue;
+        FrequencyGame_Config config = {
+            .title = node.getProperty(id_config_title, ""),
+
+            .input = (Frequency_Input)(int)node.getProperty(id_config_input, (int)Frequency_Input_Widget),
+            .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
+            .eq_quality = node.getProperty(id_config_quality, -1.0f),
+            .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
+            .min_f = node.getProperty(id_config_min_f, -1.0f),
+            .num_octaves = node.getProperty(id_config_num_octaves, -1.0f),
+
+            .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
+            .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
+
+            .question_type = (Frequency_Question_Type)(int)node.getProperty(id_config_question_type, false),
+            .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
+
+            .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
+            .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
+        };
+        frequency_game_configs.push_back(config);
+    }
+    return frequency_game_configs;
+}

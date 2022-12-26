@@ -723,3 +723,98 @@ void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Ef
     widget->repaint();
 }
 #endif
+static const juce::Identifier id_config_root = "configs";
+static const juce::Identifier id_config = "config";
+static const juce::Identifier id_config_title = "title";
+
+static const juce::Identifier id_config_variant = "variant";
+
+static const juce::Identifier id_config_total_rounds = "total_rounds";
+static const juce::Identifier id_config_listen_count = "listen_count";
+
+static const juce::Identifier id_config_thresholds = "thresholds";
+static const juce::Identifier id_config_ratios = "ratios";
+static const juce::Identifier id_config_attacks = "attacks";
+static const juce::Identifier id_config_releases = "releases";
+
+static const juce::Identifier id_config_threshold_active = "threshold_active";
+static const juce::Identifier id_config_ratio_active = "ratio_active";
+static const juce::Identifier id_config_attack_active = "attack_active";
+static const juce::Identifier id_config_release_active = "release_active";
+
+static const juce::Identifier id_config_prelisten_type = "prelisten_type";
+static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
+
+static const juce::Identifier id_config_question_type = "question_type";
+static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
+
+static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
+static const juce::Identifier id_config_result_timeout_ms = "result_timeout_ms";
+
+static const juce::Identifier id_results_root = "results_history";
+static const juce::Identifier id_result = "result";
+static const juce::Identifier id_result_score = "score";
+static const juce::Identifier id_result_timestamp = "timestamp";
+
+juce::String compressor_game_serialize(const std::vector<CompressorGame_Config> &compressor_game_configs)
+{ 
+    juce::ValueTree root_node { id_config_root };
+    for (const CompressorGame_Config& config : compressor_game_configs)
+    {
+        juce::ValueTree node = { id_config, {
+            { id_config_title,  config.title },
+                
+            { id_config_threshold_active, config.threshold_active },
+            { id_config_ratio_active, config.ratio_active },
+            { id_config_attack_active, config.attack_active },
+            { id_config_release_active, config.release_active },
+
+            { id_config_thresholds, serialize_floats(config.threshold_values_db) },
+            { id_config_ratios, serialize_floats(config.ratio_values) },
+            { id_config_attacks, serialize_floats(config.attack_values) },
+            { id_config_releases, serialize_floats(config.release_values) },
+
+            { id_config_variant, (int) config.variant },
+            { id_config_listen_count, config.listens },
+            { id_config_question_timeout_ms, config.timeout_ms },
+            { id_config_total_rounds, config.total_rounds }
+        }};
+        root_node.addChild(node, -1, nullptr);
+    }
+    return root_node.toXmlString();
+}
+
+std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_string)
+{
+    std::vector<CompressorGame_Config> compressor_game_configs{};
+    juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+    if (root_node.getType() != id_config_root)
+        return {};
+    for (int i = 0; i < root_node.getNumChildren(); i++)
+    {
+        juce::ValueTree node = root_node.getChild(i);
+        if(node.getType() != id_config)
+            continue;
+
+        CompressorGame_Config config = {
+            .title = node.getProperty(id_config_title, ""),
+
+            .threshold_active = node.getProperty(id_config_threshold_active, true),
+            .ratio_active = node.getProperty(id_config_ratio_active, true),
+            .attack_active = node.getProperty(id_config_attack_active, true),
+            .release_active = node.getProperty(id_config_release_active, true),
+
+            .threshold_values_db = deserialize_floats(node.getProperty(id_config_thresholds, "")),
+            .ratio_values = deserialize_floats(node.getProperty(id_config_ratios, "")),
+            .attack_values = deserialize_floats(node.getProperty(id_config_attacks, "")),
+            .release_values = deserialize_floats(node.getProperty(id_config_releases, "")),
+
+            .variant = (Compressor_Game_Variant)(int)node.getProperty(id_config_variant, 0),
+            .listens = node.getProperty(id_config_listen_count, 0),
+            .timeout_ms = node.getProperty(id_config_question_timeout_ms, 0),
+            .total_rounds = node.getProperty(id_config_total_rounds, 0),
+        };
+        compressor_game_configs.push_back(config);
+    }
+    return compressor_game_configs;
+}

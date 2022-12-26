@@ -1,5 +1,7 @@
 #Priority 1 :
 
+xml audio file list
+Linux build
 No config : no "insert congif" text
 No lives mode
 Mixer game takes a vector of channels
@@ -17,8 +19,6 @@ on doit pouvoir aussi avoir un mix toggle dans le frequency game
 
 #Priority 3 :
         
-Hierarchical FSM ?
-
 #Audio Files
     Normalize the selected part
     Remove file explorer

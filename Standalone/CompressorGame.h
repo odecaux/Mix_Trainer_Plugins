@@ -179,6 +179,9 @@ struct CompressorGame_IO
 struct CompressorGame_UI;
 struct CompressorGame_Widget;
 
+juce::String compressor_game_serialize(const std::vector<CompressorGame_Config> &compressor_game_configs);
+std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_string);
+
 CompressorGame_Config compressor_game_config_default(juce::String name);
 CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
 std::unique_ptr<CompressorGame_IO> compressor_game_io_init(CompressorGame_State state);

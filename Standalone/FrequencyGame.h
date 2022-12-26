@@ -123,6 +123,9 @@ struct FrequencyGame_IO
 
 struct FrequencyGame_UI;
 
+juce::String frequency_game_serlialize(const std::vector<FrequencyGame_Config> &frequency_game_configs);
+std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_string);
+
 
 FrequencyGame_Config frequency_game_config_default(juce::String name);
 FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> files);

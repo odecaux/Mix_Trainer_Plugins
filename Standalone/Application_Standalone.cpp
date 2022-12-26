@@ -54,21 +54,27 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
     DBG(app_data.getFullPathName());
     auto store_directory = app_data.getChildFile("MixTrainer");
 
-
-    //load audio file list
-    [&] {
-        auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");
+    auto get_file_from_appdata = [&] (juce::String file_name) -> std::unique_ptr<juce::FileInputStream>
+    {
+        auto file_RENAME = store_directory.getChildFile(file_name);
         if (!file_RENAME.existsAsFile())
         {
             file_RENAME.create();
-            return;
+            return nullptr;
         }
         auto stream = file_RENAME.createInputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/audio_file_list.txt");
-            return;
+            DBG("couldn't open %appdata%/MixTrainer/" << file_name);
+            return nullptr;
         }
+        return stream;
+    };
+
+    //load audio file list
+    [&] {
+        auto stream = get_file_from_appdata("audio_file_list.txt");
+        if (!stream) return;
         //TODO performance : this loop is O^2/2
         while (! stream->isExhausted())
         {
@@ -80,72 +86,16 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
 
     //load frequency config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
-        if (!file_RENAME.existsAsFile())
-        {
-            file_RENAME.create();
-            return;
-        }
-        auto stream = file_RENAME.createInputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/frequency_game_configs.xml");
-            return;
-        }
+        auto stream = get_file_from_appdata("frequency_game_configs.xml");
+        if (!stream) return;
         juce::String xml_string = stream->readString();
-        juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
-        if(root_node.getType() != id_config_root)
-            return;
-        for (int i = 0; i < root_node.getNumChildren(); i++)
-        {
-            juce::ValueTree node = root_node.getChild(i);
-            if(node.getType() != id_config)
-                continue;
-            FrequencyGame_Config config = {
-                .title = node.getProperty(id_config_title, ""),
-
-                .input = (Frequency_Input)(int)node.getProperty(id_config_input, (int)Frequency_Input_Widget),
-                .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
-                .eq_quality = node.getProperty(id_config_quality, -1.0f),
-                .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
-                .min_f = node.getProperty(id_config_min_f, -1.0f),
-                .num_octaves = node.getProperty(id_config_num_octaves, -1.0f),
-
-                .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
-                .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),
-
-                .question_type = (Frequency_Question_Type)(int)node.getProperty(id_config_question_type, false),
-                .question_timeout_ms = node.getProperty(id_config_question_timeout_ms, -1),
-
-                .result_timeout_enabled = node.getProperty(id_config_result_timeout_enabled, false),
-                .result_timeout_ms = node.getProperty(id_config_result_timeout_ms, -1),
-            };
-            frequency_game_configs.push_back(config);
-        }
+        frequency_game_configs = frequency_game_deserialize(xml_string);
     }();
-    
-    if (frequency_game_configs.empty())
-    {
-        frequency_game_configs = { 
-            frequency_game_config_default("Default")
-        };
-    }
-    jassert(!frequency_game_configs.empty());
     
     //load previous results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("frequency_game_results.xml");
-        if (!file_RENAME.existsAsFile())
-        {
-            file_RENAME.create();
-            return;
-        }
-        auto stream = file_RENAME.createInputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/frequency_game_results.xml");
-            return;
-        }
+        auto stream = get_file_from_appdata("frequency_game_results.xml");
+        if (!stream) return;
         juce::String xml_string = stream->readString();
         juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
         if(root_node.getType() != id_results_root)
@@ -164,72 +114,17 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
     
     //load compressor config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
-        if (!file_RENAME.existsAsFile())
-        {
-            file_RENAME.create();
-            return;
-        }
-        auto stream = file_RENAME.createInputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/compressor_game_configs.xml");
-            return;
-        }
+        auto stream = get_file_from_appdata("compressor_game_configs.xml");
+        if (!stream) return;
         juce::String xml_string = stream->readString();
-        juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
-        if(root_node.getType() != id_config_root)
-            return;
-        for (int i = 0; i < root_node.getNumChildren(); i++)
-        {
-            juce::ValueTree node = root_node.getChild(i);
-            if(node.getType() != id_config)
-                continue;
-
-            CompressorGame_Config config = {
-                .title = node.getProperty(id_config_title, ""),
-
-                .threshold_active = node.getProperty(id_config_threshold_active, true),
-                .ratio_active = node.getProperty(id_config_ratio_active, true),
-                .attack_active = node.getProperty(id_config_attack_active, true),
-                .release_active = node.getProperty(id_config_release_active, true),
-
-                .threshold_values_db = deserialize_floats(node.getProperty(id_config_thresholds, "")),
-                .ratio_values = deserialize_floats(node.getProperty(id_config_ratios, "")),
-                .attack_values = deserialize_floats(node.getProperty(id_config_attacks, "")),
-                .release_values = deserialize_floats(node.getProperty(id_config_releases, "")),
-
-                .variant = (Compressor_Game_Variant)(int)node.getProperty(id_config_variant, 0),
-                .listens = node.getProperty(id_config_listen_count, 0),
-                .timeout_ms = node.getProperty(id_config_question_timeout_ms, 0),
-                .total_rounds = node.getProperty(id_config_total_rounds, 0),
-            };
-            compressor_game_configs.push_back(config);
-        }
+        compressor_game_configs = compressor_game_deserialize(xml_string);
     }();
     
-    if (compressor_game_configs.empty())
-    {
-        compressor_game_configs = { 
-            compressor_game_config_default("Default")
-        };
-    }
-    jassert(!compressor_game_configs.empty());
 
     //load previous results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("compressor_game_results.xml");
-        if (!file_RENAME.existsAsFile())
-        {
-            file_RENAME.create();
-            return;
-        }
-        auto stream = file_RENAME.createInputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/compressor_game_results.xml");
-            return;
-        }
+        auto stream = get_file_from_appdata("compressor_game_results.xml");
+        if (!stream) return;
         juce::String xml_string = stream->readString();
         juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
         if(root_node.getType() != id_results_root)
@@ -264,17 +159,25 @@ Application_Standalone::~Application_Standalone()
     DBG(app_data.getFullPathName());
     assert(app_data.exists() && app_data.isDirectory());
     auto store_directory = app_data.getChildFile("MixTrainer");
-    //save audio file list
-    [&] {
-        auto file_RENAME = store_directory.getChildFile("audio_file_list.txt");
+
+    auto get_file_stream_from_appdata = [&] (juce::String file_name) -> std::unique_ptr<juce::FileOutputStream>
+    {
+        auto file_RENAME = store_directory.getChildFile(file_name);
         auto stream = file_RENAME.createOutputStream();
         if (!stream->openedOk())
         {
-            DBG("couldn't open %appdata%/MixTrainer/audio_file_list.txt");
-            return;
+            DBG("couldn't open %appdata%/MixTrainer/" << file_name);
+            return nullptr;
         }
         stream->setPosition(0);
         stream->truncate();
+        return stream;
+    };
+
+    //save audio file list
+    [&] {
+        auto stream = get_file_stream_from_appdata("audio_file_list.txt");
+        if (!stream) return;
         for (const Audio_File &audio_file : audio_file_list.files)
         {
             *stream << audio_file.file.getFullPathName() << juce::newLine;
@@ -283,55 +186,15 @@ Application_Standalone::~Application_Standalone()
 
     //save frequency config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("frequency_game_configs.xml");
-        auto stream = file_RENAME.createOutputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/frequency_game_configs.xml");
-            return;
-        }
-        stream->setPosition(0);
-        stream->truncate();
-        juce::ValueTree root_node { id_config_root };
-        for (const FrequencyGame_Config& config : frequency_game_configs)
-        {
-            juce::ValueTree node = { id_config, {
-                { id_config_title,  config.title },
-
-                { id_config_input, config.input },
-                { id_config_gain, config.eq_gain_db },
-                { id_config_quality, config.eq_quality },
-                { id_config_window, config.initial_correct_answer_window },
-                { id_config_min_f, config.min_f },
-                { id_config_num_octaves, config.num_octaves },
-
-                { id_config_prelisten_type, config.prelisten_type },
-                { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
-
-                { id_config_question_type, config.question_type },
-                { id_config_question_timeout_ms, config.question_timeout_ms },
-
-                { id_config_result_timeout_enabled, config.result_timeout_enabled },
-                { id_config_result_timeout_ms, config.result_timeout_ms },
-            } };
-            root_node.addChild(node, -1, nullptr);
-        }
-        auto xml_string = root_node.toXmlString();
-        *stream << xml_string;
+        auto stream = get_file_stream_from_appdata("frequency_game_configs.xml");
+        *stream << frequency_game_serlialize(frequency_game_configs);
     }();
 
     
     //save frequency results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("frequency_game_results.xml");
-        auto stream = file_RENAME.createOutputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/frequency_game_results.xml");
-            return;
-        }
-        stream->setPosition(0);
-        stream->truncate();
+        auto stream = get_file_stream_from_appdata("frequency_game_results.xml");
+        if (!stream) return;
         juce::ValueTree root_node { id_results_root };
         for (const FrequencyGame_Results& result : frequency_game_results_history)
         {
@@ -348,54 +211,16 @@ Application_Standalone::~Application_Standalone()
     
     //save compressor config list
     [&] {
-        auto file_RENAME = store_directory.getChildFile("compressor_game_configs.xml");
-        auto stream = file_RENAME.createOutputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/compressor_game_configs.xml");
-            return;
-        }
-        stream->setPosition(0);
-        stream->truncate();
-        juce::ValueTree root_node { id_config_root };
-        for (const CompressorGame_Config& config : compressor_game_configs)
-        {
-            juce::ValueTree node = { id_config, {
-                { id_config_title,  config.title },
-                
-                { id_config_threshold_active, config.threshold_active },
-                { id_config_ratio_active, config.ratio_active },
-                { id_config_attack_active, config.attack_active },
-                { id_config_release_active, config.release_active },
-
-                { id_config_thresholds, serialize_floats(config.threshold_values_db) },
-                { id_config_ratios, serialize_floats(config.ratio_values) },
-                { id_config_attacks, serialize_floats(config.attack_values) },
-                { id_config_releases, serialize_floats(config.release_values) },
-
-                { id_config_variant, (int) config.variant },
-                { id_config_listen_count, config.listens },
-                { id_config_question_timeout_ms, config.timeout_ms },
-                { id_config_total_rounds, config.total_rounds }
-            }};
-            root_node.addChild(node, -1, nullptr);
-        }
-        auto xml_string = root_node.toXmlString();
-        *stream << xml_string;
+        auto stream = get_file_stream_from_appdata("compressor_game_configs.xml");
+        if (!stream) return;
+        *stream << compressor_game_serlialize(compressor_game_configs);
     }();
 
     
     //save previous results
     [&] {
-        auto file_RENAME = store_directory.getChildFile("compressor_game_results.xml");
-        auto stream = file_RENAME.createOutputStream();
-        if (!stream->openedOk())
-        {
-            DBG("couldn't open %appdata%/MixTrainer/compressor_game_results.xml");
-            return;
-        }
-        stream->setPosition(0);
-        stream->truncate();
+        auto stream = get_file_stream_from_appdata("compressor_game_results.xml");
+        if (!stream) return;
         juce::ValueTree root_node { id_results_root };
         for (const CompressorGame_Results& result : compressor_game_results_history)
         {
