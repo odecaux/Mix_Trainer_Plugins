@@ -1,78 +1,17 @@
 struct Audio_File_List 
-{
-    bool insert_file(juce::File file)
-    {
-        if (!file.existsAsFile())
-        {
-            DBG(file.getFullPathName() << " does not exist");
-            return false;
-        }
-        //can't have the same file twice
-        auto result = std::find_if(files.begin(), files.end(), [&] (const Audio_File &in) { return in.file == file; });
-        if (result != files.end())
-            return false;
-
-        //expensive though
-        auto * reader = format_manager.createReaderFor(file);
-        if (reader == nullptr)
-            return false;
-
-        std::vector<juce::Range<float>> max_by_channel{};
-        
-        max_by_channel.resize(reader->numChannels);
-        reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), reader->numChannels);
-        
-        float max_level = 0.0f;
-        for (juce::Range < float > channel_range : max_by_channel)
-        {
-            DBG(file.getFileNameWithoutExtension() << " : " << channel_range.getStart() << " to " << channel_range.getEnd());
-            max_level = std::max(max_level, std::abs(channel_range.getStart()));
-            max_level = std::max(max_level, std::abs(channel_range.getEnd()));
-        }
-        if (max_level <= 0.0F)
-            return false;
-        Audio_File new_audio_file = {
-            .file = file,
-            .title = file.getFileNameWithoutExtension(),
-            .loop_bounds = { 0, reader->lengthInSamples },
-            .max_level = max_level
-        };
-        files.emplace_back(std::move(new_audio_file));
-        selected.emplace_back(false);
-        delete reader;
-        return true;
-    }
-
-    void remove_files(const juce::SparseSet<int>& indices)
-    {
-        for (int i = static_cast<int>(files.size()); --i >= 0;)
-        {   
-            if (indices.contains(static_cast<int>(i)))
-            {
-                files.erase(files.begin() + i);
-                selected.erase(selected.begin() + i);
-            }
-        }
-    }
-
-    
-    std::vector<Audio_File> get_selected_list()
-    {
-        assert(files.size() == selected.size());
-        std::vector<Audio_File> selected_files;
-        for (auto i = 0; i < files.size(); i++)
-        {
-            if(selected[i])
-                selected_files.push_back(files[i]);
-        }
-        return selected_files;
-    }
-    
+{   
     juce::AudioFormatManager &format_manager;
     std::vector<Audio_File> files = {};
     std::vector<bool> selected;
 };
 
+
+bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioFormatManager &format_manager);
+void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet < int > & indices);
+std::vector<Audio_File> get_selected_list(Audio_File_List &audio_file_list);
+
+juce::String audio_file_list_serialize(const std::vector<Audio_File> &audio_file_list);
+std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string);
 
 //------------------------------------------------------------------------
 struct FilePlayer : juce::ChangeListener 

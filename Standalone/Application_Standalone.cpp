@@ -1,42 +1,146 @@
-static const juce::Identifier id_config_root = "configs";
-static const juce::Identifier id_config = "config";
-static const juce::Identifier id_config_title = "title";
-
-static const juce::Identifier id_config_variant = "variant";
-
-static const juce::Identifier id_config_total_rounds = "total_rounds";
-static const juce::Identifier id_config_listen_count = "listen_count";
-
-static const juce::Identifier id_config_thresholds = "thresholds";
-static const juce::Identifier id_config_ratios = "ratios";
-static const juce::Identifier id_config_attacks = "attacks";
-static const juce::Identifier id_config_releases = "releases";
-
-static const juce::Identifier id_config_threshold_active = "threshold_active";
-static const juce::Identifier id_config_ratio_active = "ratio_active";
-static const juce::Identifier id_config_attack_active = "attack_active";
-static const juce::Identifier id_config_release_active = "release_active";
-
-static const juce::Identifier id_config_input = "input";
-static const juce::Identifier id_config_gain = "gain";
-static const juce::Identifier id_config_quality = "q";
-static const juce::Identifier id_config_window = "window";
-static const juce::Identifier id_config_min_f = "min_f";
-static const juce::Identifier id_config_num_octaves = "num_octaves";
-
-static const juce::Identifier id_config_prelisten_type = "prelisten_type";
-static const juce::Identifier id_config_prelisten_timeout_ms = "prelisten_timeout_ms";
-
-static const juce::Identifier id_config_question_type = "question_type";
-static const juce::Identifier id_config_question_timeout_ms = "question_timeout_ms";
-
-static const juce::Identifier id_config_result_timeout_enabled = "result_timeout_enabled";
-static const juce::Identifier id_config_result_timeout_ms = "result_timeout_ms";
-
 static const juce::Identifier id_results_root = "results_history";
 static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
+
+static const juce::Identifier id_files_root = "audio_files";
+static const juce::Identifier id_file = "file";
+static const juce::Identifier id_file_name = "filename";
+static const juce::Identifier id_file_last_modification_time = "last_modification_time";
+static const juce::Identifier id_file_title = "title";
+static const juce::Identifier id_file_loop_bounds = "loop_bounds";
+static const juce::Identifier id_file_freq_bounds = "freq_bounds";
+static const juce::Identifier id_file_max_level = "max_level";
+
+Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioFormatManager &format_manager)
+{
+    //TODO sanity check ?
+    assert(audio_file.file.existsAsFile());
+    
+    //expensive though
+    auto * reader_ptr = format_manager.createReaderFor(audio_file.file);
+    auto reader = std::unique_ptr<juce::AudioFormatReader>(reader_ptr);
+    if (reader == nullptr)
+        return audio_file;
+
+    std::vector<juce::Range<float>> max_by_channel{};
+        
+    max_by_channel.resize(reader->numChannels);
+    reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), reader->numChannels);
+        
+    float max_level = 0.0f;
+    for (juce::Range < float > channel_range : max_by_channel)
+    {
+        DBG(audio_file.file.getFileNameWithoutExtension() << " : " << channel_range.getStart() << " to " << channel_range.getEnd());
+        max_level = std::max(max_level, std::abs(channel_range.getStart()));
+        max_level = std::max(max_level, std::abs(channel_range.getEnd()));
+    }
+    if (max_level <= 0.0F)
+        return audio_file;
+
+    audio_file.loop_bounds = { 0, reader->lengthInSamples };
+    audio_file.max_level = max_level;
+    return audio_file;
+}
+
+bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioFormatManager &format_manager)
+{
+    if (!file.existsAsFile())
+    {
+        DBG(file.getFullPathName() << " does not exist");
+        return false;
+    }
+    //can't have the same file twice
+    auto result = std::find_if(audio_file_list.files.begin(), audio_file_list.files.end(), [&] (const Audio_File &in) { return in.file == file; });
+    if (result != audio_file_list.files.end())
+        return false;
+
+    Audio_File new_audio_file = {
+        .file = file,
+        .last_modification_time = file.getLastModificationTime(),
+        .title = file.getFileNameWithoutExtension()
+    };
+    new_audio_file = audio_file_scan_length_and_max(new_audio_file, format_manager);
+
+    audio_file_list.files.emplace_back(std::move(new_audio_file));
+    audio_file_list.selected.emplace_back(false);
+    return true;
+}
+
+void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet<int>& indices)
+{
+    for (int i = static_cast<int>(audio_file_list.files.size()); --i >= 0;)
+    {   
+        if (indices.contains(static_cast<int>(i)))
+        {
+            audio_file_list.files.erase(audio_file_list.files.begin() + i);
+            audio_file_list.selected.erase(audio_file_list.selected.begin() + i);
+        }
+    }
+}
+
+    
+std::vector<Audio_File> get_selected_list(Audio_File_List &audio_file_list)
+{
+    assert(audio_file_list.files.size() == audio_file_list.selected.size());
+    std::vector<Audio_File> selected_files;
+    for (auto i = 0; i < audio_file_list.files.size(); i++)
+    {
+        if(audio_file_list.selected[i])
+            selected_files.push_back(audio_file_list.files[i]);
+    }
+    return selected_files;
+}
+
+juce::String audio_file_list_serialize(const std::vector<Audio_File> &audio_file_list)
+{
+    juce::ValueTree root_node { id_files_root };
+    for (const Audio_File& audio_file : audio_file_list)
+    {
+        std::vector<juce::int64> loop_bounds { audio_file.loop_bounds.getStart(), audio_file.loop_bounds.getEnd() };
+        std::vector<int> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
+        juce::ValueTree node = { id_file, {
+            { id_file_name,  audio_file.file.getFullPathName() },
+            { id_file_last_modification_time, audio_file.last_modification_time.toMilliseconds() },
+            { id_file_title, audio_file.title },
+            { id_file_loop_bounds, serialize_vector(loop_bounds) },
+            { id_file_freq_bounds, serialize_vector(freq_bounds) },
+            { id_file_max_level, audio_file.max_level }
+        }};
+        root_node.addChild(node, -1, nullptr);
+    }
+    return root_node.toXmlString();
+}
+
+std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
+{
+    std::vector<Audio_File> audio_files{};
+    juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
+    if (root_node.getType() != id_files_root)
+        return {};
+    
+    for (int i = 0; i < root_node.getNumChildren(); i++)
+    {
+        juce::ValueTree node = root_node.getChild(i);
+        if(node.getType() != id_file)
+            continue;
+
+        juce::String file_name = node.getProperty(id_file_name);
+        auto loop_bounds = deserialize_vector<juce::int64>(node.getProperty(id_file_loop_bounds, ""));
+        auto freq_bounds = deserialize_vector<int>(node.getProperty(id_file_freq_bounds, ""));
+        juce::int64 modification_time = node.getProperty(id_file_last_modification_time, 0);
+        Audio_File audio_file = {
+            .file = { file_name },
+            .last_modification_time = juce::Time(modification_time),
+            .title = node.getProperty(id_file_title, ""),
+            .loop_bounds = { loop_bounds[0], loop_bounds[1] },
+            .freq_bounds = { freq_bounds[0], freq_bounds[1] },
+            .max_level = node.getProperty(id_file_max_level, 1.0f)
+        };
+        audio_files.push_back(audio_file);
+    }
+    return audio_files;
+}
 
 Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *mainComponent)
 :   player(formatManager),
@@ -73,15 +177,12 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
 
     //load audio file list
     [&] {
-        auto stream = get_file_from_appdata("audio_file_list.txt");
+        auto stream = get_file_from_appdata("audio_files.xml");
         if (!stream) return;
-        //TODO performance : this loop is O^2/2
-        while (! stream->isExhausted())
-        {
-            auto line = stream->readNextLine();
-            auto audio_file_path = juce::File(line);
-            audio_file_list.insert_file(audio_file_path);
-        }
+        juce::String xml_string = stream->readString();
+        auto file_list = audio_file_list_deserialize(xml_string);
+        audio_file_list.files = std::move(file_list);
+        audio_file_list.selected = std::vector<bool>(audio_file_list.files.size(), false);
     }();
 
     //load frequency config list
@@ -176,12 +277,9 @@ Application_Standalone::~Application_Standalone()
 
     //save audio file list
     [&] {
-        auto stream = get_file_stream_from_appdata("audio_file_list.txt");
+        auto stream = get_file_stream_from_appdata("audio_files.xml");
         if (!stream) return;
-        for (const Audio_File &audio_file : audio_file_list.files)
-        {
-            *stream << audio_file.file.getFullPathName() << juce::newLine;
-        }
+        *stream << audio_file_list_serialize(audio_file_list.files);
     }();
 
     //save frequency config list
@@ -213,7 +311,7 @@ Application_Standalone::~Application_Standalone()
     [&] {
         auto stream = get_file_stream_from_appdata("compressor_game_configs.xml");
         if (!stream) return;
-        *stream << compressor_game_serlialize(compressor_game_configs);
+        *stream << compressor_game_serialize(compressor_game_configs);
     }();
 
     
@@ -332,7 +430,7 @@ void Application_Standalone::to_frequency_game()
     };
     
     auto new_game_state = frequency_game_state_init(frequency_game_configs[current_frequency_game_config_idx], 
-                                                    audio_file_list.get_selected_list());
+                                                    get_selected_list(audio_file_list));
     frequency_game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
@@ -426,7 +524,7 @@ void Application_Standalone::to_compressor_game()
         juce::ignoreUnused(effects);
     };
     
-    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], audio_file_list.get_selected_list());
+    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], get_selected_list(audio_file_list));
     compressor_game_io = compressor_game_io_init(new_game_state);
 
     auto on_quit = [this] { 

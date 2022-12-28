@@ -769,10 +769,10 @@ juce::String compressor_game_serialize(const std::vector<CompressorGame_Config> 
             { id_config_attack_active, config.attack_active },
             { id_config_release_active, config.release_active },
 
-            { id_config_thresholds, serialize_floats(config.threshold_values_db) },
-            { id_config_ratios, serialize_floats(config.ratio_values) },
-            { id_config_attacks, serialize_floats(config.attack_values) },
-            { id_config_releases, serialize_floats(config.release_values) },
+            { id_config_thresholds, serialize_vector<float>(config.threshold_values_db) },
+            { id_config_ratios, serialize_vector<float>(config.ratio_values) },
+            { id_config_attacks, serialize_vector<float>(config.attack_values) },
+            { id_config_releases, serialize_vector<float>(config.release_values) },
 
             { id_config_variant, (int) config.variant },
             { id_config_listen_count, config.listens },
@@ -804,10 +804,10 @@ std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_
             .attack_active = node.getProperty(id_config_attack_active, true),
             .release_active = node.getProperty(id_config_release_active, true),
 
-            .threshold_values_db = deserialize_floats(node.getProperty(id_config_thresholds, "")),
-            .ratio_values = deserialize_floats(node.getProperty(id_config_ratios, "")),
-            .attack_values = deserialize_floats(node.getProperty(id_config_attacks, "")),
-            .release_values = deserialize_floats(node.getProperty(id_config_releases, "")),
+            .threshold_values_db = deserialize_vector<float>(node.getProperty(id_config_thresholds, "")),
+            .ratio_values = deserialize_vector<float>(node.getProperty(id_config_ratios, "")),
+            .attack_values = deserialize_vector<float>(node.getProperty(id_config_attacks, "")),
+            .release_values = deserialize_vector<float>(node.getProperty(id_config_releases, "")),
 
             .variant = (Compressor_Game_Variant)(int)node.getProperty(id_config_variant, 0),
             .listens = node.getProperty(id_config_listen_count, 0),

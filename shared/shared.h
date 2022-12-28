@@ -77,7 +77,10 @@ struct Channel_DSP_State {
 
 struct Audio_File
 {
+    bool is_valid;
     juce::File file;
+    //juce::int64 hash_code;
+    juce::Time last_modification_time;
     juce::String title;
     juce::Range<juce::int64> loop_bounds;
     juce::Range<int> freq_bounds;
@@ -1070,5 +1073,37 @@ private:
     juce::ListBox list_comp;
     std::function<void(int)> row_on_mouse_down;
 };
+
+
+
+template <typename Type>
+Type string_to(juce::String);
+
+
+
+template <typename Type>
+std::vector<Type> deserialize_vector(juce::String str)
+{
+    juce::StringArray tokens = juce::StringArray::fromTokens(str, false);
+           
+    std::vector<Type    > values{};
+    for (const auto& token : tokens)
+    {
+        values.emplace_back();
+    }
+    return values;
+}
+
+template <typename Type>
+juce::String serialize_vector(std::vector<Type> values)
+{
+    juce::String str{};
+    for (const auto value : values)
+    {
+        str += juce::String(value) + " ";
+    }
+    str = str.dropLastCharacters(1);
+    return str;
+}
 
 #endif //SHARED_H

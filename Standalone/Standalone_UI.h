@@ -461,13 +461,13 @@ public:
                 //frequency_bounds_slider.setMinAndMaxValues();
                 //nochekin;
             };
-            file_list_component.insert_file_callback = [&audio_file_list] (auto new_file)
+            file_list_component.insert_file_callback = [&audio_file_list, &format_manager = filePlayer.format_manager] (auto new_file)
             {
-                return audio_file_list.insert_file(new_file);
+                return insert_file(audio_file_list, new_file, format_manager);
             };
             file_list_component.remove_files_callback = [&audio_file_list] (const auto &files_to_remove)
             {
-                audio_file_list.remove_files(files_to_remove);
+                remove_files(audio_file_list, files_to_remove);
             };
             addAndMakeVisible(file_list_component);
         }

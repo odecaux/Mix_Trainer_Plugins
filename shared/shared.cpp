@@ -116,3 +116,19 @@ size_t db_to_slider_pos(double db, const std::vector<double> &db_values)
     jassertfalse;
     return 0;
 }
+
+template<>
+float string_to(juce::String string)
+{
+    return string.getFloatValue();
+}
+template<>
+int string_to(juce::String string)
+{
+    return string.getIntValue();
+}
+template<>
+juce::int64 string_to(juce::String string)
+{
+    return string.getLargeIntValue();
+}
