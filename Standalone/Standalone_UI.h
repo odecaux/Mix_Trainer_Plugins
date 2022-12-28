@@ -223,6 +223,73 @@ private:
 
 
 
+class Audio_File_Chooser : public juce::Component
+{
+public:
+    Audio_File_Chooser(std::function<void()> onBackClicked,
+                       std::function<void()> onBeginClicked,
+                       Audio_File_List *audio_file_list)
+    : list_comp(true)
+    {
+        auto validate_next_button = [&] (const std::vector<bool> & new_selection)
+        {
+            if (std::any_of(new_selection.begin(), new_selection.end(), [](bool val) { return val; }))
+                bottom.next_button.setEnabled(true);
+            else
+                bottom.next_button.setEnabled(false);
+        };
+        
+        std::vector<juce::String> file_names{};
+        std::vector<bool> initial_selection{};
+        for (juce::int64 hash : audio_file_list->order)
+        {
+            file_names.push_back(audio_file_list->files.at(hash).title);
+            initial_selection.push_back(audio_file_list->selected.at(hash));
+        }
+        validate_next_button(initial_selection);
+
+        list_comp.selection_changed_callback = 
+            [audio_file_list, selection_changed = std::move(validate_next_button)] (const std::vector<bool> & new_selection)
+        {
+            assert(new_selection.size() == audio_file_list->order.size());
+            for (int i = 0; i < new_selection.size(); i++)
+            {
+                juce::int64 hash = audio_file_list->order[i];
+                audio_file_list->selected.at(hash) = new_selection[i];
+            }
+            selection_changed(new_selection);
+        };
+        list_comp.set_rows(file_names, initial_selection);
+        
+        header.onBackClicked = std::move(onBackClicked);
+        
+        game_ui_header_update(&header, "Select active files", "");
+        game_ui_bottom_update(&bottom, true, "Next", Mix_Hidden, {});
+        bottom.next_button.onClick = std::move(onBeginClicked);
+        //TODO pas foufifou, ça devrait faire partie de l'API non ?
+        addAndMakeVisible(header);
+        addAndMakeVisible(list_comp);
+        addAndMakeVisible(bottom);
+    }
+
+    void resized() override
+    {
+        auto r = getLocalBounds().reduced(4);
+        auto header_bounds = r.removeFromTop(header.getHeight());
+        header.setBounds(header_bounds);
+        auto bottom_bounds = r.removeFromBottom(bottom.getHeight());
+        bottom.setBounds(bottom_bounds);
+
+        list_comp.setBounds(r);
+    }
+
+private:
+    GameUI_Header header;
+    Selection_List list_comp;
+    GameUI_Bottom bottom;
+};
+
+
 //------------------------------------------------------------------------
 class Audio_Files_ListBox : 
     public juce::Component,
@@ -230,8 +297,8 @@ class Audio_Files_ListBox :
     public juce::FileDragAndDropTarget
 {
 public:
-    Audio_Files_ListBox(std::vector<Audio_File> &audioFiles) :
-        files(audioFiles)
+    Audio_Files_ListBox(std::vector<Audio_File> audioFiles) :
+        files(std::move(audioFiles))
     {
         file_list_component.setMultipleSelectionEnabled(true);
         file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
@@ -281,9 +348,9 @@ public:
     {
         for (const auto &filename : dropped_files_names)
         {
-            if (insert_file_callback(juce::File(filename)))
-                file_list_component.updateContent();
+            insert_file_callback(juce::File(filename));
         }
+        file_list_component.updateContent();
     }
 
     
@@ -320,7 +387,10 @@ public:
                 row_to_select = row_to_delete - 1;
             else 
                 row_to_select = row_to_delete;
+            bool should_trigger_manually = row_to_select == file_list_component.getSelectedRow();
             file_list_component.selectRow(row_to_select);
+            if(should_trigger_manually)
+                selectedRowsChanged(row_to_select);
         }
     }
 
@@ -351,74 +421,21 @@ public:
             selected_file_changed_callback({});
         }
     }
+
+    void updateFileList(std::vector<Audio_File> new_files)
+    {
+        files = std::move(new_files);
+    }
+
     std::function < bool(juce::File file) > insert_file_callback;
     std::function < void(const juce::SparseSet<int>&) > remove_files_callback;
     std::function< void(std::optional<Audio_File>)> selected_file_changed_callback;
 
 private:
-    std::vector<Audio_File> &files;
+    std::vector<Audio_File> files;
     juce::ListBox file_list_component = { {}, this};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_Files_ListBox)
-};
-
-
-class Audio_File_Chooser : public juce::Component
-{
-public:
-    Audio_File_Chooser(std::function<void()> onBackClicked,
-                       std::function<void()> onBeginClicked,
-                       Audio_File_List *fileList)
-    : list_comp(true)
-    {
-        auto update_ui = [&] (const std::vector<bool> & new_selection)
-        {
-            if (std::any_of(new_selection.begin(), new_selection.end(), [](bool val) { return val; }))
-                bottom.next_button.setEnabled(true);
-            else
-                bottom.next_button.setEnabled(false);
-        };
-        update_ui(fileList->selected);
-
-        list_comp.selection_changed_callback = 
-            [fileList, selection_changed = std::move(update_ui)] (const std::vector<bool> & new_selection)
-        {
-            fileList->selected = new_selection;
-            selection_changed(new_selection);
-        };
-        std::vector<juce::String> file_names{};
-        for (const Audio_File& file : fileList->files)
-        {
-            file_names.push_back(file.title);
-        }
-        list_comp.set_rows(file_names, fileList->selected);
-        
-        header.onBackClicked = std::move(onBackClicked);
-        
-        game_ui_header_update(&header, "Select active files", "");
-        game_ui_bottom_update(&bottom, true, "Next", Mix_Hidden, {});
-        bottom.next_button.onClick = std::move(onBeginClicked);
-        //TODO pas foufifou, ça devrait faire partie de l'API non ?
-        addAndMakeVisible(header);
-        addAndMakeVisible(list_comp);
-        addAndMakeVisible(bottom);
-    }
-
-    void resized() override
-    {
-        auto r = getLocalBounds().reduced(4);
-        auto header_bounds = r.removeFromTop(header.getHeight());
-        header.setBounds(header_bounds);
-        auto bottom_bounds = r.removeFromBottom(bottom.getHeight());
-        bottom.setBounds(bottom_bounds);
-
-        list_comp.setBounds(r);
-    }
-
-private:
-    GameUI_Header header;
-    Selection_List list_comp;
-    GameUI_Bottom bottom;
 };
 
 
@@ -433,7 +450,7 @@ public:
                               Audio_File_List &audio_file_list,
                               std::function < void() > onClickBack)
     :  player(filePlayer),
-       file_list_component(audio_file_list.files)
+       file_list_component(get_ordered_audio_files(audio_file_list))
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -444,7 +461,8 @@ public:
         }
 
         {
-            file_list_component.selected_file_changed_callback = [&] (std::optional<Audio_File> new_selected_file)
+            file_list_component.selected_file_changed_callback = 
+                [&] (std::optional<Audio_File> new_selected_file)
             {
                 if (new_selected_file)
                 {
@@ -461,13 +479,20 @@ public:
                 //frequency_bounds_slider.setMinAndMaxValues();
                 //nochekin;
             };
-            file_list_component.insert_file_callback = [&audio_file_list, &format_manager = filePlayer.format_manager] (auto new_file)
+            file_list_component.insert_file_callback = 
+                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer.format_manager] 
+                (auto new_file)
             {
-                return insert_file(audio_file_list, new_file, format_manager);
+                bool succeeded = insert_file(audio_file_list, new_file, format_manager);
+                file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
+                return succeeded;
             };
-            file_list_component.remove_files_callback = [&audio_file_list] (const auto &files_to_remove)
+            file_list_component.remove_files_callback = 
+                [&file_list_component = this->file_list_component, &audio_file_list] 
+                (const auto &files_to_remove)
             {
                 remove_files(audio_file_list, files_to_remove);
+                file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
             };
             addAndMakeVisible(file_list_component);
         }

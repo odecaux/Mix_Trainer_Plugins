@@ -1,16 +1,17 @@
 struct Audio_File_List 
 {   
-    juce::AudioFormatManager &format_manager;
-    std::vector<Audio_File> files = {};
-    std::vector<bool> selected;
+    std::unordered_map<juce::int64, Audio_File> files;
+    std::unordered_map<juce::int64, bool> selected;
+    std::vector<juce::int64> order;
 };
 
 
 bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioFormatManager &format_manager);
 void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet < int > & indices);
 std::vector<Audio_File> get_selected_list(Audio_File_List &audio_file_list);
+std::vector<Audio_File> get_ordered_audio_files(Audio_File_List &audio_file_list);
 
-juce::String audio_file_list_serialize(const std::vector<Audio_File> &audio_file_list);
+juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list);
 std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string);
 
 //------------------------------------------------------------------------

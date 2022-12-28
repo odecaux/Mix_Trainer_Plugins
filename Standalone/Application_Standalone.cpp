@@ -50,9 +50,9 @@ bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioF
         DBG(file.getFullPathName() << " does not exist");
         return false;
     }
+    juce::int64 hash = file.hashCode64();
     //can't have the same file twice
-    auto result = std::find_if(audio_file_list.files.begin(), audio_file_list.files.end(), [&] (const Audio_File &in) { return in.file == file; });
-    if (result != audio_file_list.files.end())
+    if (audio_file_list.files.contains(hash))
         return false;
 
     Audio_File new_audio_file = {
@@ -62,8 +62,10 @@ bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioF
     };
     new_audio_file = audio_file_scan_length_and_max(new_audio_file, format_manager);
 
-    audio_file_list.files.emplace_back(std::move(new_audio_file));
-    audio_file_list.selected.emplace_back(false);
+    audio_file_list.files.emplace(hash, std::move(new_audio_file));
+    audio_file_list.selected.emplace(hash, false);
+    audio_file_list.order.emplace_back(hash);
+    //TODO assert sizes, assert emplaces
     return true;
 }
 
@@ -73,8 +75,11 @@ void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet<int>& 
     {   
         if (indices.contains(static_cast<int>(i)))
         {
-            audio_file_list.files.erase(audio_file_list.files.begin() + i);
-            audio_file_list.selected.erase(audio_file_list.selected.begin() + i);
+            //TODO assert
+            juce::int64 hash = audio_file_list.order[i];
+            audio_file_list.files.erase(hash);
+            audio_file_list.selected.erase(hash);
+            audio_file_list.order.erase(audio_file_list.order.begin() + i);
         }
     }
 }
@@ -83,20 +88,34 @@ void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet<int>& 
 std::vector<Audio_File> get_selected_list(Audio_File_List &audio_file_list)
 {
     assert(audio_file_list.files.size() == audio_file_list.selected.size());
+    assert(audio_file_list.files.size() == audio_file_list.order.size());
     std::vector<Audio_File> selected_files;
-    for (auto i = 0; i < audio_file_list.files.size(); i++)
+    for (juce::int64 hash : audio_file_list.order)
     {
-        if(audio_file_list.selected[i])
-            selected_files.push_back(audio_file_list.files[i]);
+        if(audio_file_list.selected.at(hash))
+            selected_files.push_back(audio_file_list.files.at(hash));
     }
     return selected_files;
 }
 
-juce::String audio_file_list_serialize(const std::vector<Audio_File> &audio_file_list)
+std::vector<Audio_File> get_ordered_audio_files(Audio_File_List &audio_file_list)
+{
+    std::vector<Audio_File> files{};
+    files.reserve(audio_file_list.order.size());
+    for (int i = 0; i < audio_file_list.order.size(); i++)
+    {
+        juce::int64 hash = audio_file_list.order[i];
+        files.push_back(audio_file_list.files.at(hash));
+    }
+    return files;
+}
+
+juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list)
 {
     juce::ValueTree root_node { id_files_root };
-    for (const Audio_File& audio_file : audio_file_list)
+    for (juce::int64 hash : audio_file_list.order)
     {
+        const auto& audio_file = audio_file_list.files.at(hash);
         std::vector<juce::int64> loop_bounds { audio_file.loop_bounds.getStart(), audio_file.loop_bounds.getEnd() };
         std::vector<int> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
         juce::ValueTree node = { id_file, {
@@ -151,7 +170,6 @@ std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
 
 Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *mainComponent)
 :   player(formatManager),
-    audio_file_list{formatManager},
     main_component(mainComponent)
 {
 
@@ -187,14 +205,22 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         auto stream = get_file_from_appdata("audio_files.xml");
         if (!stream) return;
         juce::String xml_string = stream->readString();
-        auto file_list = audio_file_list_deserialize(xml_string);
-        audio_file_list.files = std::move(file_list);
-        audio_file_list.selected = std::vector<bool>(audio_file_list.files.size(), false);
-        for (auto& file : audio_file_list.files)
+        auto file_vec = audio_file_list_deserialize(xml_string);
+        audio_file_list.files.reserve(file_vec.size());
+        audio_file_list.selected.reserve(file_vec.size());
+        audio_file_list.order.reserve(file_vec.size());
+        for (const auto& audio_file : file_vec)
         {
-            if (file.file.getLastModificationTime().toMilliseconds() > file.last_modification_time.toMilliseconds())
+            juce::int64 hash = audio_file.file.hashCode64();
+            audio_file_list.files.emplace(hash, audio_file);
+            audio_file_list.selected.emplace(hash, false);
+            audio_file_list.order.emplace_back(hash);
+        }
+        for (auto& [hash, audio_file] : audio_file_list.files)
+        {
+            if (audio_file.file.getLastModificationTime().toMilliseconds() > audio_file.last_modification_time.toMilliseconds())
             {
-                file = audio_file_scan_length_and_max(file, formatManager);
+                audio_file = audio_file_scan_length_and_max(audio_file, formatManager);
             }
         }
     }();
@@ -293,7 +319,7 @@ Application_Standalone::~Application_Standalone()
     [&] {
         auto stream = get_file_stream_from_appdata("audio_files.xml");
         if (!stream) return;
-        *stream << audio_file_list_serialize(audio_file_list.files);
+        *stream << audio_file_list_serialize(audio_file_list);
     }();
 
     //save frequency config list
