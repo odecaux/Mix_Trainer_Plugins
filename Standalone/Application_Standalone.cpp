@@ -126,11 +126,18 @@ std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
             continue;
 
         juce::String file_name = node.getProperty(id_file_name);
+        auto file = juce::File{ file_name };
+        if(!file.existsAsFile())
+            continue;
         auto loop_bounds = deserialize_vector<juce::int64>(node.getProperty(id_file_loop_bounds, ""));
+        if(loop_bounds.size() != 2)
+            continue;
         auto freq_bounds = deserialize_vector<int>(node.getProperty(id_file_freq_bounds, ""));
+        if(freq_bounds.size() != 2)
+            continue;
         juce::int64 modification_time = node.getProperty(id_file_last_modification_time, 0);
         Audio_File audio_file = {
-            .file = { file_name },
+            .file = file,
             .last_modification_time = juce::Time(modification_time),
             .title = node.getProperty(id_file_title, ""),
             .loop_bounds = { loop_bounds[0], loop_bounds[1] },
@@ -183,6 +190,13 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         auto file_list = audio_file_list_deserialize(xml_string);
         audio_file_list.files = std::move(file_list);
         audio_file_list.selected = std::vector<bool>(audio_file_list.files.size(), false);
+        for (auto& file : audio_file_list.files)
+        {
+            if (file.file.getLastModificationTime().toMilliseconds() > file.last_modification_time.toMilliseconds())
+            {
+                file = audio_file_scan_length_and_max(file, formatManager);
+            }
+        }
     }();
 
     //load frequency config list
