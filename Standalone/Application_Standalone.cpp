@@ -11,6 +11,7 @@ static const juce::Identifier id_file_title = "title";
 static const juce::Identifier id_file_loop_bounds = "loop_bounds";
 static const juce::Identifier id_file_freq_bounds = "freq_bounds";
 static const juce::Identifier id_file_max_level = "max_level";
+static const juce::Identifier id_file_length_samples = "length_samples";
 
 Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioFormatManager &format_manager)
 {
@@ -23,7 +24,7 @@ Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioForm
     if (reader == nullptr)
         return audio_file;
 
-    std::vector<juce::Range<float>> max_by_channel{};
+    std::vector<juce::Range < float> > max_by_channel{};
         
     max_by_channel.resize(reader->numChannels);
     reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), reader->numChannels);
@@ -38,8 +39,9 @@ Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioForm
     if (max_level <= 0.0F)
         return audio_file;
 
-    audio_file.loop_bounds = { 0, reader->lengthInSamples };
+    audio_file.loop_bounds_samples = { 0, reader->lengthInSamples };
     audio_file.max_level = max_level;
+    audio_file.length_samples = reader->lengthInSamples;
     return audio_file;
 }
 
@@ -116,7 +118,7 @@ juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list)
     for (juce::int64 hash : audio_file_list.order)
     {
         const auto& audio_file = audio_file_list.files.at(hash);
-        std::vector<juce::int64> loop_bounds { audio_file.loop_bounds.getStart(), audio_file.loop_bounds.getEnd() };
+        std::vector<juce::int64> loop_bounds { audio_file.loop_bounds_samples.getStart(), audio_file.loop_bounds_samples.getEnd() };
         std::vector<int> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
         juce::ValueTree node = { id_file, {
             { id_file_name,  audio_file.file.getFullPathName() },
@@ -124,7 +126,8 @@ juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list)
             { id_file_title, audio_file.title },
             { id_file_loop_bounds, serialize_vector(loop_bounds) },
             { id_file_freq_bounds, serialize_vector(freq_bounds) },
-            { id_file_max_level, audio_file.max_level }
+            { id_file_max_level, audio_file.max_level },
+            { id_file_length_samples, audio_file.length_samples }
         }};
         root_node.addChild(node, -1, nullptr);
     }
@@ -159,9 +162,10 @@ std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
             .file = file,
             .last_modification_time = juce::Time(modification_time),
             .title = node.getProperty(id_file_title, ""),
-            .loop_bounds = { loop_bounds[0], loop_bounds[1] },
+            .loop_bounds_samples = { loop_bounds[0], loop_bounds[1] },
             .freq_bounds = { freq_bounds[0], freq_bounds[1] },
-            .max_level = node.getProperty(id_file_max_level, 1.0f)
+            .max_level = node.getProperty(id_file_max_level, 1.0f),
+            .length_samples = node.getProperty(id_file_length_samples, 0),
         };
         audio_files.push_back(audio_file);
     }
@@ -615,37 +619,34 @@ FilePlayer::~FilePlayer()
 
 bool FilePlayer::load_file_into_transport (const Audio_File& audio_file)
 {
-    // unload the previous file source and delete it..
     transport_source.stop();
-    transport_source.setSource (nullptr);
+    transport_source.setSource(nullptr);
     current_reader_source.reset();
 
-    const auto source = makeInputSource (audio_file.file);
+    const auto source = makeInputSource(audio_file.file);
 
     if (source == nullptr)
         return false;
 
-    auto stream = juce::rawToUniquePtr (source->createInputStream());
+    auto stream = juce::rawToUniquePtr(source->createInputStream());
 
     if (stream == nullptr)
         return false;
 
-    auto reader = juce::rawToUniquePtr (format_manager.createReaderFor (std::move (stream)));
+    auto reader = juce::rawToUniquePtr(format_manager.createReaderFor(std::move(stream)));
 
     if (reader == nullptr)
         return false;
 
-    current_reader_source = std::make_unique<juce::AudioFormatReaderSource> (reader.release(), true);
+    current_reader_source = std::make_unique<juce::AudioFormatReaderSource>(reader.release(), true);
     current_reader_source->setLooping(true);
 
-    
     dsp_callback.push_normalization_volume(1.0f / audio_file.max_level);
 
-    // ..and plug it into our transport source
-    transport_source.setSource (current_reader_source.get(),
-                            32768,                   // tells it to buffer this many samples ahead
-                            &read_ahead_thread,                 // this is the background thread to use for reading-ahead
-                            current_reader_source->getAudioFormatReader()->sampleRate);     // allows for sample rate correction
+    transport_source.setSource(current_reader_source.get(),
+                               32768,
+                               &read_ahead_thread,
+                               current_reader_source->getAudioFormatReader()->sampleRate);
     return true;
 }
 

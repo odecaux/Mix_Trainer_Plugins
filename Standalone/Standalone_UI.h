@@ -13,7 +13,7 @@ class Main_Component;
 
 inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
 {
-    if (auto* v4 = dynamic_cast<juce::LookAndFeel_V4*> (&juce::LookAndFeel::getDefaultLookAndFeel()))
+    if (auto* v4 = dynamic_cast<juce::LookAndFeel_V4*>(&juce::LookAndFeel::getDefaultLookAndFeel()))
         return v4->getCurrentColourScheme().getUIColour (uiColour);
 
     return fallback;
@@ -21,21 +21,21 @@ inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::
 
 inline std::unique_ptr<juce::InputSource> makeInputSource (const juce::File& file)
 {
-    return std::make_unique<juce::FileInputSource> (file);
+    return std::make_unique < juce::FileInputSource > (file);
 }
 
 
 //==============================================================================
 class Thumbnail  :
     public juce::Component,
-    public juce::ChangeListener,
-    public juce::ChangeBroadcaster,
-    private juce::ScrollBar::Listener,
-    private juce::Timer
+public juce::ChangeListener,
+public juce::ChangeBroadcaster,
+private juce::ScrollBar::Listener,
+private juce::Timer
 {
 public:
     Thumbnail (juce::AudioFormatManager& formatManager,
-                       juce::AudioTransportSource& source)
+               juce::AudioTransportSource& source)
     : transport_source (source),
       thumbnail (512, formatManager, thumbnail_cache)
     {
@@ -45,9 +45,12 @@ public:
         scrollbar.setRangeLimits (visible_range);
         scrollbar.setAutoHide (false);
         scrollbar.addListener (this);
-
+        
         current_position_marker.setFill (juce::Colours::white.withAlpha (0.85f));
         addAndMakeVisible (current_position_marker);
+        
+        current_bounds_marker.setFill (juce::Colours::yellow.withAlpha (0.3f));
+        addAndMakeVisible (current_bounds_marker);
     }
 
     ~Thumbnail() override
@@ -56,16 +59,17 @@ public:
         thumbnail.removeChangeListener (this);
     }
 
-    void setFile (const juce::File& file)
+    void setFile (const Audio_File& audio_file)
     {
-        if (auto inputSource = makeInputSource (file))
+        if (auto inputSource = makeInputSource (audio_file.file))
         {
             thumbnail.setSource (inputSource.release());
 
-            juce::Range<double> newRange (0.0, thumbnail.getTotalLength());
-            scrollbar.setRangeLimits (newRange);
-            setRange (newRange);
-
+            juce::Range < double > newVisibleRange (0.0, thumbnail.getTotalLength());
+            scrollbar.setRangeLimits (newVisibleRange);
+            setVisibleRange (newVisibleRange);
+            loop_bounds = audio_file.loop_bounds_samples;
+            file_length = audio_file.length_samples;
             startTimerHz (40);
         }
     }
@@ -73,6 +77,9 @@ public:
     void removeFile()
     {
         thumbnail.setSource(nullptr);
+        //triggers changed
+        loop_bounds = { -1, -1 };
+        file_length = -1;
     }
 
     void setZoomFactor (double amount)
@@ -82,21 +89,17 @@ public:
             auto newScale = juce::jmax (0.001, thumbnail.getTotalLength() * (1.0 - juce::jlimit (0.0, 0.99, amount)));
             auto timeAtCentre = xToTime ((float) getWidth() / 2.0f);
 
-            setRange ({ timeAtCentre - newScale * 0.5, timeAtCentre + newScale * 0.5 });
+            setVisibleRange ( { timeAtCentre - newScale * 0.5, timeAtCentre + newScale * 0.5 });
         }
     }
 
-    void setRange (juce::Range<double> newRange)
+    void setVisibleRange (juce::Range < double > new_visible_range)
     {
-        visible_range = newRange;
+        visible_range = new_visible_range;
         scrollbar.setCurrentRange (visible_range);
         updateCursorPosition();
+        updateFileBoundsPosition();
         repaint();
-    }
-
-    void setFollowsTransport (bool shouldFollow)
-    {
-        is_following_transport = shouldFollow;
     }
 
     void paint (juce::Graphics& g) override
@@ -106,10 +109,10 @@ public:
 
         if (thumbnail.getTotalLength() > 0.0)
         {
-            auto thumbArea = getLocalBounds();
+            auto thumbnail_area = getLocalBounds();
 
-            thumbArea.removeFromBottom (scrollbar.getHeight() + 4);
-            thumbnail.drawChannels (g, thumbArea.reduced (2),
+            thumbnail_area.removeFromBottom (scrollbar.getHeight() + 4);
+            thumbnail.drawChannels (g, thumbnail_area.reduced (2),
                                     visible_range.getStart(), visible_range.getEnd(), 1.0f);
         }
         else
@@ -130,18 +133,17 @@ public:
         repaint();
     }
 
-    void mouseDown (const juce::MouseEvent& e) override
+    void mouseDown(const juce::MouseEvent& e) override
     {
-        mouseDrag (e);
+        mouseDrag(e);
     }
 
-    void mouseDrag (const juce::MouseEvent& e) override
+    void mouseDrag(const juce::MouseEvent& e) override
     {
-        if (canMoveTransport())
-            transport_source.setPosition (juce::jmax (0.0, xToTime ((float) e.x)));
+        transport_source.setPosition(std::max (0.0, xToTime((float) e.x)));
     }
 
-    void mouseUp (const juce::MouseEvent&) override
+    void mouseUp(const juce::MouseEvent&) override
     {
         transport_source.start();
     }
@@ -153,30 +155,34 @@ public:
             auto newStart = visible_range.getStart() - wheel.deltaX * (visible_range.getLength()) / 10.0;
             newStart = juce::jlimit (0.0, juce::jmax (0.0, thumbnail.getTotalLength() - (visible_range.getLength())), newStart);
 
-            if (canMoveTransport())
-                setRange ({ newStart, newStart + visible_range.getLength() });
+            setVisibleRange ( { newStart, newStart + visible_range.getLength() });
 
             if (wheel.deltaY != 0.0f)
             {
-                //Set value directly
-                //zoomSlider.setValue (zoomSlider.getValue() - wheel.deltaY);
+                zoom_value = zoom_value - wheel.deltaY;
+                zoom_value = std::clamp(zoom_value, 0.0f, 1.0f);
+                setZoomFactor (zoom_value);
             }
 
             repaint();
         }
     }
+    
+    std::function<void(juce::Range < juce::int64>) > loop_bounds_changed = {};
 
 private:
+    float zoom_value = 0.0F;
     juce::AudioTransportSource& transport_source;
-    juce::ScrollBar scrollbar  { false };
+    juce::ScrollBar scrollbar { false };
+    juce::Range < juce::int64 > loop_bounds = { -1, -1 };
+    juce::int64 file_length = -1;
 
-    juce::AudioThumbnailCache thumbnail_cache  { 5 };
+    juce::AudioThumbnailCache thumbnail_cache { 5 };
     juce::AudioThumbnail thumbnail;
-    juce::Range<double> visible_range;
-    bool is_following_transport = false;
-    juce::File last_dropped_file;
+    juce::Range < double > visible_range;
 
     juce::DrawableRectangle current_position_marker;
+    juce::DrawableRectangle current_bounds_marker;
 
     float timeToX (const double time) const
     {
@@ -191,36 +197,58 @@ private:
         return (x / (float) getWidth()) * (visible_range.getLength()) + visible_range.getStart();
     }
 
-    bool canMoveTransport() const noexcept
-    {
-        return ! (is_following_transport && transport_source.isPlaying());
-    }
-
     void scrollBarMoved (juce::ScrollBar* scrollBarThatHasMoved, double newRangeStart) override
     {
         if (scrollBarThatHasMoved == &scrollbar)
-            if (! (is_following_transport && transport_source.isPlaying()))
-                setRange (visible_range.movedToStartAt (newRangeStart));
+            setVisibleRange (visible_range.movedToStartAt (newRangeStart));
     }
 
     void timerCallback() override
     {
-        if (canMoveTransport())
-            updateCursorPosition();
-        else
-            setRange (visible_range.movedToStartAt (transport_source.getCurrentPosition() - (visible_range.getLength() / 2.0)));
+        updateCursorPosition();
     }
 
     void updateCursorPosition()
     {
-        current_position_marker.setVisible (transport_source.isPlaying() || isMouseButtonDown());
+        if (!(transport_source.isPlaying() || isMouseButtonDown()))
+        {
+            current_position_marker.setVisible (false);
+            return;
+        }
 
-        current_position_marker.setRectangle (juce::Rectangle<float> (timeToX (transport_source.getCurrentPosition()) - 0.75f, 0,
-                                            1.5f, (float) (getHeight() - scrollbar.getHeight())));
+        float cursor_width = 1.5f;
+        auto time = transport_source.getCurrentPosition();
+        DBG(time);
+        float cursor_left_x = timeToX (time) - cursor_width / 2.0f;
+        int cursor_height = getHeight() - scrollbar.getHeight();
+        current_position_marker.setVisible (true);
+        current_position_marker.setRectangle (juce::Rectangle < float > (cursor_left_x, 0, cursor_width, (float) cursor_height));
+    }
+
+    void updateFileBoundsPosition()
+    {
+        auto start_sample = loop_bounds.getStart();
+        auto end_sample = loop_bounds.getEnd();
+        auto start_ratio = (double)start_sample / (double)file_length;
+        auto end_ratio = (double)end_sample / (double)file_length;
+        double start_x = start_ratio * (double)getWidth() - 0.75;
+        double end_x = end_ratio * (double)getWidth() + 0.75;
+        start_x = std::max(0.0, start_x);
+        end_x = std::min((double)getWidth(), end_x);
+
+        if (end_x < 0.0f || start_x > getWidth())
+        {
+            current_bounds_marker.setVisible(false);
+            return;
+        }
+
+        current_bounds_marker.setVisible(true);
+        int cursor_height = getHeight() - scrollbar.getHeight();
+        auto rect = juce::Rectangle < double > (start_x, 0.0, end_x - start_x, (double) cursor_height);
+        current_bounds_marker.setRectangle (rect.toFloat());
+
     }
 };
-
-
 
 
 class Audio_File_Chooser : public juce::Component
@@ -248,7 +276,7 @@ public:
         }
         validate_next_button(initial_selection);
 
-        list_comp.selection_changed_callback = 
+        list_comp.selection_changed_callback =
             [audio_file_list, selection_changed = std::move(validate_next_button)] (const std::vector<bool> & new_selection)
         {
             assert(new_selection.size() == audio_file_list->order.size());
@@ -282,6 +310,7 @@ public:
 
         list_comp.setBounds(r);
     }
+    
 
 private:
     GameUI_Header header;
@@ -291,10 +320,10 @@ private:
 
 
 //------------------------------------------------------------------------
-class Audio_Files_ListBox : 
+class Audio_Files_ListBox :
     public juce::Component,
-    public juce::ListBoxModel,
-    public juce::FileDragAndDropTarget
+public juce::ListBoxModel,
+public juce::FileDragAndDropTarget
 {
 public:
     Audio_Files_ListBox(std::vector<Audio_File> audioFiles) :
@@ -362,7 +391,7 @@ public:
     {
         auto num_rows = getNumRows();
         auto num_selected = file_list_component.getNumSelectedRows();
-        if(num_selected == 0)
+        if (num_selected == 0)
             return;
         
         if (num_selected > 1)
@@ -385,11 +414,11 @@ public:
                 row_to_select = 0;
             else if (row_to_delete == num_rows - 1)
                 row_to_select = row_to_delete - 1;
-            else 
+            else
                 row_to_select = row_to_delete;
             bool should_trigger_manually = row_to_select == file_list_component.getSelectedRow();
             file_list_component.selectRow(row_to_select);
-            if(should_trigger_manually)
+            if (should_trigger_manually)
                 selectedRowsChanged(row_to_select);
         }
     }
@@ -427,28 +456,28 @@ public:
         files = std::move(new_files);
     }
 
-    std::function < bool(juce::File file) > insert_file_callback;
-    std::function < void(const juce::SparseSet<int>&) > remove_files_callback;
-    std::function< void(std::optional<Audio_File>)> selected_file_changed_callback;
+    std::function<bool(juce::File file)> insert_file_callback;
+    std::function<void(const juce::SparseSet < int>&) > remove_files_callback;
+    std::function<void(std::optional < Audio_File>) > selected_file_changed_callback;
 
 private:
     std::vector<Audio_File> files;
-    juce::ListBox file_list_component = { {}, this};
+    juce::ListBox file_list_component = { {}, this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_Files_ListBox)
 };
 
 
 //------------------------------------------------------------------------
-class Audio_File_Settings_Panel : 
+class Audio_File_Settings_Panel :
     public juce::Component,
-    public juce::DragAndDropContainer
+public juce::DragAndDropContainer
 {
 public:
     
     Audio_File_Settings_Panel(FilePlayer &filePlayer,
                               Audio_File_List &audio_file_list,
-                              std::function < void() > onClickBack)
+                              std::function<void()> onClickBack)
     :  player(filePlayer),
        file_list_component(get_ordered_audio_files(audio_file_list))
     {
@@ -461,15 +490,15 @@ public:
         }
 
         {
-            file_list_component.selected_file_changed_callback = 
-                [&] (std::optional<Audio_File> new_selected_file)
+            file_list_component.selected_file_changed_callback =
+                [&] (std::optional < Audio_File > new_selected_file)
             {
                 if (new_selected_file)
                 {
                     auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = *new_selected_file });
                     assert(ret.value_b); //file still exists on drive ?
                     player.post_command( { .type = Audio_Command_Play });
-                    thumbnail.setFile(new_selected_file->file);
+                    thumbnail.setFile(*new_selected_file);
                 }
                 else
                 {
@@ -479,16 +508,16 @@ public:
                 //frequency_bounds_slider.setMinAndMaxValues();
                 //nochekin;
             };
-            file_list_component.insert_file_callback = 
-                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer.format_manager] 
+            file_list_component.insert_file_callback =
+                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer.format_manager]
                 (auto new_file)
             {
                 bool succeeded = insert_file(audio_file_list, new_file, format_manager);
                 file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
                 return succeeded;
             };
-            file_list_component.remove_files_callback = 
-                [&file_list_component = this->file_list_component, &audio_file_list] 
+            file_list_component.remove_files_callback =
+                [&file_list_component = this->file_list_component, &audio_file_list]
                 (const auto &files_to_remove)
             {
                 remove_files(audio_file_list, files_to_remove);
@@ -503,7 +532,7 @@ public:
         }
     }
 
-    void resized() override 
+    void resized() override
     {
         auto r = getLocalBounds().reduced (4);
         auto header_bounds = r.removeFromTop(header.getHeight());
@@ -516,6 +545,18 @@ public:
         frequency_bounds_slider.setBounds(bottom_bounds.removeFromBottom(20).reduced(50, 0));
         thumbnail.setBounds(bottom_bounds);
     }
+    
+
+    bool keyPressed (const juce::KeyPress &key) override
+    {
+        if (key == key.spaceKey)
+        {
+            player.post_command( { .type = Audio_Command_Stop });
+            return true;
+        }
+        return false;
+    }
+
 private:
     FilePlayer &player;
     GameUI_Header header;
@@ -543,10 +584,10 @@ public :
 class MainMenu_Panel : public juce::Component
 {
 public :
-    MainMenu_Panel(std::function<void()> &&toFrequencyGame,
-             std::function<void()> &&toCompressorGame,
-             std::function<void()> &&toFileList,
-             std::function<void()> &&toStats)
+    MainMenu_Panel(std::function<void()> && toFrequencyGame,
+                   std::function<void()> && toCompressorGame,
+                   std::function<void()> && toFileList,
+                   std::function<void()> && toStats)
     {
         frequency_game_button.setSize(100, 40);
         frequency_game_button.setButtonText("Learn EQs");
@@ -587,10 +628,10 @@ public :
     void resized() override
     {
         auto bounds = getLocalBounds();
-        frequency_game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -75));
-        compressor_game_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, -25));
-        file_list_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 25));
-        stats_button.setCentrePosition(bounds.getCentre() + juce::Point<int>(0, 75));
+        frequency_game_button.setCentrePosition(bounds.getCentre() + juce::Point < int > (0, -75));
+        compressor_game_button.setCentrePosition(bounds.getCentre() + juce::Point < int > (0, -25));
+        file_list_button.setCentrePosition(bounds.getCentre() + juce::Point < int > (0, 25));
+        stats_button.setCentrePosition(bounds.getCentre() + juce::Point < int > (0, 75));
     }
 
     juce::TextButton frequency_game_button;
@@ -610,9 +651,9 @@ public :
         addAndMakeVisible(main_fader);
         setSize (500, 300);
 #if 0
-        auto selection_list = std::make_unique<Selection_List>(
+        auto selection_list = std::make_unique < Selection_List > (
             std::vector<juce::String> { "yes", "no", "maybe", "I don't know" },
-            std::vector<int>{0, 3},
+            std::vector<int> { 0, 3 },
             true,
             [](const auto &){}
         );
@@ -620,20 +661,20 @@ public :
 #endif
     }
 
-    void resized() override 
+    void resized() override
     {
         auto r = getLocalBounds();
         auto main_fader_bounds = r.removeFromRight(60);
         main_fader.setBounds(main_fader_bounds);
         auto panelBounds = r;
-        if(panel)
+        if (panel)
             panel->setBounds(panelBounds);
     }
 
     void changePanel(std::unique_ptr<juce::Component> new_panel)
     {
         panel = std::move(new_panel);
-        if(panel)
+        if (panel)
             addAndMakeVisible(*panel);
         resized();
     }
@@ -643,7 +684,7 @@ private :
     std::unique_ptr<juce::Component> panel;
     Application_Standalone application;
 
-    juce::TooltipWindow tooltip_window {this, 300};
+    juce::TooltipWindow tooltip_window { this, 300 };
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };

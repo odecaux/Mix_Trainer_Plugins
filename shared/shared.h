@@ -82,9 +82,10 @@ struct Audio_File
     //juce::int64 hash_code;
     juce::Time last_modification_time;
     juce::String title;
-    juce::Range<juce::int64> loop_bounds;
+    juce::Range<juce::int64> loop_bounds_samples;
     juce::Range<int> freq_bounds;
     float max_level;
+    juce::int64 length_samples;
 };
 
 Channel_DSP_State ChannelDSP_on();
