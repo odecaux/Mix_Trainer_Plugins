@@ -86,6 +86,7 @@ struct Audio_File
     juce::Range<int> freq_bounds;
     float max_level;
     juce::int64 length_samples;
+    juce::int64 hash;
 };
 
 Channel_DSP_State ChannelDSP_on();
@@ -1075,22 +1076,18 @@ private:
     std::function<void(int)> row_on_mouse_down;
 };
 
-
-
 template <typename Type>
 Type string_to(juce::String);
-
-
 
 template <typename Type>
 std::vector<Type> deserialize_vector(juce::String str)
 {
     juce::StringArray tokens = juce::StringArray::fromTokens(str, false);
            
-    std::vector<Type    > values{};
+    std::vector<Type> values{};
     for (const auto& token : tokens)
     {
-        values.emplace_back();
+        values.emplace_back(string_to<Type>(token));
     }
     return values;
 }

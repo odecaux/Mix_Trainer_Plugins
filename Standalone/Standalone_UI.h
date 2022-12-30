@@ -499,14 +499,17 @@ public:
                     assert(ret.value_b); //file still exists on drive ?
                     player.post_command( { .type = Audio_Command_Play });
                     thumbnail.setFile(*new_selected_file);
+                    file_is_selected = true;
+                    selected_file_hash = new_selected_file->hash;
+                    frequency_bounds_slider.setMinAndMaxValues((float)new_selected_file->freq_bounds.getStart(), (float)new_selected_file->freq_bounds.getEnd());
                 }
                 else
                 {
                     player.post_command( { .type = Audio_Command_Stop });
                     thumbnail.removeFile();
+                    file_is_selected = false;
+                    frequency_bounds_slider.setMinAndMaxValues(20.0f, 20000.0f);
                 }
-                //frequency_bounds_slider.setMinAndMaxValues();
-                //nochekin;
             };
             file_list_component.insert_file_callback =
                 [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer.format_manager]
@@ -526,10 +529,14 @@ public:
             addAndMakeVisible(file_list_component);
         }
 
-        {
-            addAndMakeVisible(thumbnail);
-            addAndMakeVisible(frequency_bounds_slider);
-        }
+        addAndMakeVisible(thumbnail);
+        frequency_bounds_slider.on_mix_max_changed = 
+            [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, &audio_file_list] 
+            (float begin, float end, float) {
+            if(is_selected)
+                audio_file_list.files[hash].freq_bounds = { (int)begin, (int)end };
+        };
+        addAndMakeVisible(frequency_bounds_slider);
     }
 
     void resized() override
@@ -564,6 +571,8 @@ private:
 
     Thumbnail thumbnail { player.format_manager, player.transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
+    bool file_is_selected = false;
+    juce::int64 selected_file_hash;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };

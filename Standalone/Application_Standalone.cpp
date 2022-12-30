@@ -17,7 +17,7 @@ Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioForm
 {
     //TODO sanity check ?
     assert(audio_file.file.existsAsFile());
-    
+     
     //expensive though
     auto * reader_ptr = format_manager.createReaderFor(audio_file.file);
     auto reader = std::unique_ptr<juce::AudioFormatReader>(reader_ptr);
@@ -60,7 +60,9 @@ bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioF
     Audio_File new_audio_file = {
         .file = file,
         .last_modification_time = file.getLastModificationTime(),
-        .title = file.getFileNameWithoutExtension()
+        .title = file.getFileNameWithoutExtension(),
+        .freq_bounds = { 20, 20000 },
+        .hash = hash
     };
     new_audio_file = audio_file_scan_length_and_max(new_audio_file, format_manager);
 
@@ -213,9 +215,10 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager &formatM
         audio_file_list.files.reserve(file_vec.size());
         audio_file_list.selected.reserve(file_vec.size());
         audio_file_list.order.reserve(file_vec.size());
-        for (const auto& audio_file : file_vec)
+        for (auto& audio_file : file_vec)
         {
             juce::int64 hash = audio_file.file.hashCode64();
+            audio_file.hash = hash; //HACK or is it ? It's a cached value, right ?
             audio_file_list.files.emplace(hash, audio_file);
             audio_file_list.selected.emplace(hash, false);
             audio_file_list.order.emplace_back(hash);
