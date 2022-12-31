@@ -67,9 +67,10 @@ public:
 
             juce::Range < double > newVisibleRange (0.0, thumbnail.getTotalLength());
             scrollbar.setRangeLimits (newVisibleRange);
-            setVisibleRange (newVisibleRange);
             loop_bounds = audio_file.loop_bounds_samples;
             file_length = audio_file.length_samples;
+            setVisibleRange (newVisibleRange);
+            DBG(loop_bounds.getStart() << ", " << loop_bounds.getEnd());
             startTimerHz (40);
         }
     }
@@ -98,7 +99,7 @@ public:
         visible_range = new_visible_range;
         scrollbar.setCurrentRange (visible_range);
         updateCursorPosition();
-        updateFileBoundsPosition();
+        updateLoopBoundsPosition();
         repaint();
     }
 
@@ -140,12 +141,28 @@ public:
 
     void mouseDrag(const juce::MouseEvent& e) override
     {
-        transport_source.setPosition(std::max (0.0, xToTime((float) e.x)));
+        if (file_length == -1) return;
+        float ratio = e.x / (float)getWidth();
+        juce::int64 sample_position = juce::int64(ratio * (float)file_length); //todo arithmetics
+        if (e.mods.isLeftButtonDown())
+        {
+            loop_bounds.setStart(sample_position);
+        }
+        else if (e.mods.isRightButtonDown())
+        {
+            loop_bounds.setEnd(sample_position);
+        }
+        else return;
+
+        loop_bounds_changed(loop_bounds);
+        updateLoopBoundsPosition();
+        repaint();
+        //transport_source.setPosition(std::max (0.0, xToTime((float) e.x)));
     }
 
-    void mouseUp(const juce::MouseEvent&) override
+    void mouseUp(const juce::MouseEvent& e) override
     {
-        transport_source.start();
+        //transport_source.start();
     }
 
     void mouseWheelMove (const juce::MouseEvent&, const juce::MouseWheelDetails& wheel) override
@@ -218,14 +235,13 @@ private:
 
         float cursor_width = 1.5f;
         auto time = transport_source.getCurrentPosition();
-        DBG(time);
         float cursor_left_x = timeToX (time) - cursor_width / 2.0f;
         int cursor_height = getHeight() - scrollbar.getHeight();
         current_position_marker.setVisible (true);
         current_position_marker.setRectangle (juce::Rectangle < float > (cursor_left_x, 0, cursor_width, (float) cursor_height));
     }
 
-    void updateFileBoundsPosition()
+    void updateLoopBoundsPosition()
     {
         auto start_sample = loop_bounds.getStart();
         auto end_sample = loop_bounds.getEnd();
@@ -436,7 +452,7 @@ public:
         }
     }
 
-    
+   
     void selectedRowsChanged (int last_row_selected) override
     {
         if (last_row_selected != -1)
@@ -528,13 +544,16 @@ public:
             };
             addAndMakeVisible(file_list_component);
         }
-
+        
+        thumbnail.loop_bounds_changed = [&] (juce::Range < juce::int64 > new_loop_bounds){
+            audio_file_list.files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
+        };
         addAndMakeVisible(thumbnail);
         frequency_bounds_slider.on_mix_max_changed = 
             [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, &audio_file_list] 
             (float begin, float end, float) {
             if(is_selected)
-                audio_file_list.files[hash].freq_bounds = { (int)begin, (int)end };
+                audio_file_list.files.at(hash).freq_bounds = { (int)begin, (int)end };
         };
         addAndMakeVisible(frequency_bounds_slider);
     }
