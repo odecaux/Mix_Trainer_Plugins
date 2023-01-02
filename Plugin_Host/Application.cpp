@@ -2,11 +2,12 @@
 #include "../shared/shared.h"
 
 #include "../Game/Game.h"
+#include "../Game/Game_UI.h"
 #include "../Game/Game_Mixer.h"
-#include "MainMenu.h"
+#include "Main_Menu.h"
 #include "Application.h"
-#include "../Plugin_Host/Processor_Host.h"
-#include "../Plugin_Host/PluginEditor_Host.h"
+#include "Processor_Host.h"
+#include "PluginEditor_Host.h"
 
 Application::Application(ProcessorHost &processorHost) :
     game_ui(nullptr),

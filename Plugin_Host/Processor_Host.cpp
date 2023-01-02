@@ -14,9 +14,10 @@
 
 
 #include "../Game/Game.h"
+#include "../Game/Game_UI.h"
 #include "../Game/Game_Mixer.h"
-#include "../Application/MainMenu.h"
-#include "../Application/Application.h"
+#include "Main_Menu.h"
+#include "Application.h"
 #include "Processor_Host.h"
 #include "PluginEditor_Host.h"
 

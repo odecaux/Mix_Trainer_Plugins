@@ -266,7 +266,7 @@ struct Compressor_Config_Panel : public juce::Component
         
         //List
         {
-            
+            //TODO mutations should not happen here
             auto configs_to_names = [] (std::vector<CompressorGame_Config> *configs) {
                 std::vector<std::string> config_names{};
                 config_names.resize(configs->size());

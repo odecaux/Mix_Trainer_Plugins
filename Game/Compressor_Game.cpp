@@ -2,8 +2,7 @@
 #include "../shared/pch.h"
 #include "../shared/shared.h"
 #include "../Game/Game.h"
-//#include "CompressorWidget.h"
-#include "CompressorGame.h"
+#include "Compressor_Game.h"
 
 CompressorGame_Config compressor_game_config_default(std::string name)
 {

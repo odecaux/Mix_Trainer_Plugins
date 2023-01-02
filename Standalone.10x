@@ -78,21 +78,6 @@
 				<Path>Standalone/Standalone.cpp</Path>
 			</File>
 			<File>
-				<Path>Standalone/FrequencyWidget.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/CompressorGame.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/CompressorGame.cpp</Path>
-			</File>
-			<File>
-				<Path>Standalone/FrequencyGame.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/FrequencyGame.cpp</Path>
-			</File>
-			<File>
 				<Path>Standalone/Application_Standalone.h</Path>
 			</File>
 			<File>
@@ -100,18 +85,6 @@
 			</File>
 			<File>
 				<Path>Standalone/Standalone_UI.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/Frequency_Game_UI.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/Compressor_Game_UI.h</Path>
-			</File>
-			<File>
-				<Path>Standalone/Frequency_Game_UI.cpp</Path>
-			</File>
-			<File>
-				<Path>Standalone/Compressor_Game_UI.cpp</Path>
 			</File>
 		</Children>
 	</Workspace>

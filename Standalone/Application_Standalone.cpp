@@ -1,10 +1,11 @@
 #include "../shared/pch.h"
 #include "../shared/shared.h"
 #include "../Game/Game.h"
-#include "FrequencyGame.h"
-#include "CompressorGame.h"
-#include "Compressor_Game_UI.h"
-#include "Frequency_Game_UI.h"
+#include "../Game/Game_UI.h"
+#include "../Game/Frequency_Game.h"
+#include "../Game/Compressor_Game.h"
+#include "../Game/Compressor_Game_UI.h"
+#include "../Game/Frequency_Game_UI.h"
 #include "Application_Standalone.h"
 #include "Standalone_UI.h"
 
@@ -421,7 +422,7 @@ void Application_Standalone::to_audio_file_settings()
         file_player_post_command(&player, { .type = Audio_Command_Stop });
         to_main_menu();
     };
-    auto audio_file_settings_panel = std::make_unique < Audio_File_Settings_Panel > (&player, &audio_file_list,  std::move(on_back_pressed));
+    auto audio_file_settings_panel = std::make_unique<Audio_File_Settings_Panel>(&player, &audio_file_list,  std::move(on_back_pressed));
     main_component->changePanel(std::move(audio_file_settings_panel));
 }
 

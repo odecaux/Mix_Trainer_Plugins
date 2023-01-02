@@ -1,7 +1,8 @@
 #include "../shared/pch.h"
 #include "../shared/shared.h"
 #include "../Game/Game.h"
-#include "CompressorGame.h"
+#include "../Game/Game_UI.h"
+#include "Compressor_Game.h"
 #include "Compressor_Game_UI.h"
 
 void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition transition)

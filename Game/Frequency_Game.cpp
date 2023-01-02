@@ -2,8 +2,9 @@
 #include "../shared/pch.h"
 #include "../shared/shared.h"
 #include "../Game/Game.h"
-#include "FrequencyWidget.h"
-#include "FrequencyGame.h"
+#include "../Game/Game_UI.h"
+#include "Frequency_Widget.h"
+#include "Frequency_Game.h"
 #include "Frequency_Game_UI.h"
 
 FrequencyGame_Config frequency_game_config_default(std::string name)
@@ -26,7 +27,6 @@ FrequencyGame_Config frequency_game_config_default(std::string name)
         .result_timeout_ms = 1000
     };
 }
-
 
 void frequency_game_post_event(FrequencyGame_IO *io, Event event)
 {

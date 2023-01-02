@@ -57,9 +57,10 @@ juce_add_plugin(MixTrainer_Host
 target_sources(MixTrainer_Host
     PRIVATE
         Plugin_Host/Processor_Host.cpp
+        Plugin_Host/Application.cpp
         Game/Game.cpp
+        Game/Game_UI.cpp
         Game/Game_Mixer.cpp
-        Application/Application.cpp
         shared/shared.cpp)
         
 if(MSVC)
@@ -135,12 +136,13 @@ juce_add_gui_app(MixTrainer_Standalone
 target_sources(MixTrainer_Standalone
     PRIVATE
         Standalone/Standalone.cpp
-        Game/Game.cpp
-        Standalone/FrequencyGame.cpp
-        Standalone/CompressorGame.cpp
-        Standalone/Frequency_Game_UI.cpp
-        Standalone/Compressor_Game_UI.cpp
         Standalone/Application_Standalone.cpp
+        Game/Game.cpp
+        Game/Game_UI.cpp
+        Game/Frequency_Game.cpp
+        Game/Compressor_Game.cpp
+        Game/Frequency_Game_UI.cpp
+        Game/Compressor_Game_UI.cpp
         shared/shared.cpp)
 
 if(MSVC)

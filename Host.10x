@@ -81,6 +81,15 @@
 			<File>
 				<Path>Plugin_Host/PluginEditor_Host.h</Path>
 			</File>
+            <File>
+                <Path>Plugin_Host/Main_Menu.h</Path>
+            </File>
+            <File>
+                <Path>Plugin_Host/Application.h</Path>
+            </File>
+            <File>
+                <Path>Plugin_Host/Application.cpp</Path>
+            </File>
 		</Children>
 	</Workspace>
 </N10X>

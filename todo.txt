@@ -1,10 +1,8 @@
 #Priority 1 :
 
-Linux build 
-No config : no "insert congif" text
+frequency game implement pre listen
 No lives mode
 Mixer game takes a vector of channels
-Tables look like shit
 look and feel
 bug si les sliders on une seule valeur !
 pouvoir selectionner aucune track !

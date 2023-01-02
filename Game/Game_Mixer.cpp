@@ -2,9 +2,10 @@
 #include "../shared/shared.h"
 
 #include "Game.h"
+#include "Game_UI.h"
 #include "Game_Mixer.h"
-#include "../Application/MainMenu.h"
-#include "../Application/Application.h"
+#include "../Plugin_Host/Main_Menu.h"
+#include "../Plugin_Host/Application.h"
 
 
 

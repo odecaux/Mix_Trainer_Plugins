@@ -121,7 +121,7 @@ public :
     ChannelSettingsMenu(MuliTrack_Model &multiTrackModel,
                         std::function<void()> && onBackButtonClick)
     :    multitrack_model(multiTrackModel),
-         channel_list()
+         channel_list("Create new channel")
     {
         {
             header.onBackClicked = [click = std::move(onBackButtonClick)] {
@@ -174,8 +174,6 @@ public :
             label->setColour(juce::Label::textColourId, colour);
         };
 
-        channel_list.insertion_row_text = "Create new channel";
-        
         auto multitrack_observer = [&](MuliTrack_Model *new_model) { 
             std::vector<std::string> channel_names{};
             channel_names.resize(new_model->game_channels.size());

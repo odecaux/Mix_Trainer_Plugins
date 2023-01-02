@@ -19,7 +19,6 @@ inline to checked_cast(const from& from_value) {
 #endif
     return to_value;
 }
-//#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
 static uint32_t random_uint(uint32_t max = INT_MAX)
 {
