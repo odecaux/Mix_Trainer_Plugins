@@ -515,8 +515,10 @@ public:
             {
                 if (new_selected_file)
                 {
-                    auto ret = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
-                    assert(ret.value_b); //file still exists on drive ?
+                    auto player_state = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
+                    if(player_state.step == Transport_Loading_Failed)
+                        return;
+                    //TODO file does not exist anymore ?
                     file_player_post_command(player, { .type = Audio_Command_Play });
                     thumbnail.setFile(new_selected_file);
                     file_is_selected = true;

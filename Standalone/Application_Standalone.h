@@ -14,6 +14,12 @@ std::vector<Audio_File> get_ordered_audio_files(Audio_File_List *audio_file_list
 std::string audio_file_list_serialize(Audio_File_List *audio_file_list);
 std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string);
 
+struct File_Player_State
+{
+    Transport_Step step;
+    int64_t playing_file_hash;
+};
+
 //------------------------------------------------------------------------
 struct File_Player : juce::ChangeListener 
 {
@@ -22,7 +28,7 @@ struct File_Player : juce::ChangeListener
     ~File_Player();
 
     juce::AudioFormatManager *format_manager;
-    Transport_State transport_state;
+    File_Player_State player_state;
     
     juce::AudioDeviceManager device_manager;
     juce::String output_device_name;
@@ -40,9 +46,9 @@ private:
 
 
 bool file_player_load(File_Player *player, Audio_File *audio_file);
-Return_Value file_player_post_command(File_Player *player, Audio_Command command);
+File_Player_State file_player_post_command(File_Player *player, Audio_Command command);
 void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state);
-
+File_Player_State file_player_query_state(File_Player *player);
 
 class Application_Standalone
 {

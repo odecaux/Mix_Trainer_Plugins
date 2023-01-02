@@ -659,43 +659,46 @@ bool file_player_load(File_Player *player, Audio_File *audio_file)
     return true;
 }
 
-Return_Value file_player_post_command(File_Player *player, Audio_Command command)
+File_Player_State file_player_post_command(File_Player *player, Audio_Command command)
 {
     switch (command.type)
     {
         case Audio_Command_Play :
         {
-            DBG("Play");
             player->transport_source.start();
-            player->transport_state.step = Transport_Playing;
+            player->player_state.step = Transport_Playing;
         } break;
         case Audio_Command_Pause :
         {
             DBG("Pause");
             player->transport_source.stop();
-            player->transport_state.step = Transport_Paused;
+            player->player_state.step = Transport_Paused;
         } break;
         case Audio_Command_Stop :
         {
-            DBG("Stop");
             player->transport_source.stop();
             player->transport_source.setPosition(0);
-            player->transport_state.step = Transport_Stopped;
+            player->player_state.step = Transport_Stopped;
         } break;
         case Audio_Command_Seek :
         {
-            DBG("Seek : "<<command.value_f);
             player->transport_source.setPosition(command.value_f);
         } break;
         case Audio_Command_Load :
         {
-            DBG("Load : "<<command.value_file.title);
             bool success = file_player_load(player, &command.value_file);
-            player->transport_state.step = Transport_Stopped;
-            return { .value_b = success };
+            if (success)
+            {
+                player->player_state.playing_file_hash = command.value_file.hash;
+                player->player_state.step = Transport_Stopped;
+            }
+            else
+            {
+                player->player_state.step = Transport_Loading_Failed;
+            }
         } break;
     }
-    return { .value_b = true };
+    return player->player_state;
 }
 
 void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state)
@@ -724,4 +727,9 @@ void File_Player::changeListenerCallback(juce::ChangeBroadcaster* source)
         output_device_name = device_manager.getAudioDeviceSetup().outputDeviceName;
     }
     device_manager.addChangeListener(this);
+}
+
+File_Player_State file_player_query_state(File_Player *player)
+{
+    return player->player_state;
 }

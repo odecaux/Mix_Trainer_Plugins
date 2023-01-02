@@ -521,12 +521,9 @@ enum Transport_Step
     Transport_Stopped,
     Transport_Playing,
     Transport_Paused,
+    Transport_Loading_Failed
 };
 
-struct Transport_State
-{
-    Transport_Step step;
-};
 
 enum Audio_Command_Type
 {
@@ -542,11 +539,6 @@ struct Audio_Command
     Audio_Command_Type type;
     float value_f;
     Audio_File value_file;
-};
-
-struct Return_Value
-{
-    bool value_b;
 };
 
 static float denormalize_slider_frequency(float value)
