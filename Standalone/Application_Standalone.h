@@ -15,15 +15,12 @@ juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list);
 std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string);
 
 //------------------------------------------------------------------------
-struct FilePlayer : juce::ChangeListener 
+struct File_Player : juce::ChangeListener 
 {
-    FilePlayer(juce::AudioFormatManager &formatManager);
+    File_Player(juce::AudioFormatManager &formatManager);
 
-    ~FilePlayer();
+    ~File_Player();
 
-    bool load_file_into_transport (const Audio_File& audio_file);
-    Return_Value post_command(Audio_Command command);
-    void push_new_dsp_state(Channel_DSP_State new_dsp_state);
 
     juce::AudioFormatManager &format_manager;
     Transport_State transport_state;
@@ -42,6 +39,12 @@ private:
     void changeListenerCallback(juce::ChangeBroadcaster*) override;
 };
 
+
+bool file_player_load(File_Player *player, Audio_File *audio_file);
+Return_Value file_player_post_command(File_Player *player, Audio_Command command);
+void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state);
+
+
 class Application_Standalone
 {
     public :
@@ -58,7 +61,7 @@ class Application_Standalone
     void to_compressor_game();
 
     private :
-    FilePlayer player;
+    File_Player player;
     Audio_File_List audio_file_list;
     std::unique_ptr<FrequencyGame_IO> frequency_game_io;
     std::unique_ptr<CompressorGame_IO> compressor_game_io;

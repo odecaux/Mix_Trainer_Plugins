@@ -404,7 +404,7 @@ void Application_Standalone::to_audio_file_settings()
     assert(frequency_game_io == nullptr);
     assert(compressor_game_io == nullptr);
     auto on_back_pressed = [&] {
-        player.post_command( { .type = Audio_Command_Stop });
+        file_player_post_command(&player, { .type = Audio_Command_Stop });
         to_main_menu();
     };
     auto audio_file_settings_panel = std::make_unique < Audio_File_Settings_Panel > (player, audio_file_list,  std::move(on_back_pressed));
@@ -454,12 +454,12 @@ void Application_Standalone::to_frequency_game()
         }
         if (effects.dsp)
         {
-            player.push_new_dsp_state(effects.dsp->dsp_state);
+            file_player_push_dsp(&player, effects.dsp->dsp_state);
         }
         if (effects.player)
         {
             for (const auto& command : effects.player->commands)
-                player.post_command(command);
+                file_player_post_command(&player, command);
         }
         if (effects.results)
         {
@@ -482,7 +482,7 @@ void Application_Standalone::to_frequency_game()
 
     auto on_quit = [this] { 
         frequency_game_io->timer.stopTimer();
-        player.post_command( { .type = Audio_Command_Stop });
+        file_player_post_command(&player, { .type = Audio_Command_Stop });
         to_main_menu();
     };
     frequency_game_io->on_quit = std::move(on_quit);
@@ -549,12 +549,12 @@ void Application_Standalone::to_compressor_game()
         }
         if (effects.dsp)
         {
-            player.push_new_dsp_state(effects.dsp->dsp_state);
+            file_player_push_dsp(&player, effects.dsp->dsp_state);
         }
         if (effects.player)
         {
             for (const auto& command : effects.player->commands)
-                player.post_command(command);
+                file_player_post_command(&player, command);
         }
         if (effects.results)
         {
@@ -576,7 +576,7 @@ void Application_Standalone::to_compressor_game()
 
     auto on_quit = [this] { 
         compressor_game_io->timer.stopTimer();
-        player.post_command( { .type = Audio_Command_Stop });
+        file_player_post_command(&player, { .type = Audio_Command_Stop });
         to_main_menu();
     };
     compressor_game_io->on_quit = std::move(on_quit);
@@ -593,7 +593,7 @@ void Application_Standalone::to_compressor_game()
 }
 
 //------------------------------------------------------------------------
-FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)
+File_Player::File_Player(juce::AudioFormatManager &formatManager)
 :   format_manager(formatManager),
     dsp_callback(&transport_source)
 {
@@ -612,7 +612,7 @@ FilePlayer::FilePlayer(juce::AudioFormatManager &formatManager)
     device_manager.addChangeListener(this);
 }
 
-FilePlayer::~FilePlayer()
+File_Player::~File_Player()
 {
     transport_source.setSource (nullptr);
     source_player.setSource (nullptr);
@@ -620,13 +620,13 @@ FilePlayer::~FilePlayer()
     device_manager.removeAudioCallback (&source_player);
 }
 
-bool FilePlayer::load_file_into_transport (const Audio_File& audio_file)
+bool file_player_load(File_Player *player, Audio_File *audio_file)
 {
-    transport_source.stop();
-    transport_source.setSource(nullptr);
-    current_reader_source.reset();
+    player->transport_source.stop();
+    player->transport_source.setSource(nullptr);
+    player->current_reader_source.reset();
 
-    const auto source = makeInputSource(audio_file.file);
+    const auto source = makeInputSource(audio_file->file);
 
     if (source == nullptr)
         return false;
@@ -636,68 +636,68 @@ bool FilePlayer::load_file_into_transport (const Audio_File& audio_file)
     if (stream == nullptr)
         return false;
 
-    auto reader = juce::rawToUniquePtr(format_manager.createReaderFor(std::move(stream)));
+    auto reader = juce::rawToUniquePtr(player->format_manager.createReaderFor(std::move(stream)));
 
     if (reader == nullptr)
         return false;
 
-    current_reader_source = std::make_unique<juce::AudioFormatReaderSource>(reader.release(), true);
-    current_reader_source->setLooping(true);
+    player->current_reader_source = std::make_unique<juce::AudioFormatReaderSource>(reader.release(), true);
+    player->current_reader_source->setLooping(true);
 
-    dsp_callback.push_normalization_volume(1.0f / audio_file.max_level);
+    player->dsp_callback.push_normalization_volume(1.0f / audio_file->max_level);
 
-    transport_source.setSource(current_reader_source.get(),
+    player->transport_source.setSource(player->current_reader_source.get(),
                                32768,
-                               &read_ahead_thread,
-                               current_reader_source->getAudioFormatReader()->sampleRate);
+                                       &player->read_ahead_thread,
+                                       player->current_reader_source->getAudioFormatReader()->sampleRate);
     return true;
 }
 
-Return_Value FilePlayer::post_command(Audio_Command command)
+Return_Value file_player_post_command(File_Player *player, Audio_Command command)
 {
     switch (command.type)
     {
         case Audio_Command_Play :
         {
             DBG("Play");
-            transport_source.start();
-            transport_state.step = Transport_Playing;
+            player->transport_source.start();
+            player->transport_state.step = Transport_Playing;
         } break;
         case Audio_Command_Pause :
         {
             DBG("Pause");
-            transport_source.stop();
-            transport_state.step = Transport_Paused;
+            player->transport_source.stop();
+            player->transport_state.step = Transport_Paused;
         } break;
         case Audio_Command_Stop :
         {
             DBG("Stop");
-            transport_source.stop();
-            transport_source.setPosition(0);
-            transport_state.step = Transport_Stopped;
+            player->transport_source.stop();
+            player->transport_source.setPosition(0);
+            player->transport_state.step = Transport_Stopped;
         } break;
         case Audio_Command_Seek :
         {
             DBG("Seek : "<<command.value_f);
-            transport_source.setPosition(command.value_f);
+            player->transport_source.setPosition(command.value_f);
         } break;
         case Audio_Command_Load :
         {
             DBG("Load : "<<command.value_file.title);
-            bool success = load_file_into_transport(command.value_file);
-            transport_state.step = Transport_Stopped;
+            bool success = file_player_load(player, &command.value_file);
+            player->transport_state.step = Transport_Stopped;
             return { .value_b = success };
         } break;
     }
     return { .value_b = true };
 }
 
-void FilePlayer::push_new_dsp_state(Channel_DSP_State new_dsp_state)
+void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state)
 {
-    dsp_callback.push_new_dsp_state(new_dsp_state);
+    player->dsp_callback.push_new_dsp_state(new_dsp_state);
 }
 
-void FilePlayer::changeListenerCallback(juce::ChangeBroadcaster* source)
+void File_Player::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     if(source != &device_manager)
         return;

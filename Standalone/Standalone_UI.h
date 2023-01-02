@@ -70,7 +70,6 @@ public:
             loop_bounds = audio_file.loop_bounds_samples;
             file_length = audio_file.length_samples;
             setVisibleRange (newVisibleRange);
-            DBG(loop_bounds.getStart() << ", " << loop_bounds.getEnd());
             startTimerHz (40);
         }
     }
@@ -491,7 +490,7 @@ public juce::DragAndDropContainer
 {
 public:
     
-    Audio_File_Settings_Panel(FilePlayer &filePlayer,
+    Audio_File_Settings_Panel(File_Player &filePlayer,
                               Audio_File_List &audio_file_list,
                               std::function<void()> onClickBack)
     :  player(filePlayer),
@@ -511,9 +510,9 @@ public:
             {
                 if (new_selected_file)
                 {
-                    auto ret = player.post_command( { .type = Audio_Command_Load, .value_file = *new_selected_file });
+                    auto ret = file_player_post_command(&player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
                     assert(ret.value_b); //file still exists on drive ?
-                    player.post_command( { .type = Audio_Command_Play });
+                    file_player_post_command(&player, { .type = Audio_Command_Play });
                     thumbnail.setFile(*new_selected_file);
                     file_is_selected = true;
                     selected_file_hash = new_selected_file->hash;
@@ -521,7 +520,7 @@ public:
                 }
                 else
                 {
-                    player.post_command( { .type = Audio_Command_Stop });
+                    file_player_post_command(&player, { .type = Audio_Command_Stop });
                     thumbnail.removeFile();
                     file_is_selected = false;
                     frequency_bounds_slider.setMinAndMaxValues(20.0f, 20000.0f);
@@ -577,14 +576,14 @@ public:
     {
         if (key == key.spaceKey)
         {
-            player.post_command( { .type = Audio_Command_Stop });
+            file_player_post_command(&player, { .type = Audio_Command_Stop });
             return true;
         }
         return false;
     }
 
 private:
-    FilePlayer &player;
+    File_Player &player;
     GameUI_Header header;
     Audio_Files_ListBox file_list_component;
 
