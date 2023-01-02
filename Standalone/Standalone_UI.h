@@ -532,7 +532,7 @@ public:
                 }
             };
             file_list_component.insert_file_callback =
-                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer->format_manager]
+                [&file_list_component = this->file_list_component,  audio_file_list, &format_manager = filePlayer->format_manager]
                 (auto new_file)
             {
                 bool succeeded = insert_file(audio_file_list, new_file, format_manager);
@@ -540,7 +540,7 @@ public:
                 return succeeded;
             };
             file_list_component.remove_files_callback =
-                [&file_list_component = this->file_list_component, &audio_file_list]
+                [&file_list_component = this->file_list_component, audio_file_list]
                 (auto *files_to_remove)
             {
                 remove_files(audio_file_list, files_to_remove);
@@ -549,12 +549,12 @@ public:
             addAndMakeVisible(file_list_component);
         }
         
-        thumbnail.loop_bounds_changed = [&] (juce::Range < int64_t > new_loop_bounds){
+        thumbnail.loop_bounds_changed = [&, audio_file_list] (juce::Range < int64_t > new_loop_bounds){
             audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
         };
         addAndMakeVisible(thumbnail);
         frequency_bounds_slider.on_mix_max_changed = 
-            [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, &audio_file_list] 
+            [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, audio_file_list] 
             (float begin, float end, float) {
             if(is_selected)
                 audio_file_list->files.at(hash).freq_bounds = { (uint32_t)begin, (uint32_t)end };
