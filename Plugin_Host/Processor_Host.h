@@ -59,7 +59,7 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
     void setStateInformation(const void* data, int sizeInBytes) override;
     
 
-    void broadcastAllDSP(const std::unordered_map<int, Channel_DSP_State> &dsp_states)
+    void broadcastAllDSP(const std::unordered_map<uint32_t, Channel_DSP_State> &dsp_states)
     {
         for (const auto &[id, state] : dsp_states)
         {
@@ -84,14 +84,6 @@ class ProcessorHost : public juce::AudioProcessor, public juce::ActionListener
         auto message = juce::String("new_track_list ") + juce::String::toHexString((void*)&out, sizeof(out), 0);
         juce::MessageManager::getInstance()->broadcastMessage(message);
     }
-
-#if 0
-    void broadcastRenameTrack(int id, const juce::String& new_name)
-    {
-        auto message = juce::String("name_from_ui ") + juce::String(id) + " " + new_name;
-        juce::MessageManager::getInstance()->broadcastMessage(message);
-    }
-#endif
 
     
     Application app;

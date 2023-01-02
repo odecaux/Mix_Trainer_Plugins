@@ -50,7 +50,7 @@ void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition tra
         ui->compressor_widget->onClick = [state = ui->game_state, io = ui->game_io] (int compressor) {
             Event event = {
                 .type = Event_Click_Compressor,
-                .value_i = compressor
+                .value_u = compressor
             };
             compressor_game_post_event(state, io, event);
         };
@@ -91,13 +91,13 @@ void compressor_game_ui_update(CompressorGame_UI *ui, Compressor_Game_Effect_UI 
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
-    using bundle_t = std::tuple<TextSlider&, Widget_Interaction_Type, int, int, std::function < juce::String(double)> >;
+    using bundle_t = std::tuple<TextSlider&, Widget_Interaction_Type, uint32_t, uint32_t, std::function < juce::String(double)> >;
 
     auto bundle = std::vector<bundle_t>{
-        { ui->compressor_widget.threshold_slider, new_ui->comp_widget.threshold_visibility, new_ui->comp_widget.threshold_pos, static_cast<int>(new_ui->comp_widget.threshold_values_db.size()), std::move(threshold_text) },
-        { ui->compressor_widget.ratio_slider, new_ui->comp_widget.ratio_visibility, new_ui->comp_widget.ratio_pos, static_cast<int>(new_ui->comp_widget.ratio_values.size()), std::move(ratio_text) },
-        { ui->compressor_widget.attack_slider, new_ui->comp_widget.attack_visibility,  new_ui->comp_widget.attack_pos, static_cast<int>(new_ui->comp_widget.attack_values.size()), std::move(attack_text) },
-        { ui->compressor_widget.release_slider, new_ui->comp_widget.release_visibility, new_ui->comp_widget.release_pos, static_cast<int>(new_ui->comp_widget.release_values.size()), std::move(release_text) }
+        { ui->compressor_widget.threshold_slider, new_ui->comp_widget.threshold_visibility, new_ui->comp_widget.threshold_pos, checked_cast<uint32_t>(new_ui->comp_widget.threshold_values_db.size()), std::move(threshold_text) },
+        { ui->compressor_widget.ratio_slider, new_ui->comp_widget.ratio_visibility, new_ui->comp_widget.ratio_pos, checked_cast<uint32_t>(new_ui->comp_widget.ratio_values.size()), std::move(ratio_text) },
+        { ui->compressor_widget.attack_slider, new_ui->comp_widget.attack_visibility,  new_ui->comp_widget.attack_pos, checked_cast<uint32_t>(new_ui->comp_widget.attack_values.size()), std::move(attack_text) },
+        { ui->compressor_widget.release_slider, new_ui->comp_widget.release_visibility, new_ui->comp_widget.release_pos, checked_cast<uint32_t>(new_ui->comp_widget.release_values.size()), std::move(release_text) }
     };
 
     //TODO rename range
@@ -206,19 +206,19 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             {
                 case 0 : {
                     assert(state.config.threshold_active || state.step == GameStep_Begin);
-                    state.input_threshold_pos = event.value_i;
+                    state.input_threshold_pos = event.value_u;
                 } break;
                 case 1 : {
                     assert(state.config.ratio_active || state.step == GameStep_Begin);
-                    state.input_ratio_pos = event.value_i;
+                    state.input_ratio_pos = event.value_u;
                 } break;
                 case 2 : {
                     assert(state.config.attack_active || state.step == GameStep_Begin);
-                    state.input_attack_pos = event.value_i;
+                    state.input_attack_pos = event.value_u;
                 } break;
                 case 3 : {
                     assert(state.config.release_active || state.step == GameStep_Begin);
-                    state.input_release_pos = event.value_i;
+                    state.input_release_pos = event.value_u;
                 } break;
             }
             update_audio = true;
@@ -420,18 +420,12 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.step = GameStep_Begin;
             state.score = 0;
             state.mix = Mix_Hidden;
-
-            state.target_threshold_pos = -1;
-            state.target_ratio_pos = -1;
-            state.target_attack_pos = -1;
-            state.target_release_pos = -1;
             
-            state.input_threshold_pos = static_cast<int>(state.config.threshold_values_db.size()) - 1;
+            state.input_threshold_pos = checked_cast<uint32_t>(state.config.threshold_values_db.size()) - 1;
             state.input_ratio_pos = 0;
             state.input_attack_pos = 0;
             state.input_release_pos = 0;
 
-            state.current_file_idx = -1;
             state.current_round = 0;
             update_audio = true;
             update_ui = true;
@@ -442,15 +436,15 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             state.can_still_listen = true;
             state.current_round++;
 
-            state.target_threshold_pos = random_positive_int(static_cast<int>(state.config.threshold_values_db.size()));
-            state.target_ratio_pos = random_positive_int(static_cast<int>(state.config.ratio_values.size()));
-            state.target_attack_pos = random_positive_int(static_cast<int>(state.config.attack_values.size()));
-            state.target_release_pos = random_positive_int(static_cast<int>(state.config.release_values.size()));
+            state.target_threshold_pos = random_uint(checked_cast<uint32_t>(state.config.threshold_values_db.size()));
+            state.target_ratio_pos = random_uint(checked_cast<uint32_t>(state.config.ratio_values.size()));
+            state.target_attack_pos = random_uint(checked_cast<uint32_t>(state.config.attack_values.size()));
+            state.target_release_pos = random_uint(checked_cast<uint32_t>(state.config.release_values.size()));
 
             {
                 //TODO
                 if (state.config.threshold_active)
-                    state.input_threshold_pos = static_cast<int>(state.config.threshold_values_db.size()) - 1;
+                    state.input_threshold_pos = checked_cast<uint32_t>(state.config.threshold_values_db.size()) - 1;
                 else
                     state.input_threshold_pos = state.target_threshold_pos;
 
@@ -470,7 +464,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                     state.input_release_pos = state.target_release_pos;
             }
 
-            state.current_file_idx = random_positive_int((int)state.files.size());
+            state.current_file_idx = random_uint(checked_cast<uint32_t>(state.files.size()));
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)] },
@@ -518,10 +512,10 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         }break;
     }
     
-    int threshold_pos;
-    int ratio_pos;
-    int attack_pos;
-    int release_pos;
+    uint32_t threshold_pos;
+    uint32_t ratio_pos;
+    uint32_t attack_pos;
+    uint32_t release_pos;
     if (state.step == GameStep_Begin || state.mix == Mix_User)
     {
         threshold_pos = state.input_threshold_pos;
@@ -781,7 +775,7 @@ std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_
     juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
     if (root_node.getType() != id_config_root)
         return {};
-    for (int i = 0; i < root_node.getNumChildren(); i++)
+    for (uint32_t i = 0; i < checked_cast<uint32_t>(root_node.getNumChildren()); i++)
     {
         juce::ValueTree node = root_node.getChild(i);
         if(node.getType() != id_config)

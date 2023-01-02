@@ -34,10 +34,10 @@ void frequency_game_ui_transitions(FrequencyGame_UI *ui, Effect_Transition trans
         if (ui_target == 0)
         {
             auto frequency_widget = std::make_unique<FrequencyWidget>();
-            frequency_widget->onClick = [io = ui->game_io] (int frequency) {
+            frequency_widget->onClick = [io = ui->game_io] (uint32_t frequency) {
                 Event event = {
                     .type = Event_Click_Frequency,
-                    .value_i = frequency
+                    .value_u = frequency
                 };
                 frequency_game_post_event(io, event);
             };
@@ -46,10 +46,10 @@ void frequency_game_ui_transitions(FrequencyGame_UI *ui, Effect_Transition trans
         else
         {
             auto text_input = std::make_unique<Frequency_Game_Text_Input>();
-            text_input->onClick = [io = ui->game_io] (int frequency) {
+            text_input->onClick = [io = ui->game_io] (uint32_t frequency) {
                 Event event = {
                     .type = Event_Click_Frequency,
-                    .value_i = frequency
+                    .value_u = frequency
                 };
                 frequency_game_post_event(io, event);
             };
@@ -167,7 +167,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     };
 
     bool check_answer = false;
-    int TEMP_answer_frequency = -1;
+    uint32_t TEMP_answer_frequency = 0;
 
     switch (event.type) 
     {
@@ -178,7 +178,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         case Event_Click_Frequency :
         {
             check_answer = true;
-            TEMP_answer_frequency = event.value_i;
+            TEMP_answer_frequency = event.value_u;
         } break;
         case Event_Toggle_Input_Target :
         {
@@ -282,9 +282,9 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     if (check_answer)
     {
         if (state.step != GameStep_Question) return { .error = 1 };
-        auto clicked_ratio = normalize_frequency(TEMP_answer_frequency, state.config.min_f, state.config.num_octaves);
-        auto target_ratio = normalize_frequency(state.target_frequency, state.config.min_f, state.config.num_octaves);
-        auto distance = std::abs(clicked_ratio - target_ratio);
+        float clicked_ratio = normalize_frequency(TEMP_answer_frequency, state.config.min_f, state.config.num_octaves);
+        float target_ratio = normalize_frequency(state.target_frequency, state.config.min_f, state.config.num_octaves);
+        float distance = std::abs(clicked_ratio - target_ratio);
         if (distance < state.correct_answer_window)
         {
             int points_scored = int((1.0f - distance) * 100.0f);
@@ -342,7 +342,6 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
 
             state.correct_answer_window = state.config.initial_correct_answer_window;
 
-            state.current_file_idx = -1;
             update_audio = true;
             update_ui = true;
         }break;
@@ -350,7 +349,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.step = GameStep_Question;
             state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat(), state.config.min_f, state.config.num_octaves);
     
-            state.current_file_idx = random_positive_int((int)state.files.size());
+            state.current_file_idx = random_uint(checked_cast<uint32_t>(state.files.size()));
             effects.player = Effect_Player {
                 .commands = { 
                     { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)] },
@@ -493,7 +492,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 else if (event.type == Event_Timer_Tick)
                 {
                     effects.ui->freq_widget.is_cursor_locked = true;
-                    effects.ui->freq_widget.locked_cursor_frequency = -1;
+                    effects.ui->freq_widget.locked_cursor_frequency = 0;
                 }
                 else 
                     jassertfalse;
@@ -539,7 +538,7 @@ void frequency_widget_update(FrequencyWidget *widget, Frequency_Game_Effect_UI *
     widget->locked_cursor_frequency = new_ui->freq_widget.locked_cursor_frequency;
     widget->display_window = new_ui->freq_widget.display_window;
     widget->correct_answer_window = new_ui->freq_widget.correct_answer_window;
-    widget->min_f = new_ui->freq_widget.min_f;
+    widget->min_frequency = new_ui->freq_widget.min_f;
     widget->num_octaves = new_ui->freq_widget.num_octaves;
     widget->repaint();
 }
@@ -587,8 +586,8 @@ juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *freque
             { id_config_gain, config->eq_gain_db },
             { id_config_quality, config->eq_quality },
             { id_config_window, config->initial_correct_answer_window },
-            { id_config_min_f, config->min_f },
-            { id_config_num_octaves, config->num_octaves },
+            { id_config_min_f, checked_cast<int>(config->min_f) },
+            { id_config_num_octaves, checked_cast<int>(config->num_octaves) },
 
             { id_config_prelisten_type, config->prelisten_type },
             { id_config_prelisten_timeout_ms, config->prelisten_timeout_ms },
@@ -612,7 +611,7 @@ std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_st
     juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
     if (root_node.getType() != id_config_root)
         return {};
-    for (int i = 0; i < root_node.getNumChildren(); i++)
+    for (uint32_t i = 0; i < checked_cast<uint32_t>(root_node.getNumChildren()); i++)
     {
         juce::ValueTree node = root_node.getChild(i);
         if(node.getType() != id_config)
@@ -624,8 +623,8 @@ std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_st
             .eq_gain_db = node.getProperty(id_config_gain, 0.0f),
             .eq_quality = node.getProperty(id_config_quality, -1.0f),
             .initial_correct_answer_window = node.getProperty(id_config_window, -1.0f),
-            .min_f = node.getProperty(id_config_min_f, -1.0f),
-            .num_octaves = node.getProperty(id_config_num_octaves, -1.0f),
+            .min_f = checked_cast<uint32_t>((int)node.getProperty(id_config_min_f, 0)),
+            .num_octaves = checked_cast<uint32_t>((int)node.getProperty(id_config_num_octaves, 0)),
 
             .prelisten_type = (PreListen_Type)(int)node.getProperty(id_config_prelisten_type, (int)PreListen_None),
             .prelisten_timeout_ms = node.getProperty(id_config_prelisten_timeout_ms, -1),

@@ -27,7 +27,7 @@ ProcessorTrack::ProcessorTrack()
                  )
 #endif
 ,
-    daw_channel_id { random_positive_int() },
+    daw_channel_id { random_uint() },
     name { daw_channel_id },
     gain_db { 0.0f },
     minFrequency { 20 },
@@ -178,7 +178,7 @@ void ProcessorTrack::getStateInformation(juce::MemoryBlock& destData)
     //out.writeInt(daw_channel_id);
     out.write(out_message, sizeof(out_message));
 
-    out.writeInt(game_channel_id);
+    out.writeInt64(game_channel_id);
     //out.writeFloat(minFrequency);
     //out.writeFloat(maxFrequency);
     out.writeInt(0);
@@ -230,7 +230,7 @@ void ProcessorTrack::actionListenerCallback(const juce::String& message)
     }
     else if(tokens[0] == "name_from_ui")
     {
-        int message_id = tokens[1].getIntValue();
+        uint32_t message_id = checked_cast<uint32_t>(tokens[1].getLargeIntValue());
         if(message_id != daw_channel_id)
             return;
         name = tokens[2];

@@ -127,8 +127,15 @@ int string_to(juce::String string)
 {
     return string.getIntValue();
 }
+
 template<>
-juce::int64 string_to(juce::String string)
+uint32_t string_to(juce::String string)
+{
+    return checked_cast<uint32_t>(string.getIntValue());
+}
+
+template<>
+int64_t string_to(juce::String string)
 {
     return string.getLargeIntValue();
 }

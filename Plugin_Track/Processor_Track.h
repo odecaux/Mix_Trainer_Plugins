@@ -93,8 +93,8 @@ class ProcessorTrack : public juce::AudioProcessor, public juce::ActionListener
     }
     //==============================================================================
     std::vector<Game_Channel> game_channels;
-    int game_channel_id = -1;
-    int daw_channel_id;
+    int64_t game_channel_id = -1;
+    uint32_t daw_channel_id;
     juce::String name;
     double gain_db;
     float minFrequency;

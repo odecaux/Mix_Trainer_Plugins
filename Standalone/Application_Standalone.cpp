@@ -38,7 +38,7 @@ bool insert_file(Audio_File_List *audio_file_list, juce::File file, juce::AudioF
         DBG(file.getFullPathName() << " does not exist");
         return false;
     }
-    juce::int64 hash = file.hashCode64();
+    int64_t hash = file.hashCode64();
     //can't have the same file twice
     if (audio_file_list->files.contains(hash))
         return false;
@@ -61,12 +61,12 @@ bool insert_file(Audio_File_List *audio_file_list, juce::File file, juce::AudioF
 
 void remove_files(Audio_File_List *audio_file_list, juce::SparseSet<int>* indices)
 {
-    for (int i = static_cast<int>(audio_file_list->files.size()); --i >= 0;)
+    for (uint32_t i = static_cast<int>(audio_file_list->files.size()); --i >= 0;)
     {   
         if (indices->contains(static_cast<int>(i)))
         {
             //TODO assert
-            juce::int64 hash = audio_file_list->order[i];
+            uint64_t hash = audio_file_list->order[i];
             audio_file_list->files.erase(hash);
             audio_file_list->selected.erase(hash);
             audio_file_list->order.erase(audio_file_list->order.begin() + i);
@@ -80,7 +80,7 @@ std::vector<Audio_File> get_selected_list(Audio_File_List *audio_file_list)
     assert(audio_file_list->files.size() == audio_file_list->selected.size());
     assert(audio_file_list->files.size() == audio_file_list->order.size());
     std::vector<Audio_File> selected_files;
-    for (juce::int64 hash : audio_file_list->order)
+    for (uint64_t hash : audio_file_list->order)
     {
         if(audio_file_list->selected.at(hash))
             selected_files.push_back(audio_file_list->files.at(hash));
@@ -92,9 +92,9 @@ std::vector<Audio_File> get_ordered_audio_files(Audio_File_List *audio_file_list
 {
     std::vector<Audio_File> files{};
     files.reserve(audio_file_list->order.size());
-    for (int i = 0; i < audio_file_list->order.size(); i++)
+    for (uint32_t i = 0; i < audio_file_list->order.size(); i++)
     {
-        juce::int64 hash = audio_file_list->order[i];
+        uint64_t hash = audio_file_list->order[i];
         files.push_back(audio_file_list->files.at(hash));
     }
     return files;
@@ -119,11 +119,11 @@ static const juce::Identifier id_file_length_samples = "length_samples";
 juce::String audio_file_list_serialize(Audio_File_List *audio_file_list)
 {
     juce::ValueTree root_node { id_files_root };
-    for (juce::int64 hash : audio_file_list->order)
+    for (uint64_t hash : audio_file_list->order)
     {
         const auto& audio_file = audio_file_list->files.at(hash);
-        std::vector<juce::int64> loop_bounds { audio_file.loop_bounds_samples.getStart(), audio_file.loop_bounds_samples.getEnd() };
-        std::vector<int> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
+        std::vector<int64_t> loop_bounds { audio_file.loop_bounds_samples.getStart(), audio_file.loop_bounds_samples.getEnd() };
+        std::vector<uint32_t> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
         juce::ValueTree node = { id_file, {
             { id_file_name,  audio_file.file.getFullPathName() },
             { id_file_last_modification_time, audio_file.last_modification_time.toMilliseconds() },
@@ -145,7 +145,7 @@ std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
     if (root_node.getType() != id_files_root)
         return {};
     
-    for (int i = 0; i < root_node.getNumChildren(); i++)
+    for (uint32_t i = 0; i < checked_cast<uint32_t>(root_node.getNumChildren()); i++)
     {
         juce::ValueTree node = root_node.getChild(i);
         if(node.getType() != id_file)
@@ -155,13 +155,13 @@ std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
         auto file = juce::File{ file_name };
         if(!file.existsAsFile())
             continue;
-        auto loop_bounds = deserialize_vector<juce::int64>(node.getProperty(id_file_loop_bounds, ""));
+        auto loop_bounds = deserialize_vector<int64_t>(node.getProperty(id_file_loop_bounds, ""));
         if(loop_bounds.size() != 2)
             continue;
-        auto freq_bounds = deserialize_vector<int>(node.getProperty(id_file_freq_bounds, ""));
+        auto freq_bounds = deserialize_vector<uint32_t>(node.getProperty(id_file_freq_bounds, ""));
         if(freq_bounds.size() != 2)
             continue;
-        juce::int64 modification_time = node.getProperty(id_file_last_modification_time, 0);
+        int64_t modification_time = node.getProperty(id_file_last_modification_time, 0);
         Audio_File audio_file = {
             .file = file,
             .last_modification_time = juce::Time(modification_time),
@@ -219,7 +219,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         audio_file_list.order.reserve(file_vec.size());
         for (auto& audio_file : file_vec)
         {
-            juce::int64 hash = audio_file.file.hashCode64();
+            uint64_t hash = audio_file.file.hashCode64();
             audio_file.hash = hash; //HACK or is it ? It's a cached value, right ?
             audio_file_list.files.emplace(hash, audio_file);
             audio_file_list.selected.emplace(hash, false);
@@ -250,7 +250,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
         if(root_node.getType() != id_results_root)
             return;
-        for (int i = 0; i < root_node.getNumChildren(); i++)
+        for (uint32_t i = 0; i < checked_cast<uint32_t>(root_node.getNumChildren()); i++)
         {
             juce::ValueTree node = root_node.getChild(i);
             if(node.getType() != id_result)
@@ -279,7 +279,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
         if(root_node.getType() != id_results_root)
             return;
-        for (int i = 0; i < root_node.getNumChildren(); i++)
+        for (uint32_t i = 0; i < checked_cast<uint32_t>(root_node.getNumChildren()); i++)
         {
             juce::ValueTree node = root_node.getChild(i);
             if(node.getType() != id_result)
@@ -494,7 +494,7 @@ void Application_Standalone::to_frequency_game()
 
     frequency_game_post_event(frequency_game_io.get(), Event { .type = Event_Init });
     frequency_game_post_event(frequency_game_io.get(), Event { .type = Event_Create_UI });
-    frequency_game_io->timer.callback = [io = frequency_game_io.get()] (juce::int64 timestamp) {
+    frequency_game_io->timer.callback = [io = frequency_game_io.get()] (int64_t timestamp) {
         frequency_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
     frequency_game_io->timer.startTimerHz(60);
@@ -589,7 +589,7 @@ void Application_Standalone::to_compressor_game()
 
     compressor_game_post_event(compressor_game_io.get(), Event { .type = Event_Init });
     compressor_game_post_event(compressor_game_io.get(), Event { .type = Event_Create_UI });
-    compressor_game_io->timer.callback = [io = compressor_game_io.get()] (juce::int64 timestamp) {
+    compressor_game_io->timer.callback = [io = compressor_game_io.get()] (int64_t timestamp) {
         compressor_game_post_event(io, Event {.type = Event_Timer_Tick, .value_i64 = timestamp});
     };
     compressor_game_io->timer.startTimerHz(60);

@@ -7,14 +7,14 @@ struct Game_Mixer_Effect_Transition {
 };
 
 struct Game_Mixer_Effect_DSP {
-    std::unordered_map<int, Channel_DSP_State> dsp_states;
+    std::unordered_map<uint32_t, Channel_DSP_State> dsp_states;
 };
 
 struct Game_Mixer_Effect_UI {
     juce::String header_center_text;
     juce::String header_right_text;
     //int score; 
-    std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+    std::optional < std::unordered_map<uint32_t, uint32_t> > slider_pos_to_display;
     Widget_Interaction_Type widget_visibility;
     Mix mix_toggles;
     bool display_bottom_button;
@@ -33,7 +33,7 @@ enum MixerGame_Variant
 struct MixerGame_Config 
 {
     juce::String title;
-    std::unordered_map<int, Game_Channel> channel_infos;
+    std::unordered_map<uint32_t, Game_Channel> channel_infos;
     std::vector < double > db_slider_values;
     MixerGame_Variant variant;
     int listens;
@@ -45,8 +45,8 @@ struct MixerGame_State {
     Mix mix;
     int score;
     //mixer
-    std::unordered_map < int, int > edited_slider_pos;
-    std::unordered_map < int, int > target_slider_pos;
+    std::unordered_map < uint32_t, uint32_t > edited_slider_pos;
+    std::unordered_map < uint32_t, uint32_t > target_slider_pos;
     
     MixerGame_Config config;
     int remaining_listens;
@@ -82,7 +82,7 @@ void mixer_game_ui_transitions(MixerGameUI &ui, Game_Mixer_Effect_Transition tra
 void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui);
 void mixer_game_add_observer(MixerGame_IO *io, mixer_game_observer_t new_observer);
 
-MixerGame_State mixer_game_state_init(std::unordered_map<int, Game_Channel> &channel_infos,
+MixerGame_State mixer_game_state_init(std::unordered_map<uint32_t, Game_Channel> &channel_infos,
                                       MixerGame_Variant variant,
                                       int listens,
                                       int timeout_ms,
@@ -93,7 +93,7 @@ std::unique_ptr<MixerGame_IO> mixer_game_io_init(MixerGame_State state);
 
 struct MixerGameUI : public juce::Component
 {
-    MixerGameUI(const std::unordered_map<int, Game_Channel>& channelInfo,
+    MixerGameUI(const std::unordered_map<uint32_t, Game_Channel>& channelInfo,
                 const std::vector<double> &SliderValuesdB,
                 MixerGame_IO *gameIO) 
         :

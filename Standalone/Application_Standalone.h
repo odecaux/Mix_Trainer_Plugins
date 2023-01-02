@@ -1,8 +1,8 @@
 struct Audio_File_List 
 {   
-    std::unordered_map<juce::int64, Audio_File> files;
-    std::unordered_map<juce::int64, bool> selected;
-    std::vector<juce::int64> order;
+    std::unordered_map<uint64_t, Audio_File> files;
+    std::unordered_map<uint64_t, bool> selected;
+    std::vector<uint64_t> order;
 };
 
 
@@ -20,7 +20,6 @@ struct File_Player : juce::ChangeListener
     File_Player(juce::AudioFormatManager *formatManager);
 
     ~File_Player();
-
 
     juce::AudioFormatManager *format_manager;
     Transport_State transport_state;

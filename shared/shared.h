@@ -21,10 +21,10 @@ inline to checked_cast(const from& from_value) {
 }
 //#define ArraySize(array) (sizeof((array)) / sizeof(*(array)))
 
-static int random_positive_int(int max = INT_MAX)
+static uint32_t random_uint(uint32_t max = INT_MAX)
 {
-    auto seed = juce::Random::getSystemRandom().nextInt(max);
-    return seed;
+    int seed = juce::Random::getSystemRandom().nextInt(checked_cast<int>(max));
+    return checked_cast<uint32_t>(seed);
 }
 
 struct Timer: public juce::Timer
@@ -82,11 +82,11 @@ struct Audio_File
     //juce::int64 hash_code;
     juce::Time last_modification_time;
     juce::String title;
-    juce::Range<juce::int64> loop_bounds_samples;
-    juce::Range<int> freq_bounds;
+    juce::Range<int64_t> loop_bounds_samples;
+    juce::Range<uint32_t> freq_bounds;
     float max_level;
-    juce::int64 length_samples;
-    juce::int64 hash;
+    int64_t length_samples;
+    int64_t hash;
 };
 
 Channel_DSP_State ChannelDSP_on();
@@ -139,10 +139,10 @@ struct Channel_DSP_Callback : public juce::AudioSource
         sample_rate = sampleRate;
         input_source->prepareToPlay (blockSize, sampleRate);
 
-        normalization_gain.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
-        dsp_chain.prepare({ sampleRate, (juce::uint32) blockSize, 2 }); //TODO always stereo ?
+        normalization_gain.prepare({ sampleRate, (uint32_t) blockSize, 2 });
+        dsp_chain.prepare({ sampleRate, (uint32_t) blockSize, 2 }); //TODO always stereo ?
         channel_dsp_update_chain(&dsp_chain, state, &lock, sample_rate);
-        master_gain.prepare({ sampleRate, (juce::uint32) blockSize, 2 });
+        master_gain.prepare({ sampleRate, (uint32_t) blockSize, 2 });
     }
 
     void releaseResources() override
@@ -179,7 +179,7 @@ struct Channel_DSP_Callback : public juce::AudioSource
 
 struct Game_Channel
 {
-    int id;
+    uint32_t id;
     char name[128];
     float min_freq;
     float max_freq;
@@ -187,8 +187,8 @@ struct Game_Channel
 
 struct Daw_Channel
 {
-    int id;
-    int assigned_game_channel_id;
+    uint32_t id;
+    int64_t assigned_game_channel_id;
     char name[128];
 };
 
@@ -206,7 +206,7 @@ enum MultiTrack_Observers_ID : int
 
 struct MuliTrack_Model
 {
-    std::unordered_map<int, Game_Channel> game_channels;
+    std::unordered_map<uint32_t, Game_Channel> game_channels;
     std::vector<int> order;
     std::unordered_map<int, Daw_Channel> daw_channels;
     std::unordered_map<int, multitrack_observer_t> observers;
@@ -242,7 +242,7 @@ static void debug_multitrack_model(MuliTrack_Model *model)
         }
         else
         {
-            auto game_channel_it = model->game_channels.find(daw_channel.assigned_game_channel_id);
+            auto game_channel_it = model->game_channels.find(checked_cast<uint32_t>(daw_channel.assigned_game_channel_id));
             if(game_channel_it != model->game_channels.end())
                 DBG("-----> " << game_channel_it->second.name << ", " << daw_channel.assigned_game_channel_id % 100);
             else 
@@ -264,7 +264,7 @@ static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observ
     {
         //if (daw_channel.assigned_game_channel_id == -1) continue;
         //TODO HACK, not sure if it is a proper fix
-        auto it = model->assigned_daw_track_count.find(daw_channel.assigned_game_channel_id);
+        auto it = model->assigned_daw_track_count.find(checked_cast<uint32_t>(daw_channel.assigned_game_channel_id));
         if(it == model->assigned_daw_track_count.end())
             continue;
         it->second++;

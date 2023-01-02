@@ -17,25 +17,25 @@ public:
     void toSettings();
     
     //TODO rename
-    static std::unordered_map < int, Channel_DSP_State > bypassedAllChannelsDSP(const std::unordered_map<int, Game_Channel> &channels) {
-        std::unordered_map < int, Channel_DSP_State > dsp_states;
+    static std::unordered_map < uint32_t, Channel_DSP_State > bypassedAllChannelsDSP(const std::unordered_map<uint32_t, Game_Channel> &channels) {
+        std::unordered_map < uint32_t, Channel_DSP_State > dsp_states;
         
         std::transform(channels.begin(), channels.end(), 
                        std::inserter(dsp_states, dsp_states.end()), 
-                       [](const auto &a) -> std::pair<int, Channel_DSP_State>{
+                       [](const auto &a) -> std::pair<uint32_t, Channel_DSP_State>{
                        return { a.first, ChannelDSP_on() };
         });
         return dsp_states;
     }
 
-    void broadcastDSP(const std::unordered_map < int, Channel_DSP_State > &dsp_states);
+    void broadcastDSP(const std::unordered_map < uint32_t, Channel_DSP_State > &dsp_states);
 
-    void create_daw_channel(int id);
-    void delete_daw_channel(int id);
+    void create_daw_channel(uint32_t id);
+    void delete_daw_channel(uint32_t id);
     //void renameChannelFromUI(int id, juce::String newName);
-    void rename_daw_channel(int id, const juce::String &new_name);
-    void change_frequency_range_from_daw(int daw_channel_id, int game_channel_id, float new_min, float new_max);
-    void bind_daw_channel_with_game_channel(int daw_track_id, int game_track_id);
+    void rename_daw_channel(uint32_t id, const juce::String &new_name);
+    void change_frequency_range_from_daw(uint32_t daw_channel_id, uint32_t game_channel_id, float new_min, float new_max);
+    void bind_daw_channel_with_game_channel(uint32_t daw_track_id, uint32_t game_track_id);
     void set_model(const std::vector<Game_Channel> &channels);
     std::vector<Game_Channel> save_model();
 

@@ -135,7 +135,7 @@ public :
         };
         
         channel_list.create_channel_callback = [&](juce::String new_channel_name){
-            int new_channel_id = random_positive_int();
+            uint32_t new_channel_id = random_uint();
             Game_Channel new_channel = {
                 .id = new_channel_id,
             };

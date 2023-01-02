@@ -44,8 +44,8 @@ void Application::toMainMenu()
     editor->changePanel(std::move(main_menu));
 }
 
-static void channel_dsp_log(const std::unordered_map<int, Channel_DSP_State> &dsps, 
-                    const std::unordered_map<int, Game_Channel> &channels)
+static void channel_dsp_log(const std::unordered_map<uint32_t, Channel_DSP_State> &dsps, 
+                    const std::unordered_map<uint32_t, Game_Channel> &channels)
 {
     assert(dsps.size() == channels.size());
     for (const auto& [id, channel] : channels)
@@ -243,12 +243,12 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
     editor->changePanel(std::move(panel));
 }
 
-void Application::broadcastDSP(const std::unordered_map < int, Channel_DSP_State > &dsp_states)
+void Application::broadcastDSP(const std::unordered_map < uint32_t, Channel_DSP_State > &dsp_states)
 {
     host.broadcastAllDSP(dsp_states);
 }
 
-void Application::create_daw_channel(int daw_channel_id)
+void Application::create_daw_channel(uint32_t daw_channel_id)
 {
     //DBG("action create " << daw_channel_id % 100 );
     auto [it, result] = multitrack_model.daw_channels.emplace(daw_channel_id, Daw_Channel { .id = daw_channel_id, .assigned_game_channel_id = -1  });
@@ -256,7 +256,7 @@ void Application::create_daw_channel(int daw_channel_id)
     multitrack_model_broadcast_change(&multitrack_model);
 }
     
-void Application::delete_daw_channel(int daw_channel_id)
+void Application::delete_daw_channel(uint32_t daw_channel_id)
 {    
     //DBG("action delete " << daw_channel_id % 100 << " " << multitrack_model.daw_channels[daw_channel_id].name);
     {
@@ -267,7 +267,7 @@ void Application::delete_daw_channel(int daw_channel_id)
 }
     
 #if 0
-void Application::renameChannelFromUI(int id, juce::String new_name)
+void Application::renameChannelFromUI(uint32_t id, juce::String new_name)
 {
     juce::ignoreUnused(id);
     juce::ignoreUnused(new_name);
@@ -281,7 +281,7 @@ void Application::renameChannelFromUI(int id, juce::String new_name)
 }
 #endif
     
-void Application::rename_daw_channel(int daw_channel_id, const juce::String &new_name)
+void Application::rename_daw_channel(uint32_t daw_channel_id, const juce::String &new_name)
 {
     //DBG("action rename " << daw_channel_id % 100 << " " << daw_channel.name << " into " << new_name);
     auto &daw_channel = multitrack_model.daw_channels.at(daw_channel_id);
@@ -293,7 +293,7 @@ void Application::rename_daw_channel(int daw_channel_id, const juce::String &new
     multitrack_model_broadcast_change(&multitrack_model);
 }
     
-void Application::change_frequency_range_from_daw(int daw_channel_id, int game_channel_id, float new_min, float new_max)
+void Application::change_frequency_range_from_daw(uint32_t daw_channel_id, uint32_t game_channel_id, float new_min, float new_max)
 {
     //DBG("action frequency " << daw_channel_id % 100);
     auto &daw_channel = multitrack_model.daw_channels.at(daw_channel_id);
@@ -306,7 +306,7 @@ void Application::change_frequency_range_from_daw(int daw_channel_id, int game_c
 }
 
 
-void Application::bind_daw_channel_with_game_channel(int daw_channel_id, int game_channel_id)
+void Application::bind_daw_channel_with_game_channel(uint32_t daw_channel_id, uint32_t game_channel_id)
 {
     //DBG("action bind " << daw_channel_id % 100 << " " << game_channel_id % 100);
     assert(multitrack_model.daw_channels.contains(daw_channel_id));

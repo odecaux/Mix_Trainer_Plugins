@@ -28,13 +28,13 @@ struct Frequency_Game_Effect_UI {
     int ui_target;
     struct {
         bool display_target;
-        int target_frequency;
+        uint32_t target_frequency;
         bool is_cursor_locked;
-        int locked_cursor_frequency;
+        uint32_t locked_cursor_frequency;
         bool display_window;
         float correct_answer_window;
-        int min_f;
-        int num_octaves;
+        uint32_t min_f;
+        uint32_t num_octaves;
     } freq_widget;
     FrequencyGame_Results results;
     juce::String header_center_text;
@@ -67,8 +67,8 @@ struct FrequencyGame_Config
     float eq_gain_db;
     float eq_quality;
     float initial_correct_answer_window;
-    int min_f;
-    int num_octaves;
+    uint32_t min_f;
+    uint32_t num_octaves;
     //
     PreListen_Type prelisten_type;
     int prelisten_timeout_ms;
@@ -86,16 +86,16 @@ struct FrequencyGame_State
     int score;
     int lives;
     //frequency
-    int target_frequency;
+    uint32_t target_frequency;
     float correct_answer_window;
     //
-    int current_file_idx;
+    uint32_t current_file_idx;
     std::vector<Audio_File> files;
     FrequencyGame_Config config;
     FrequencyGame_Results results;
 
-    juce::int64 timestamp_start;
-    juce::int64 current_timestamp;
+    int64_t timestamp_start;
+    int64_t current_timestamp;
 };
 
 struct Frequency_Game_Effects {

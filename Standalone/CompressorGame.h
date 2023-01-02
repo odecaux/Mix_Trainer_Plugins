@@ -34,10 +34,10 @@ struct Compressor_Game_Effect_UI {
         Widget_Interaction_Type attack_visibility;
         Widget_Interaction_Type release_visibility;
 
-        int threshold_pos;
-        int ratio_pos;
-        int attack_pos;
-        int release_pos;
+        uint32_t threshold_pos;
+        uint32_t ratio_pos;
+        uint32_t attack_pos;
+        uint32_t release_pos;
         
         std::vector < float > threshold_values_db;
         std::vector < float > ratio_values;
@@ -108,26 +108,26 @@ struct CompressorGame_State
     Mix mix;
     int score;
     //compressor
-    int target_threshold_pos;
-    int target_ratio_pos;
-    int target_attack_pos;
-    int target_release_pos;
+    uint32_t target_threshold_pos;
+    uint32_t target_ratio_pos;
+    uint32_t target_attack_pos;
+    uint32_t target_release_pos;
 
-    int input_threshold_pos;
-    int input_ratio_pos;
-    int input_attack_pos;
-    int input_release_pos;
+    uint32_t input_threshold_pos;
+    uint32_t input_ratio_pos;
+    uint32_t input_attack_pos;
+    uint32_t input_release_pos;
 
     //
-    int current_file_idx;
+    uint32_t current_file_idx;
     std::vector<Audio_File> files;
     CompressorGame_Config config;
     CompressorGame_Results results;
     
     int remaining_listens;
     bool can_still_listen;
-    juce::int64 timestamp_start;
-    juce::int64 current_timestamp;
+    int64_t timestamp_start;
+    int64_t current_timestamp;
     int current_round;
 };
 
@@ -176,7 +176,7 @@ struct CompressorGame_Widget : public juce::Component
     CompressorGame_Widget(CompressorGame_IO *gameIO)
     : game_io(gameIO)
     {
-        auto setup_slider = [&] (TextSlider &slider, juce::Label &label, juce::String name, std::function<void(int)> onEdit) {
+        auto setup_slider = [&] (TextSlider &slider, juce::Label &label, juce::String name, std::function<void(uint32_t)> onEdit) {
             label.setText(name, juce::NotificationType::dontSendNotification);
             label.setJustificationType(juce::Justification::centred);
             addAndMakeVisible(label);
@@ -186,47 +186,47 @@ struct CompressorGame_Widget : public juce::Component
             slider.setScrollWheelEnabled(true);
         
             slider.onValueChange = [&slider, onEdit = std::move(onEdit)] {
-                onEdit((int)slider.getValue());
+                onEdit((uint32_t)slider.getValue());
             };
             addAndMakeVisible(slider);
         };
         
-        auto onThresholdMoved = [io = this->game_io] (int new_pos) {
+        auto onThresholdMoved = [io = this->game_io] (uint32_t new_pos) {
             Event event = {
                 .type = Event_Slider,
                 .id = 0,
-                .value_i = new_pos
+                .value_u = new_pos
             };
             compressor_game_post_event(io, event);
         };
 
         setup_slider(threshold_slider, threshold_label, "Threshold", std::move(onThresholdMoved));
         
-        auto onRatioMoved = [io = this->game_io] (int new_pos) {
+        auto onRatioMoved = [io = this->game_io] (uint32_t new_pos) {
             Event event = {
                 .type = Event_Slider,
                 .id = 1,
-                .value_i = new_pos
+                .value_u = new_pos
             };
             compressor_game_post_event(io, event);
         };
         setup_slider(ratio_slider, ratio_label, "Ratio", std::move(onRatioMoved));
         
-        auto onAttackMoved = [io = this->game_io] (int new_pos) {
+        auto onAttackMoved = [io = this->game_io] (uint32_t new_pos) {
             Event event = {
                 .type = Event_Slider,
                 .id = 2,
-                .value_i = new_pos
+                .value_u = new_pos
             };
             compressor_game_post_event(io, event);
         };
         setup_slider(attack_slider, attack_label, "Attack", std::move(onAttackMoved));
         
-        auto onReleaseMoved = [io = this->game_io] (int new_pos) {
+        auto onReleaseMoved = [io = this->game_io] (uint32_t new_pos) {
             Event event = {
                 .type = Event_Slider,
                 .id = 3,
-                .value_i = new_pos
+                .value_u = new_pos
             };
             compressor_game_post_event(io, event);
         };

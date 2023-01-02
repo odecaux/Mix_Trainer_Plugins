@@ -277,7 +277,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             state.can_still_listen = true;
             for (auto& [_, channel] : state.config.channel_infos)
             {
-                auto target_pos = random_positive_int(static_cast<int>(state.config.db_slider_values.size()));
+                auto target_pos = random_uint(static_cast<int>(state.config.db_slider_values.size()));
                 state.target_slider_pos[channel.id] = target_pos;
                 auto edited_pos = static_cast<int>(state.config.db_slider_values.size()) - 2;
                 state.edited_slider_pos[channel.id] = edited_pos;
@@ -313,7 +313,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         }break;
     }
     
-    std::unordered_map<int, int>* slider_pos;
+    std::unordered_map<uint32_t, uint32_t>* slider_pos;
     if(state.step == GameStep_Begin || state.mix == Mix_User)
         slider_pos = &state.edited_slider_pos;
     else
@@ -321,10 +321,10 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     
     if (update_audio)
     {
-        std::unordered_map < int, Channel_DSP_State > dsp;
+        std::unordered_map < uint32_t, Channel_DSP_State > dsp;
         std::transform(slider_pos->begin(), slider_pos->end(), 
                        std::inserter(dsp, dsp.end()), 
-                       [state](const auto &a) -> std::pair<int, Channel_DSP_State> {
+                       [state](const auto &a) -> std::pair<uint32_t, Channel_DSP_State> {
                            double gain_db = state.config.db_slider_values[static_cast<size_t>(a.second)];
                            return { a.first, ChannelDSP_gain_db(gain_db) };
                        });
@@ -333,7 +333,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     
     if (update_ui)
     {
-        std::optional < std::unordered_map<int, int> > slider_pos_to_display;
+        std::optional < std::unordered_map<uint32_t, uint32_t> > slider_pos_to_display;
         
         if(state.step == GameStep_Question && state.mix == Mix_Target)
             slider_pos_to_display = std::nullopt; 
@@ -435,7 +435,7 @@ void mixer_game_add_observer(MixerGame_IO *io, mixer_game_observer_t new_observe
 }
 
 
-MixerGame_State mixer_game_state_init(std::unordered_map<int, Game_Channel> &channel_infos,
+MixerGame_State mixer_game_state_init(std::unordered_map<uint32_t, Game_Channel> &channel_infos,
                                       MixerGame_Variant variant,
                                       int listens,
                                       int timeout_ms,

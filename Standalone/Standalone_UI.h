@@ -142,7 +142,7 @@ public:
     {
         if (file_length == -1) return;
         float ratio = e.x / (float)getWidth();
-        juce::int64 sample_position = juce::int64(ratio * (float)file_length); //todo arithmetics
+        uint64_t sample_position = uint64_t(ratio * (float)file_length); //todo arithmetics
         if (e.mods.isLeftButtonDown())
         {
             loop_bounds.setStart(sample_position);
@@ -184,14 +184,14 @@ public:
         }
     }
     
-    std::function<void(juce::Range < juce::int64>) > loop_bounds_changed = {};
+    std::function<void(juce::Range<int64_t>)> loop_bounds_changed = {};
 
 private:
     float zoom_value = 0.0F;
     juce::AudioTransportSource *transport_source;
     juce::ScrollBar scrollbar { false };
-    juce::Range < juce::int64 > loop_bounds = { -1, -1 };
-    juce::int64 file_length = -1;
+    juce::Range < int64_t > loop_bounds = { -1, -1 };
+    int64_t file_length = -1;
 
     juce::AudioThumbnailCache thumbnail_cache { 5 };
     juce::AudioThumbnail thumbnail;
@@ -284,7 +284,7 @@ public:
         
         std::vector<juce::String> file_names{};
         std::vector<bool> initial_selection{};
-        for (juce::int64 hash : audio_file_list->order)
+        for (uint64_t hash : audio_file_list->order)
         {
             file_names.push_back(audio_file_list->files.at(hash).title);
             initial_selection.push_back(audio_file_list->selected.at(hash));
@@ -295,9 +295,9 @@ public:
             [audio_file_list, selection_changed = std::move(validate_next_button)] (std::vector<bool> *new_selection)
         {
             assert(new_selection->size() == audio_file_list->order.size());
-            for (int i = 0; i < new_selection->size(); i++)
+            for (uint32_t i = 0; i < new_selection->size(); i++)
             {
-                juce::int64 hash = audio_file_list->order[i];
+                uint64_t hash = audio_file_list->order[i];
                 audio_file_list->selected.at(hash) = new_selection->at(i);
             }
             selection_changed(*new_selection);
@@ -374,11 +374,11 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-        if (rowNumber < static_cast<int>(files.size()))
+        if (rowNumber < checked_cast<int>(files.size()))
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(files[static_cast<size_t>(rowNumber)].title, bounds.reduced(2), juce::Justification::centredLeft);
+            g.drawText(files[checked_cast<size_t>(rowNumber)].title, bounds.reduced(2), juce::Justification::centredLeft);
             if (rowIsSelected)
             {
                 g.drawRect(bounds);
@@ -424,14 +424,14 @@ public:
             if (row_to_delete == -1)
                 return;
 
-            int row_to_select{};
+            uint32_t row_to_select = 0;
             if (row_to_delete == 0)
                 row_to_select = 0;
             else if (row_to_delete == num_rows - 1)
                 row_to_select = row_to_delete - 1;
             else
                 row_to_select = row_to_delete;
-            bool should_trigger_manually = row_to_select == file_list_component.getSelectedRow();
+            bool should_trigger_manually = row_to_select == checked_cast<uint32_t>(file_list_component.getSelectedRow());
             file_list_component.selectRow(row_to_select);
             if (should_trigger_manually)
                 selectedRowsChanged(row_to_select);
@@ -544,7 +544,7 @@ public:
             addAndMakeVisible(file_list_component);
         }
         
-        thumbnail.loop_bounds_changed = [&] (juce::Range < juce::int64 > new_loop_bounds){
+        thumbnail.loop_bounds_changed = [&] (juce::Range < int64_t > new_loop_bounds){
             audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
         };
         addAndMakeVisible(thumbnail);
@@ -552,7 +552,7 @@ public:
             [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, &audio_file_list] 
             (float begin, float end, float) {
             if(is_selected)
-                audio_file_list->files.at(hash).freq_bounds = { (int)begin, (int)end };
+                audio_file_list->files.at(hash).freq_bounds = { (uint32_t)begin, (uint32_t)end };
         };
         addAndMakeVisible(frequency_bounds_slider);
     }
@@ -590,7 +590,7 @@ private:
     Thumbnail thumbnail { player->format_manager, &player->transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
     bool file_is_selected = false;
-    juce::int64 selected_file_hash;
+    uint64_t selected_file_hash;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };

@@ -15,7 +15,7 @@ class EditorTrack : public juce::AudioProcessorEditor
     
     EditorTrack(ProcessorTrack& p,
                 const std::vector<Game_Channel> &gameChannels,
-                int &gameTrackId
+                int64_t &gameTrackId
                 #if 0
                 const juce::String &name, 
                 float minFrequency, 
@@ -106,7 +106,7 @@ class EditorTrack : public juce::AudioProcessorEditor
     ProcessorTrack& audioProcessor;
     
     const std::vector<Game_Channel> &game_channels;
-    int &game_track_id;
+    int64_t &game_track_id;
     juce::ComboBox game_track_combo;
 #if 0
     juce::Label track_name_label;
