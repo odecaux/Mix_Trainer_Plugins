@@ -143,7 +143,7 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event)
         io->game_state = effects.new_state;
     }
     assert(effects.error == 0);
-    for (auto i = 0; i < io->observers.size(); i++)
+    for (uint32_t i = 0; i < io->observers.size(); i++)
     {
         io->observers[i](&effects);
     }
@@ -299,13 +299,6 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
         {
             if(state.step != GameStep_Begin) assert(false);
             if(state.mix != Mix_Hidden) assert(false);
-            if (state.target_ratio_pos != -1 ||
-                state.target_threshold_pos != -1 ||
-                state.target_attack_pos != -1 ||
-                state.target_release_pos != -1)
-            {
-                assert(false);
-            }
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;

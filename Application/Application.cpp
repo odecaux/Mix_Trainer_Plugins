@@ -16,7 +16,7 @@ Application::Application(ProcessorHost &processorHost) :
 {
     //NOTE useless
     broadcastDSP(bypassedAllChannelsDSP(multitrack_model.game_channels));
-    multitrack_model_add_observer(&multitrack_model, MultiTrack_Observers_Debug, debug_multitrack_model);
+    //multitrack_model_add_observer(&multitrack_model, MultiTrack_Observers_Debug, debug_multitrack_model);
     multitrack_model_add_observer(&multitrack_model, 
                                   MultiTrack_Observers_Broadcast, 
                                   [&host = host] (auto *model) { host.broadcastChannelList(*model);});

@@ -541,9 +541,7 @@ public:
                 file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
                 return succeeded;
             };
-            file_list_component.remove_files_callback =
-                [&file_list_component = this->file_list_component, audio_file_list]
-                (auto *files_to_remove)
+            file_list_component.remove_files_callback = [&file_list_component = this->file_list_component, audio_file_list] (auto *files_to_remove)
             {
                 remove_files(audio_file_list, files_to_remove);
                 file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));

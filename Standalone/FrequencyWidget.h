@@ -75,7 +75,7 @@ struct FrequencyWidget : public juce::Component
             //juce::Line<int> cursor_line;
     
             //cursor
-            if (cursor_frequency != -1)
+            if (cursor_frequency != 0)
             {
                 float window_left = std::max(0.0f, cursor_ratio - correct_answer_window);
                 float window_right = std::min(1.0f, cursor_ratio + correct_answer_window);

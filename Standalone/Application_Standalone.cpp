@@ -482,7 +482,8 @@ void Application_Standalone::to_frequency_game()
     };
     
     auto selected_file_list = get_selected_list(&audio_file_list);
-    auto new_game_state = frequency_game_state_init(frequency_game_configs[current_frequency_game_config_idx], &selected_file_list);
+    FrequencyGame_Config config = frequency_game_configs[current_frequency_game_config_idx];
+    auto new_game_state = frequency_game_state_init(config, &selected_file_list);
     frequency_game_io = frequency_game_io_init(new_game_state);
 
     auto on_quit = [this] { 
@@ -577,7 +578,8 @@ void Application_Standalone::to_compressor_game()
     };
     
     auto selected_file_list = get_selected_list(&audio_file_list);
-    auto new_game_state = compressor_game_state_init(compressor_game_configs[current_compressor_game_config_idx], &selected_file_list);
+    CompressorGame_Config config = compressor_game_configs[current_compressor_game_config_idx];
+    auto new_game_state = compressor_game_state_init(config, &selected_file_list);
     compressor_game_io = compressor_game_io_init(new_game_state);
 
     auto on_quit = [this] { 

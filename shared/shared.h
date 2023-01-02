@@ -213,6 +213,8 @@ struct MuliTrack_Model
     std::unordered_map<int, int> assigned_daw_track_count;
 };
 
+#if 0
+
 static void debug_multitrack_model(MuliTrack_Model *model)
 {    
     assert(model->game_channels.size() == model->order.size());
@@ -251,6 +253,8 @@ static void debug_multitrack_model(MuliTrack_Model *model)
     }
     DBG("\n\n\n");
 }
+
+#endif 
 
 static void multitrack_model_broadcast_change(MuliTrack_Model *model, int observer_id_to_skip = -1)
 {       
@@ -1052,7 +1056,7 @@ public:
         row_texts = std::move(rowTexts);
 
         juce::SparseSet < int > selected_set{};
-        for (int i = 0; i < selection.size(); i++)
+        for (uint32_t i = 0; i < selection.size(); i++)
         {
             if(selection[i])
                 selected_set.addRange(juce::Range<int>(i, i + 1));
