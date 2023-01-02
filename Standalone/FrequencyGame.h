@@ -204,7 +204,8 @@ struct Frequency_Config_Panel : public juce::Component
                            std::function<void()> onClickBack,
                            std::function<void()> onClickNext)
     :        configs(gameConfigs),
-             current_config_idx(currentConfigIdx)
+             current_config_idx(currentConfigIdx),
+             config_list_freq("Create new config")
     {
         //Header
         {
@@ -374,32 +375,34 @@ struct Frequency_Config_Panel : public juce::Component
                 std::transform(configs->begin(), configs->end(), config_names.begin(), projection);
                 return config_names;
             };
-            config_list_comp.selected_channel_changed_callback = [&](int config_idx) {
+            config_list_freq.selected_channel_changed_callback = [&](int config_idx) {
                 selectConfig(config_idx);
             };
         
-            config_list_comp.create_channel_callback = [&, configs_to_names](std::string new_config_name) {
+            config_list_freq.create_channel_callback = [&, configs_to_names](std::string new_config_name) {
                 configs->push_back(frequency_game_config_default(new_config_name));
-                config_list_comp.update(configs_to_names(configs));
+                config_list_freq.update(configs_to_names(configs));
             };
 
-            config_list_comp.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
+            config_list_freq.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
+                if(configs->size() == 1)
+                    return;
                 configs->erase(configs->begin() + row_to_delete);
-                config_list_comp.update(configs_to_names(configs));
+                config_list_freq.update(configs_to_names(configs));
             };
 
-            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, std::string new_config_name) {
+            config_list_freq.rename_channel_callback = [&, configs_to_names](int row_idx, std::string new_config_name) {
                 (*configs)[row_idx].title = new_config_name;
-                config_list_comp.update(configs_to_names(configs));
+                config_list_freq.update(configs_to_names(configs));
             };
 
-            config_list_comp.customization_point = [&](int, List_Row_Label*) {
+            config_list_freq.customization_point = [&](int, List_Row_Label*) {
             };
 
-            config_list_comp.insert_row_text = "Create new config";
-            config_list_comp.update(configs_to_names(configs));
-            config_list_comp.select_row(static_cast<int>(*current_config_idx));
-            addAndMakeVisible(config_list_comp);
+            config_list_freq.insertion_row_text = "Create new config";
+            config_list_freq.update(configs_to_names(configs));
+            config_list_freq.select_row(static_cast<int>(*current_config_idx));
+            addAndMakeVisible(config_list_freq);
         }
     }
 
@@ -414,7 +417,7 @@ struct Frequency_Config_Panel : public juce::Component
         auto left_bounds = r.getProportion<float>( { .0f, .0f, 0.4f, 1.0f }).withTrimmedRight(5);
         auto right_bounds = r.getProportion<float>( { 0.4f, .0f, 0.6f, 1.0f }).withTrimmedLeft(5);
 
-        config_list_comp.setBounds(left_bounds);
+        config_list_freq.setBounds(left_bounds);
 
         auto scroller_height = onResizeScroller(right_bounds.getWidth());
         scroller.setSize(right_bounds.getWidth(), scroller_height);
@@ -546,7 +549,7 @@ struct Frequency_Config_Panel : public juce::Component
 
     std::vector<FrequencyGame_Config> *configs;
     size_t *current_config_idx;
-    Insertable_List config_list_comp;
+    Insertable_List config_list_freq;
     
     GameUI_Header header;
     

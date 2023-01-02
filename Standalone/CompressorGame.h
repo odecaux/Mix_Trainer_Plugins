@@ -361,7 +361,8 @@ struct Compressor_Config_Panel : public juce::Component
                            std::function < void() > onClickBack,
                            std::function < void() > onClickNext)
     :        configs(gameConfigs),
-             current_config_idx(currentConfigIdx)
+             current_config_idx(currentConfigIdx),
+             config_list_comp("Create new config")
     {
         //Header
         {
@@ -452,6 +453,8 @@ struct Compressor_Config_Panel : public juce::Component
             };
 
             config_list_comp.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
+                if(configs->size() == 1)
+                    return;
                 configs->erase(configs->begin() + row_to_delete);
                 config_list_comp.update(configs_to_names(configs));
             };
@@ -464,7 +467,6 @@ struct Compressor_Config_Panel : public juce::Component
             config_list_comp.customization_point = [&](int, List_Row_Label*) {
             };
 
-            config_list_comp.insert_row_text = "Create new config";
             config_list_comp.update(configs_to_names(configs));
             config_list_comp.select_row(static_cast<int>(*current_config_idx));
             addAndMakeVisible(config_list_comp);

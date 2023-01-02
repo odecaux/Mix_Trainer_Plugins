@@ -635,7 +635,7 @@ class List_Row_Label  : public juce::Label
 {
 public:
     List_Row_Label (
-        std::string newRowText,
+        std::string insertionRowText,
         const std::function < void(int) > &onMouseDown,
         const std::function < void(int, std::string) > &onTextChanged,
         const std::function < void(std::string) > &onCreateRow
@@ -643,7 +643,7 @@ public:
     : mouse_down_callback(onMouseDown),
       text_changed_callback(onTextChanged),
       create_row_callback(onCreateRow),
-      new_row_text(newRowText)
+      insertion_row_text(insertionRowText)
     {
         // double click to edit the label text; single click handled below
         setEditable (false, true, true);
@@ -676,12 +676,12 @@ public:
             text_changed_callback(row, getText().toStdString());
         }
         //insert new track
-        else 
+        else
         {
                 
             if (input_is_empty)
             {
-                setText(new_row_text, juce::dontSendNotification);
+                setText(insertion_row_text, juce::dontSendNotification);
                 return;
             }
             is_last_row = false;
@@ -697,14 +697,14 @@ public:
         if (!is_last_row)
         {
             setJustificationType(juce::Justification::left);
-            setText (row_text, juce::dontSendNotification);
             setColour(juce::Label::textColourId, juce::Colours::white);
+            setText (row_text, juce::dontSendNotification);
         }
         else
         {
             setJustificationType(juce::Justification::centred);
-            setText (new_row_text, juce::dontSendNotification);
             setColour(juce::Label::textColourId, juce::Colours::lightgrey);
+            setText (insertion_row_text, juce::dontSendNotification);
         }
     }
 
@@ -725,7 +725,7 @@ public:
     std::string row_text;
     bool is_last_row;
 private:
-    std::string new_row_text;
+    std::string insertion_row_text;
     juce::Colour textColour;
 };
 
@@ -733,8 +733,9 @@ private:
 class Insertable_List : public juce::Component,
 public juce::ListBoxModel
 {
-public: 
-    Insertable_List()
+public:
+    Insertable_List(std::string insertionRowText)
+    : insertion_row_text { insertionRowText }
     {
         list_comp.setModel(this);
         list_comp.setMultipleSelectionEnabled(false);
@@ -842,7 +843,7 @@ public:
             }
             else
             {
-                label = new List_Row_Label(insert_row_text,
+                label = new List_Row_Label(insertion_row_text,
                                            editable_mouse_down_callback,
                                            editable_text_changed_callback,
                                            editable_create_row_callback);
@@ -884,7 +885,7 @@ public:
     std::function<void(int, List_Row_Label*)> customization_point = {};
 
     juce::ListBox list_comp;
-    std::string insert_row_text = {};
+    std::string insertion_row_text;
 private:
     std::function<void(int)> editable_mouse_down_callback;
     std::function<void(int, std::string)> editable_text_changed_callback;
@@ -892,64 +893,6 @@ private:
 
     std::vector<std::string> rows_text;
 };
-
-#if 0
-class DumbRow  : public juce::Component
-{
-public:
-    DumbRow(const std::function<void(int)> &onMouseDown) :
-        on_mouse_down(onMouseDown)
-    {}
-
-    DumbRow (juce::ListBox& lb) : owner (lb) {}
-
-    void paint (juce::Graphics& g) override
-    {
-        g.setColour(juce::Colours::white);
-        //g.drawText(text, getLocalBounds(), juce::Justification::left);
-    }
-
-    void update (const juce::String new_text, int new_row)
-    {
-        text = new_text;
-        row = new_row;
-    }
-
-    void mouseDown (const juce::MouseEvent&) override
-    {
-        assert(row != -1);
-        on_mouse_down(row);
-    }
-
-    void mouseUp (const juce::MouseEvent& ) override
-    {
-    }
-
-    void mouseDoubleClick (const juce::MouseEvent& ) override
-    {
-    }
-
-    void mouseDrag (const juce::MouseEvent& ) override
-    {
-    }
-
-    void resized() override
-    {
-        if (customComponent != nullptr)
-            customComponent->setBounds (getLocalBounds());
-    }
-
-    //==============================================================================
-    std::unique_ptr<juce::Component> customComponent;
-    int row = -1;
-    bool isSelected = false, isDragging = false, isDraggingToScroll = false, selectRowOnMouseUp = false;
-    juce::ListBox& owner;
-    const std::function<void(int)> &on_mouse_down;
-    juce::String text;
-    int row = -1;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DumbRow)
-};
-#endif
 
 class Selection_List : 
     public juce::Component,

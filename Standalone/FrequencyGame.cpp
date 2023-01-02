@@ -233,7 +233,6 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             }
             else
             {
-                
                 if (state.timestamp_start != -1) return { .error = 1 };
             }
             if (state.step == GameStep_Question && state.config.question_type == Frequency_Question_Rising)
