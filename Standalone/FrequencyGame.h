@@ -109,7 +109,7 @@ struct Frequency_Game_Effects {
     FrequencyGame_State new_state;
 };
 
-using frequency_game_observer_t = std::function<void(const Frequency_Game_Effects&)>;
+using frequency_game_observer_t = std::function<void(Frequency_Game_Effects*)>;
 
 struct FrequencyGame_IO
 {
@@ -123,20 +123,20 @@ struct FrequencyGame_IO
 
 struct FrequencyGame_UI;
 
-juce::String frequency_game_serlialize(const std::vector<FrequencyGame_Config> &frequency_game_configs);
+juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs);
 std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_string);
 
 
 FrequencyGame_Config frequency_game_config_default(juce::String name);
-FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> files);
+FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> *files);
 std::unique_ptr<FrequencyGame_IO> frequency_game_io_init(FrequencyGame_State);
 void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer);
 
 void frequency_game_post_event(FrequencyGame_IO *io, Event event);
 Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event event);
-void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition, int ui_target);
-void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui);
-void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui);
+void frequency_game_ui_transitions(FrequencyGame_UI *ui, Effect_Transition transition, int ui_target);
+void frequency_game_ui_update(FrequencyGame_UI *ui, Frequency_Game_Effect_UI *new_ui);
+void frequency_widget_update(FrequencyWidget *widget, Frequency_Game_Effect_UI *new_ui);
 
 struct FrequencyGame_UI : public juce::Component
 {
@@ -199,10 +199,10 @@ struct Frequency_Config_Panel : public juce::Component
     using slider_and_label_t = std::vector<std::tuple<juce::Slider&, juce::Label&, juce::Range < double>, double> >;
     using slider_and_toggle_t = std::vector<std::tuple<juce::Slider&, juce::ToggleButton&, juce::Range < double>, double> >;
 
-    Frequency_Config_Panel(std::vector<FrequencyGame_Config> &gameConfigs,
-                 size_t &currentConfigIdx,
-                 std::function < void() > onClickBack,
-                 std::function < void() > onClickNext)
+    Frequency_Config_Panel(std::vector<FrequencyGame_Config> *gameConfigs,
+                           size_t *currentConfigIdx,
+                           std::function<void()> onClickBack,
+                           std::function<void()> onClickNext)
     :        configs(gameConfigs),
              current_config_idx(currentConfigIdx)
     {
@@ -367,11 +367,11 @@ struct Frequency_Config_Panel : public juce::Component
         //List
         {
             
-            auto configs_to_names = [] (const std::vector<FrequencyGame_Config>& configs) {
+            auto configs_to_names = [] (std::vector<FrequencyGame_Config> *configs) {
                 std::vector<juce::String> config_names{};
-                config_names.resize(configs.size());
+                config_names.resize(configs->size());
                 auto projection = [] (const FrequencyGame_Config& config) { return config.title; };
-                std::transform(configs.begin(), configs.end(), config_names.begin(), projection);
+                std::transform(configs->begin(), configs->end(), config_names.begin(), projection);
                 return config_names;
             };
             config_list_comp.selected_channel_changed_callback = [&](int config_idx) {
@@ -379,17 +379,17 @@ struct Frequency_Config_Panel : public juce::Component
             };
         
             config_list_comp.create_channel_callback = [&, configs_to_names](juce::String new_config_name) {
-                configs.push_back(frequency_game_config_default(new_config_name));
+                configs->push_back(frequency_game_config_default(new_config_name));
                 config_list_comp.update(configs_to_names(configs));
             };
 
             config_list_comp.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
-                configs.erase(configs.begin() + row_to_delete);
+                configs->erase(configs->begin() + row_to_delete);
                 config_list_comp.update(configs_to_names(configs));
             };
 
             config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, juce::String new_config_name) {
-                configs[row_idx].title = new_config_name;
+                (*configs)[row_idx].title = new_config_name;
                 config_list_comp.update(configs_to_names(configs));
             };
 
@@ -398,7 +398,7 @@ struct Frequency_Config_Panel : public juce::Component
 
             config_list_comp.insert_row_text = "Create new config";
             config_list_comp.update(configs_to_names(configs));
-            config_list_comp.select_row(static_cast<int>(current_config_idx));
+            config_list_comp.select_row(static_cast<int>(*current_config_idx));
             addAndMakeVisible(config_list_comp);
         }
     }
@@ -426,71 +426,73 @@ struct Frequency_Config_Panel : public juce::Component
 
     void updateConfig()
     {
+        FrequencyGame_Config *current_config = &configs->at(*current_config_idx);
+
         if (mode.getSelectedId() == 1)
         {
-            configs[current_config_idx].min_f = 70;
-            configs[current_config_idx].num_octaves = 8;
+            current_config->min_f = 70;
+            current_config->num_octaves = 8;
         }
         else
         {
-            configs[current_config_idx].min_f = 35;
-            configs[current_config_idx].num_octaves = 2;
+            current_config->min_f = 35;
+            current_config->num_octaves = 2;
         }
     
         Frequency_Input input_type = static_cast<Frequency_Input>(input.getSelectedId() - 1);
-        configs[current_config_idx].input = input_type;
+        current_config->input = input_type;
         
-        configs[current_config_idx].eq_gain_db = (float)eq_gain.getValue();
-        configs[current_config_idx].eq_quality = (float) eq_quality.getValue();
-        configs[current_config_idx].initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
+        current_config->eq_gain_db = (float)eq_gain.getValue();
+        current_config->eq_quality = (float) eq_quality.getValue();
+        current_config->initial_correct_answer_window = (float) initial_correct_answer_window.getValue();
         
         PreListen_Type new_prelisten_type = static_cast<PreListen_Type>(prelisten_type.getSelectedId() - 1);
-        configs[current_config_idx].prelisten_type = new_prelisten_type;
+        current_config->prelisten_type = new_prelisten_type;
         prelisten_timeout_ms.setEnabled(new_prelisten_type == PreListen_Timeout);
 
-        configs[current_config_idx].prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
+        current_config->prelisten_timeout_ms = (int) prelisten_timeout_ms.getValue();
         
         Frequency_Question_Type new_question_type = static_cast<Frequency_Question_Type>(question_type.getSelectedId() - 1);
-        configs[current_config_idx].question_type = new_question_type;
+        current_config->question_type = new_question_type;
         question_timeout_ms.setEnabled(new_question_type != Frequency_Question_Free);
         
-        configs[current_config_idx].question_timeout_ms = (int) question_timeout_ms.getValue();
-        configs[current_config_idx].result_timeout_ms = (int) result_timeout_ms.getValue();
+        current_config->question_timeout_ms = (int) question_timeout_ms.getValue();
+        current_config->result_timeout_ms = (int) result_timeout_ms.getValue();
 
         bool new_toggle_state = result_timeout_enabled.getToggleState();
-        configs[current_config_idx].result_timeout_enabled = new_toggle_state;
+        current_config->result_timeout_enabled = new_toggle_state;
         result_timeout_ms.setEnabled(new_toggle_state);
         
     }
 
     void selectConfig(size_t new_config_idx)
     {
-        assert(new_config_idx < configs.size());
-        current_config_idx = new_config_idx;
-        FrequencyGame_Config &current_config = configs[current_config_idx];
+        assert(new_config_idx < configs->size());
+        *current_config_idx = new_config_idx;
+        FrequencyGame_Config *current_config = &configs->at(*current_config_idx);
 
-        if (current_config.min_f == 35)
+        if (current_config->min_f == 35)
             mode.setSelectedId(2);
         else
             mode.setSelectedId(1);
         
-        input.setSelectedId(static_cast<int>(current_config.input) + 1);
+        input.setSelectedId(static_cast<int>(current_config->input) + 1);
 
-        eq_gain.setValue(current_config.eq_gain_db);
-        eq_quality.setValue(current_config.eq_quality);
-        initial_correct_answer_window.setValue(current_config.initial_correct_answer_window);
+        eq_gain.setValue(current_config->eq_gain_db);
+        eq_quality.setValue(current_config->eq_quality);
+        initial_correct_answer_window.setValue(current_config->initial_correct_answer_window);
         
-        prelisten_timeout_ms.setValue(static_cast<double>(current_config.prelisten_timeout_ms));
-        prelisten_timeout_ms.setEnabled(current_config.prelisten_type == PreListen_Timeout);
-        prelisten_type.setSelectedId(current_config.prelisten_type + 1);
+        prelisten_timeout_ms.setValue(static_cast<double>(current_config->prelisten_timeout_ms));
+        prelisten_timeout_ms.setEnabled(current_config->prelisten_type == PreListen_Timeout);
+        prelisten_type.setSelectedId(current_config->prelisten_type + 1);
 
-        question_timeout_ms.setValue(static_cast<double>(current_config.question_timeout_ms));
-        question_timeout_ms.setEnabled(current_config.question_type != Frequency_Question_Free);
-        question_type.setSelectedId(current_config.question_type + 1);
+        question_timeout_ms.setValue(static_cast<double>(current_config->question_timeout_ms));
+        question_timeout_ms.setEnabled(current_config->question_type != Frequency_Question_Free);
+        question_type.setSelectedId(current_config->question_type + 1);
 
-        result_timeout_ms.setValue(static_cast<double>(current_config.result_timeout_ms));
-        result_timeout_ms.setEnabled(current_config.result_timeout_enabled);
-        result_timeout_enabled.setToggleState(current_config.result_timeout_enabled, juce::dontSendNotification);
+        result_timeout_ms.setValue(static_cast<double>(current_config->result_timeout_ms));
+        result_timeout_ms.setEnabled(current_config->result_timeout_enabled);
+        result_timeout_enabled.setToggleState(current_config->result_timeout_enabled, juce::dontSendNotification);
     }
     
     int onResizeScroller(int width)
@@ -542,8 +544,8 @@ struct Frequency_Config_Panel : public juce::Component
         return total_height;
     }
 
-    std::vector<FrequencyGame_Config> &configs;
-    size_t &current_config_idx;
+    std::vector<FrequencyGame_Config> *configs;
+    size_t *current_config_idx;
     Insertable_List config_list_comp;
     
     GameUI_Header header;

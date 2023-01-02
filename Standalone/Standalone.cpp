@@ -12,18 +12,19 @@ public:
     void initialise (const juce::String&) override
     {
         formatManager.registerBasicFormats();
-        auto *main_component = new Main_Component(formatManager);
-        mainWindow = std::make_unique<MainWindow>("Mix Trainer", main_component, *this);
+        auto *main_component = new Main_Component(&formatManager);
+        auto window_title = juce::String("Mix Trainer");
+        mainWindow = std::make_unique < MainWindow > (&window_title, main_component, this);
     }
 
-    void shutdown() override                         { mainWindow = nullptr; }
+    void shutdown() override { mainWindow = nullptr; }
 
 private:
     class MainWindow    : public juce::DocumentWindow
     {
     public:
-        MainWindow (const juce::String& name, juce::Component* c, JUCEApplication& a)
-        : DocumentWindow (name, juce::Desktop::getInstance().getDefaultLookAndFeel()
+        MainWindow (juce::String* name, juce::Component* c, juce::JUCEApplication *a)
+        : DocumentWindow (*name, juce::Desktop::getInstance().getDefaultLookAndFeel()
                           .findColour (ResizableWindow::backgroundColourId),
                           juce::DocumentWindow::allButtons),
                           app (a)
@@ -40,11 +41,11 @@ private:
 
         void closeButtonPressed() override
         {
-            app.systemRequestedQuit();
+            app->systemRequestedQuit();
         }
 
     private:
-        JUCEApplication& app;
+        juce::JUCEApplication *app;
 
         //==============================================================================
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)

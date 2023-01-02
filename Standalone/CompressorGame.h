@@ -76,29 +76,29 @@ struct CompressorGame_Config
     int total_rounds;
 };
 
-static void sort_clamp_and_filter(std::vector<float> &vec, float min, float max)
+static void sort_clamp_and_filter(std::vector<float> *vec, float min, float max)
 {
-    std::sort(vec.begin(), vec.end());
+    std::sort(vec->begin(), vec->end());
     auto clamping = [min, max] (float in)
     {
         return std::clamp(in, min, max);
     };
-    std::transform(vec.begin(), vec.end(), vec.begin(), clamping);
-    vec.erase( std::unique( vec.begin(), vec.end() ), vec.end() );
+    std::transform(vec->begin(), vec->end(), vec->begin(), clamping);
+    vec->erase(std::unique(vec->begin(), vec->end()), vec->end());
 }
 
 
-static inline bool compressor_game_config_validate(CompressorGame_Config &config)
+static inline bool compressor_game_config_validate(CompressorGame_Config *config)
 {
-    sort_clamp_and_filter(config.threshold_values_db, -90, 0);
-    sort_clamp_and_filter(config.ratio_values, 1, 10);
-    sort_clamp_and_filter(config.attack_values, 1, 1000);
-    sort_clamp_and_filter(config.release_values, 1, 1000);
+    sort_clamp_and_filter(&config->threshold_values_db, -90, 0);
+    sort_clamp_and_filter(&config->ratio_values, 1, 10);
+    sort_clamp_and_filter(&config->attack_values, 1, 1000);
+    sort_clamp_and_filter(&config->release_values, 1, 1000);
 
-    return config.threshold_active
-        || config.ratio_active
-        || config.attack_active
-        || config.release_active;
+    return config->threshold_active
+        || config->ratio_active
+        || config->attack_active
+        || config->release_active;
 }
 
 
@@ -142,7 +142,7 @@ struct Compressor_Game_Effects {
     bool quit;
 };
 
-using compressor_game_observer_t = std::function<void(const Compressor_Game_Effects&)>;
+using compressor_game_observer_t = std::function<void(Compressor_Game_Effects*)>;
 
 struct CompressorGame_IO
 {
@@ -156,19 +156,19 @@ struct CompressorGame_IO
 struct CompressorGame_UI;
 struct CompressorGame_Widget;
 
-juce::String compressor_game_serialize(const std::vector<CompressorGame_Config> &compressor_game_configs);
+juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs);
 std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_string);
 
 CompressorGame_Config compressor_game_config_default(juce::String name);
-CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> files);
+CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> *files);
 std::unique_ptr<CompressorGame_IO> compressor_game_io_init(CompressorGame_State state);
 void compressor_game_add_observer(CompressorGame_IO *io, compressor_game_observer_t observer);
 
 void compressor_game_post_event(CompressorGame_IO *io, Event event);
 Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event event);
-void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition);
-void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui);
-void compressor_widget_update(CompressorGame_Widget *widget, const Compressor_Game_Effect_UI &new_ui);
+void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition transition);
+void compressor_game_ui_update(CompressorGame_UI *ui, Compressor_Game_Effect_UI *new_ui);
+void compressor_widget_update(CompressorGame_Widget *widget, Compressor_Game_Effect_UI *new_ui);
 
 
 struct CompressorGame_Widget : public juce::Component
@@ -356,8 +356,8 @@ struct Compressor_Config_Panel : public juce::Component
 {
     using textedit_and_toggle_t = std::vector<std::tuple<juce::TextEditor&, juce::ToggleButton&>>;
 
-    Compressor_Config_Panel(std::vector<CompressorGame_Config> &gameConfigs,
-                           size_t &currentConfigIdx,
+    Compressor_Config_Panel(std::vector<CompressorGame_Config> *gameConfigs,
+                           size_t *currentConfigIdx,
                            std::function < void() > onClickBack,
                            std::function < void() > onClickNext)
     :        configs(gameConfigs),
@@ -433,13 +433,13 @@ struct Compressor_Config_Panel : public juce::Component
         //List
         {
             
-            auto configs_to_names = [] (const std::vector<CompressorGame_Config>& configs) {
+            auto configs_to_names = [] (std::vector<CompressorGame_Config> *configs) {
                 std::vector<juce::String> config_names{};
-                config_names.resize(configs.size());
+                config_names.resize(configs->size());
                 auto projection = [] (const CompressorGame_Config& config) { 
                     return config.title; 
                 };
-                std::transform(configs.begin(), configs.end(), config_names.begin(), projection);
+                std::transform(configs->begin(), configs->end(), config_names.begin(), projection);
                 return config_names;
             };
             config_list_comp.selected_channel_changed_callback = [&](int config_idx) {
@@ -447,17 +447,17 @@ struct Compressor_Config_Panel : public juce::Component
             };
         
             config_list_comp.create_channel_callback = [&, configs_to_names](juce::String new_config_name) {
-                configs.push_back(compressor_game_config_default(new_config_name));
+                configs->push_back(compressor_game_config_default(new_config_name));
                 config_list_comp.update(configs_to_names(configs));
             };
 
             config_list_comp.delete_channel_callback = [&, configs_to_names](int row_to_delete) {
-                configs.erase(configs.begin() + row_to_delete);
+                configs->erase(configs->begin() + row_to_delete);
                 config_list_comp.update(configs_to_names(configs));
             };
 
             config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, juce::String new_config_name) {
-                configs[row_idx].title = new_config_name;
+                configs->at(row_idx).title = new_config_name;
                 config_list_comp.update(configs_to_names(configs));
             };
 
@@ -466,7 +466,7 @@ struct Compressor_Config_Panel : public juce::Component
 
             config_list_comp.insert_row_text = "Create new config";
             config_list_comp.update(configs_to_names(configs));
-            config_list_comp.select_row(static_cast<int>(current_config_idx));
+            config_list_comp.select_row(static_cast<int>(*current_config_idx));
             addAndMakeVisible(config_list_comp);
         }
     }
@@ -494,57 +494,57 @@ struct Compressor_Config_Panel : public juce::Component
 
     void updateConfig()
     {
-        CompressorGame_Config &current_config = configs[current_config_idx]; 
+        CompressorGame_Config *current_config = &configs->at(*current_config_idx);
         
-        current_config.threshold_active = thresholds_label.getToggleState();
+        current_config->threshold_active = thresholds_label.getToggleState();
         auto thresholds_str = thresholds.getText();
         if (!thresholds_str.isEmpty())
         {
-            current_config.threshold_values_db = deserialize_vector<float>(thresholds_str);
+            current_config->threshold_values_db = deserialize_vector<float>(thresholds_str);
         }
     
-        current_config.ratio_active = ratios_label.getToggleState();
+        current_config->ratio_active = ratios_label.getToggleState();
         auto ratios_str = ratios.getText();
         if (!ratios_str.isEmpty())
         {
-            current_config.ratio_values = deserialize_vector<float>(ratios_str);
+            current_config->ratio_values = deserialize_vector<float>(ratios_str);
         }
 
-        current_config.attack_active = attacks_label.getToggleState();
+        current_config->attack_active = attacks_label.getToggleState();
         auto attacks_str = attacks.getText();
         if (!attacks_str.isEmpty())
         {
-            current_config.attack_values = deserialize_vector<float>(attacks_str);
+            current_config->attack_values = deserialize_vector<float>(attacks_str);
         }
         
-        current_config.release_active = releases_label.getToggleState();
+        current_config->release_active = releases_label.getToggleState();
         auto releases_str = releases.getText();
         if (!releases_str.isEmpty())
         {
-            current_config.release_values = deserialize_vector<float>(releases_str);
+            current_config->release_values = deserialize_vector<float>(releases_str);
         }
 
         bool is_config_valid = compressor_game_config_validate(current_config);
         nextButton.setEnabled(is_config_valid);
 
-        selectConfig(current_config_idx);
+        selectConfig(*current_config_idx);
     }
 
     void selectConfig(size_t new_config_idx)
     {
-        assert(new_config_idx < configs.size());
-        current_config_idx = new_config_idx;
-        CompressorGame_Config &current_config = configs[current_config_idx];
+        assert(new_config_idx < configs->size());
+        *current_config_idx = new_config_idx;
+        CompressorGame_Config *current_config = &configs->at(*current_config_idx);
       
-        thresholds_label.setToggleState(current_config.threshold_active, juce::dontSendNotification);
-        ratios_label.setToggleState(current_config.ratio_active, juce::dontSendNotification);
-        attacks_label.setToggleState(current_config.attack_active, juce::dontSendNotification);
-        releases_label.setToggleState(current_config.release_active, juce::dontSendNotification);
+        thresholds_label.setToggleState(current_config->threshold_active, juce::dontSendNotification);
+        ratios_label.setToggleState(current_config->ratio_active, juce::dontSendNotification);
+        attacks_label.setToggleState(current_config->attack_active, juce::dontSendNotification);
+        releases_label.setToggleState(current_config->release_active, juce::dontSendNotification);
 
-        thresholds.setText(serialize_vector<float>(current_config.threshold_values_db), juce::dontSendNotification);
-        ratios.setText(serialize_vector<float>(current_config.ratio_values), juce::dontSendNotification);
-        attacks.setText(serialize_vector<float>(current_config.attack_values), juce::dontSendNotification);
-        releases.setText(serialize_vector<float>(current_config.release_values), juce::dontSendNotification);
+        thresholds.setText(serialize_vector<float>(current_config->threshold_values_db), juce::dontSendNotification);
+        ratios.setText(serialize_vector<float>(current_config->ratio_values), juce::dontSendNotification);
+        attacks.setText(serialize_vector<float>(current_config->attack_values), juce::dontSendNotification);
+        releases.setText(serialize_vector<float>(current_config->release_values), juce::dontSendNotification);
     }
     
     int onResizeScroller(int width)
@@ -584,8 +584,8 @@ struct Compressor_Config_Panel : public juce::Component
         return total_height;
     }
 
-    std::vector<CompressorGame_Config> &configs;
-    size_t &current_config_idx;
+    std::vector<CompressorGame_Config> *configs;
+    size_t *current_config_idx;
     Insertable_List config_list_comp;
     
     GameUI_Header header;

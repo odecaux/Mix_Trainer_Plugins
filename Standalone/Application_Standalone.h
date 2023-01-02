@@ -6,23 +6,23 @@ struct Audio_File_List
 };
 
 
-bool insert_file(Audio_File_List &audio_file_list, juce::File file, juce::AudioFormatManager &format_manager);
-void remove_files(Audio_File_List &audio_file_list, const juce::SparseSet < int > & indices);
-std::vector<Audio_File> get_selected_list(Audio_File_List &audio_file_list);
-std::vector<Audio_File> get_ordered_audio_files(Audio_File_List &audio_file_list);
+bool insert_file(Audio_File_List *audio_file_list, juce::File file, juce::AudioFormatManager *format_manager);
+void remove_files(Audio_File_List *audio_file_list, juce::SparseSet < int > * indices);
+std::vector<Audio_File> get_selected_list(Audio_File_List *audio_file_list);
+std::vector<Audio_File> get_ordered_audio_files(Audio_File_List *audio_file_list);
 
-juce::String audio_file_list_serialize(const Audio_File_List &audio_file_list);
+juce::String audio_file_list_serialize(Audio_File_List *audio_file_list);
 std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string);
 
 //------------------------------------------------------------------------
 struct File_Player : juce::ChangeListener 
 {
-    File_Player(juce::AudioFormatManager &formatManager);
+    File_Player(juce::AudioFormatManager *formatManager);
 
     ~File_Player();
 
 
-    juce::AudioFormatManager &format_manager;
+    juce::AudioFormatManager *format_manager;
     Transport_State transport_state;
     
     juce::AudioDeviceManager device_manager;
@@ -49,10 +49,10 @@ class Application_Standalone
 {
     public :
     
-    Application_Standalone(juce::AudioFormatManager &formatManager, Main_Component *main_component);
+    Application_Standalone(juce::AudioFormatManager* formatManager, Main_Component *main_component);
     ~Application_Standalone();
-    void to_main_menu();
 
+    void to_main_menu();
     void to_audio_file_settings();
     void to_freq_game_settings();
     void to_frequency_game();
@@ -63,16 +63,17 @@ class Application_Standalone
     private :
     File_Player player;
     Audio_File_List audio_file_list;
-    std::unique_ptr<FrequencyGame_IO> frequency_game_io;
-    std::unique_ptr<CompressorGame_IO> compressor_game_io;
     Main_Component *main_component;
-    FrequencyGame_UI *frequency_game_ui;
-    CompressorGame_UI *compressor_game_ui;
     
+    std::unique_ptr<FrequencyGame_IO> frequency_game_io;
     std::vector<FrequencyGame_Config> frequency_game_configs = {};
     size_t current_frequency_game_config_idx = 0;
     std::vector<FrequencyGame_Results> frequency_game_results_history = {};
+    FrequencyGame_UI *frequency_game_ui;
+
+    std::unique_ptr<CompressorGame_IO> compressor_game_io;
     std::vector<CompressorGame_Config> compressor_game_configs = {};
     size_t current_compressor_game_config_idx = 0;
     std::vector<CompressorGame_Results> compressor_game_results_history = {};
+    CompressorGame_UI *compressor_game_ui;
 };

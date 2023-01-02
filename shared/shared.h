@@ -1023,7 +1023,7 @@ public:
             selection[selected_idx] = true;
         }
         //TODO slow ??? who cares ?
-        selection_changed_callback(selection);
+        selection_changed_callback(&selection);
     }
 
     
@@ -1068,7 +1068,7 @@ public:
         list_comp.selectRow(new_row);
     }
 
-    std::function < void(const std::vector<bool> &) > selection_changed_callback;
+    std::function < void(std::vector<bool> *) > selection_changed_callback;
 
 private:
     std::vector<juce::String> row_texts;

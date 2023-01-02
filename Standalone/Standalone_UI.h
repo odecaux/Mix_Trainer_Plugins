@@ -34,10 +34,10 @@ private juce::ScrollBar::Listener,
 private juce::Timer
 {
 public:
-    Thumbnail (juce::AudioFormatManager& formatManager,
-               juce::AudioTransportSource& source)
+    Thumbnail (juce::AudioFormatManager *formatManager,
+               juce::AudioTransportSource *source)
     : transport_source (source),
-      thumbnail (512, formatManager, thumbnail_cache)
+      thumbnail (512, *formatManager, thumbnail_cache)
     {
         thumbnail.addChangeListener (this);
 
@@ -59,16 +59,16 @@ public:
         thumbnail.removeChangeListener (this);
     }
 
-    void setFile (const Audio_File& audio_file)
+    void setFile (Audio_File *audio_file)
     {
-        if (auto inputSource = makeInputSource (audio_file.file))
+        if (auto inputSource = makeInputSource (audio_file->file))
         {
             thumbnail.setSource (inputSource.release());
 
             juce::Range < double > newVisibleRange (0.0, thumbnail.getTotalLength());
             scrollbar.setRangeLimits (newVisibleRange);
-            loop_bounds = audio_file.loop_bounds_samples;
-            file_length = audio_file.length_samples;
+            loop_bounds = audio_file->loop_bounds_samples;
+            file_length = audio_file->length_samples;
             setVisibleRange (newVisibleRange);
             startTimerHz (40);
         }
@@ -188,7 +188,7 @@ public:
 
 private:
     float zoom_value = 0.0F;
-    juce::AudioTransportSource& transport_source;
+    juce::AudioTransportSource *transport_source;
     juce::ScrollBar scrollbar { false };
     juce::Range < juce::int64 > loop_bounds = { -1, -1 };
     juce::int64 file_length = -1;
@@ -226,14 +226,14 @@ private:
 
     void updateCursorPosition()
     {
-        if (!(transport_source.isPlaying() || isMouseButtonDown()))
+        if (!(transport_source->isPlaying() || isMouseButtonDown()))
         {
             current_position_marker.setVisible (false);
             return;
         }
 
         float cursor_width = 1.5f;
-        auto time = transport_source.getCurrentPosition();
+        auto time = transport_source->getCurrentPosition();
         float cursor_left_x = timeToX (time) - cursor_width / 2.0f;
         int cursor_height = getHeight() - scrollbar.getHeight();
         current_position_marker.setVisible (true);
@@ -292,15 +292,15 @@ public:
         validate_next_button(initial_selection);
 
         list_comp.selection_changed_callback =
-            [audio_file_list, selection_changed = std::move(validate_next_button)] (const std::vector<bool> & new_selection)
+            [audio_file_list, selection_changed = std::move(validate_next_button)] (std::vector<bool> *new_selection)
         {
-            assert(new_selection.size() == audio_file_list->order.size());
-            for (int i = 0; i < new_selection.size(); i++)
+            assert(new_selection->size() == audio_file_list->order.size());
+            for (int i = 0; i < new_selection->size(); i++)
             {
                 juce::int64 hash = audio_file_list->order[i];
-                audio_file_list->selected.at(hash) = new_selection[i];
+                audio_file_list->selected.at(hash) = new_selection->at(i);
             }
-            selection_changed(new_selection);
+            selection_changed(*new_selection);
         };
         list_comp.set_rows(file_names, initial_selection);
         
@@ -415,7 +415,7 @@ public:
         }
         
         auto selected_rows = file_list_component.getSelectedRows();
-        remove_files_callback(selected_rows);
+        remove_files_callback(&selected_rows);
         file_list_component.updateContent();
 
         if (num_selected == 1)
@@ -458,11 +458,11 @@ public:
         {
             assert(last_row_selected >= 0);
             assert(static_cast<size_t>(last_row_selected) < files.size());
-            selected_file_changed_callback(files[last_row_selected]);
+            selected_file_changed_callback(&files[last_row_selected]);
         }
         else
         {
-            selected_file_changed_callback({});
+            selected_file_changed_callback(nullptr);
         }
     }
 
@@ -472,8 +472,8 @@ public:
     }
 
     std::function<bool(juce::File file)> insert_file_callback;
-    std::function<void(const juce::SparseSet < int>&) > remove_files_callback;
-    std::function<void(std::optional < Audio_File>) > selected_file_changed_callback;
+    std::function<void(juce::SparseSet < int>*) > remove_files_callback;
+    std::function<void(Audio_File*) > selected_file_changed_callback;
 
 private:
     std::vector<Audio_File> files;
@@ -490,8 +490,8 @@ public juce::DragAndDropContainer
 {
 public:
     
-    Audio_File_Settings_Panel(File_Player &filePlayer,
-                              Audio_File_List &audio_file_list,
+    Audio_File_Settings_Panel(File_Player *filePlayer,
+                              Audio_File_List *audio_file_list,
                               std::function<void()> onClickBack)
     :  player(filePlayer),
        file_list_component(get_ordered_audio_files(audio_file_list))
@@ -506,28 +506,28 @@ public:
 
         {
             file_list_component.selected_file_changed_callback =
-                [&] (std::optional < Audio_File > new_selected_file)
+                [&] (Audio_File *new_selected_file)
             {
                 if (new_selected_file)
                 {
-                    auto ret = file_player_post_command(&player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
+                    auto ret = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
                     assert(ret.value_b); //file still exists on drive ?
-                    file_player_post_command(&player, { .type = Audio_Command_Play });
-                    thumbnail.setFile(*new_selected_file);
+                    file_player_post_command(player, { .type = Audio_Command_Play });
+                    thumbnail.setFile(new_selected_file);
                     file_is_selected = true;
                     selected_file_hash = new_selected_file->hash;
                     frequency_bounds_slider.setMinAndMaxValues((float)new_selected_file->freq_bounds.getStart(), (float)new_selected_file->freq_bounds.getEnd());
                 }
                 else
                 {
-                    file_player_post_command(&player, { .type = Audio_Command_Stop });
+                    file_player_post_command(player, { .type = Audio_Command_Stop });
                     thumbnail.removeFile();
                     file_is_selected = false;
                     frequency_bounds_slider.setMinAndMaxValues(20.0f, 20000.0f);
                 }
             };
             file_list_component.insert_file_callback =
-                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer.format_manager]
+                [&file_list_component = this->file_list_component,  &audio_file_list, &format_manager = filePlayer->format_manager]
                 (auto new_file)
             {
                 bool succeeded = insert_file(audio_file_list, new_file, format_manager);
@@ -536,7 +536,7 @@ public:
             };
             file_list_component.remove_files_callback =
                 [&file_list_component = this->file_list_component, &audio_file_list]
-                (const auto &files_to_remove)
+                (auto *files_to_remove)
             {
                 remove_files(audio_file_list, files_to_remove);
                 file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
@@ -545,14 +545,14 @@ public:
         }
         
         thumbnail.loop_bounds_changed = [&] (juce::Range < juce::int64 > new_loop_bounds){
-            audio_file_list.files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
+            audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
         };
         addAndMakeVisible(thumbnail);
         frequency_bounds_slider.on_mix_max_changed = 
             [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, &audio_file_list] 
             (float begin, float end, float) {
             if(is_selected)
-                audio_file_list.files.at(hash).freq_bounds = { (int)begin, (int)end };
+                audio_file_list->files.at(hash).freq_bounds = { (int)begin, (int)end };
         };
         addAndMakeVisible(frequency_bounds_slider);
     }
@@ -576,18 +576,18 @@ public:
     {
         if (key == key.spaceKey)
         {
-            file_player_post_command(&player, { .type = Audio_Command_Stop });
+            file_player_post_command(player, { .type = Audio_Command_Stop });
             return true;
         }
         return false;
     }
 
 private:
-    File_Player &player;
+    File_Player *player;
     GameUI_Header header;
     Audio_Files_ListBox file_list_component;
 
-    Thumbnail thumbnail { player.format_manager, player.transport_source };
+    Thumbnail thumbnail { player->format_manager, &player->transport_source };
     Frequency_Bounds_Widget frequency_bounds_slider;
     bool file_is_selected = false;
     juce::int64 selected_file_hash;
@@ -672,7 +672,7 @@ class Main_Component : public juce::Component
 {
 public :
     
-    Main_Component(juce::AudioFormatManager &formatManager)
+    Main_Component(juce::AudioFormatManager *formatManager)
     : application(formatManager, this)
     {
         addAndMakeVisible(main_fader);

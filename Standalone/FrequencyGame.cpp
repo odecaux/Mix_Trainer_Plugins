@@ -27,89 +27,89 @@ FrequencyGame_Config frequency_game_config_default(juce::String name)
 }
 
 
-void frequency_game_ui_transitions(FrequencyGame_UI &ui, Effect_Transition transition, int ui_target)
+void frequency_game_ui_transitions(FrequencyGame_UI *ui, Effect_Transition transition, int ui_target)
 {
     if (transition.out_transition == GameStep_Begin)
     {
         if (ui_target == 0)
         {
             auto frequency_widget = std::make_unique<FrequencyWidget>();
-            frequency_widget->onClick = [io = ui.game_io] (int frequency) {
+            frequency_widget->onClick = [io = ui->game_io] (int frequency) {
                 Event event = {
                     .type = Event_Click_Frequency,
                     .value_i = frequency
                 };
                 frequency_game_post_event(io, event);
             };
-            ui.center_panel = std::move(frequency_widget);
+            ui->center_panel = std::move(frequency_widget);
         }
         else
         {
             auto text_input = std::make_unique<Frequency_Game_Text_Input>();
-            text_input->onClick = [io = ui.game_io] (int frequency) {
+            text_input->onClick = [io = ui->game_io] (int frequency) {
                 Event event = {
                     .type = Event_Click_Frequency,
                     .value_i = frequency
                 };
                 frequency_game_post_event(io, event);
             };
-            ui.center_panel = std::move(text_input);
+            ui->center_panel = std::move(text_input);
         }
-        ui.addAndMakeVisible(*ui.center_panel);
-        ui.resized();
+        ui->addAndMakeVisible(*ui->center_panel);
+        ui->resized();
     }
     if (transition.in_transition == GameStep_EndResults)
     {
         assert(ui_target == 1);
         auto results_panel = std::make_unique < FrequencyGame_Results_Panel > ();
-        ui.center_panel = std::move(results_panel);
-        ui.addAndMakeVisible(*ui.center_panel);
-        ui.resized();
+        ui->center_panel = std::move(results_panel);
+        ui->addAndMakeVisible(*ui->center_panel);
+        ui->resized();
     }
 }
 
-void frequency_game_ui_update(FrequencyGame_UI &ui, const Frequency_Game_Effect_UI &new_ui)
+void frequency_game_ui_update(FrequencyGame_UI *ui, Frequency_Game_Effect_UI *new_ui)
 {
-    frequency_game_ui_transitions(ui, new_ui.transition, new_ui.ui_target);
-    game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
-    if (ui.center_panel)
+    frequency_game_ui_transitions(ui, new_ui->transition, new_ui->ui_target);
+    game_ui_header_update(&ui->header, new_ui->header_center_text, new_ui->header_right_text);
+    if (ui->center_panel)
     {
-        switch (new_ui.ui_target)
+        switch (new_ui->ui_target)
         {
             case 0 :
             {
-                auto *frequency_widget = dynamic_cast<FrequencyWidget*>(ui.center_panel.get());
+                auto *frequency_widget = dynamic_cast<FrequencyWidget*>(ui->center_panel.get());
                 assert(frequency_widget);
                 frequency_widget_update(frequency_widget, new_ui);
             } break;
             case 1 :
             {
-                auto *result_panel = dynamic_cast<FrequencyGame_Results_Panel*>(ui.center_panel.get());
+                auto *result_panel = dynamic_cast<FrequencyGame_Results_Panel*>(ui->center_panel.get());
                 assert(result_panel);
-                result_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui.results.score), juce::dontSendNotification);
+                result_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui->results.score), juce::dontSendNotification);
             } break;
             case 2 :
             {
-                auto *text_input = dynamic_cast<Frequency_Game_Text_Input*>(ui.center_panel.get());
+                auto *text_input = dynamic_cast<Frequency_Game_Text_Input*>(ui->center_panel.get());
                 assert(text_input);
-                text_input->text_input.setEnabled(!new_ui.freq_widget.is_cursor_locked);
-                if (new_ui.freq_widget.display_target)
+                text_input->text_input.setEnabled(!new_ui->freq_widget.is_cursor_locked);
+                if (new_ui->freq_widget.display_target)
                 {
-                    text_input->text_input.setText(juce::String(new_ui.freq_widget.target_frequency));
+                    text_input->text_input.setText(juce::String(new_ui->freq_widget.target_frequency));
                 }
-                if (new_ui.transition.in_transition == GameStep_Question)
+                if (new_ui->transition.in_transition == GameStep_Question)
                 {
                     text_input->text_input.setText("");
                     text_input->text_input.grabKeyboardFocus();
                 }
-                if (new_ui.transition.out_transition == GameStep_Question)
+                if (new_ui->transition.out_transition == GameStep_Question)
                 {
                     text_input->text_input.giveAwayKeyboardFocus();
                 }
             };
         }
     }
-    game_ui_bottom_update(&ui.bottom, new_ui.display_button, new_ui.button_text, new_ui.mix, new_ui.button_event);
+    game_ui_bottom_update(&ui->bottom, new_ui->display_button, new_ui->button_text, new_ui->mix, new_ui->button_event);
 }
 
 void frequency_game_post_event(FrequencyGame_IO *io, Event event)
@@ -122,7 +122,7 @@ void frequency_game_post_event(FrequencyGame_IO *io, Event event)
     }
     assert(effects.error == 0);
     for(auto &observer : io->observers)
-        observer(effects);
+        observer(&effects);
 
     if (effects.quit)
     {
@@ -131,11 +131,11 @@ void frequency_game_post_event(FrequencyGame_IO *io, Event event)
 }
 
 FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, 
-                                              std::vector<Audio_File> files)
+                                              std::vector<Audio_File> *files)
 {
-    assert(!files.empty());
+    assert(!files->empty());
     auto state = FrequencyGame_State {
-        .files = std::move(files),
+        .files = std::move(*files),
         .config = config,
         .timestamp_start = -1
     };
@@ -531,16 +531,16 @@ void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t
     io->observers.push_back(std::move(observer));
 }
 
-void frequency_widget_update(FrequencyWidget *widget, const Frequency_Game_Effect_UI &new_ui)
+void frequency_widget_update(FrequencyWidget *widget, Frequency_Game_Effect_UI *new_ui)
 {
-    widget->display_target = new_ui.freq_widget.display_target;
-    widget->target_frequency = new_ui.freq_widget.target_frequency;
-    widget->is_cursor_locked = new_ui.freq_widget.is_cursor_locked;
-    widget->locked_cursor_frequency = new_ui.freq_widget.locked_cursor_frequency;
-    widget->display_window = new_ui.freq_widget.display_window;
-    widget->correct_answer_window = new_ui.freq_widget.correct_answer_window;
-    widget->min_f = new_ui.freq_widget.min_f;
-    widget->num_octaves = new_ui.freq_widget.num_octaves;
+    widget->display_target = new_ui->freq_widget.display_target;
+    widget->target_frequency = new_ui->freq_widget.target_frequency;
+    widget->is_cursor_locked = new_ui->freq_widget.is_cursor_locked;
+    widget->locked_cursor_frequency = new_ui->freq_widget.locked_cursor_frequency;
+    widget->display_window = new_ui->freq_widget.display_window;
+    widget->correct_answer_window = new_ui->freq_widget.correct_answer_window;
+    widget->min_f = new_ui->freq_widget.min_f;
+    widget->num_octaves = new_ui->freq_widget.num_octaves;
     widget->repaint();
 }
 
@@ -574,10 +574,10 @@ static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
-juce::String frequency_game_serlialize(const std::vector<FrequencyGame_Config> &frequency_game_configs)
+juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs)
 {
     juce::ValueTree root_node { id_config_root };
-    for (const FrequencyGame_Config& config : frequency_game_configs)
+    for (const FrequencyGame_Config& config : *frequency_game_configs)
     {
         juce::ValueTree node = { id_config, {
             { id_config_title,  config.title },

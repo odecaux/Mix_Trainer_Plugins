@@ -20,15 +20,15 @@ CompressorGame_Config compressor_game_config_default(juce::String name)
     };
 }
 
-void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition transition)
+void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition transition)
 {
     juce::ignoreUnused(ui);
     if (transition.in_transition == GameStep_Begin)
     {
-        ui.previewer_file_list.setVisible(true);
-        ui.resized();
+        ui->previewer_file_list.setVisible(true);
+        ui->resized();
 #if 0  
-        ui.previewer_file_list.selection_changed_callback = 
+        ui->previewer_file_list.selection_changed_callback = 
             [fileList, selection_changed = std::move(update_ui)] (const std::vector<bool> & new_selection)
         {
             fileList->selected = new_selection;
@@ -44,60 +44,60 @@ void compressor_game_ui_transitions(CompressorGame_UI &ui, Effect_Transition tra
     }
     if (transition.out_transition == GameStep_Begin)
     {
-        ui.previewer_file_list.setVisible(false);
+        ui->previewer_file_list.setVisible(false);
 #if 0
-        ui.compressor_widget = std::make_unique < CompressorWidget > ();
-        ui.compressor_widget->onClick = [state = ui.game_state, io = ui.game_io] (int compressor) {
+        ui->compressor_widget = std::make_unique < CompressorWidget > ();
+        ui->compressor_widget->onClick = [state = ui->game_state, io = ui->game_io] (int compressor) {
             Event event = {
                 .type = Event_Click_Compressor,
                 .value_i = compressor
             };
             compressor_game_post_event(state, io, event);
         };
-        ui.addAndMakeVisible(*ui.compressor_widget);
+        ui->addAndMakeVisible(*ui->compressor_widget);
 #endif
-        ui.resized();
+        ui->resized();
     }
     if (transition.in_transition == GameStep_EndResults)
     {
 #if 0
-        ui.compressor_widget.reset();
-        ui.results_panel = std::make_unique < CompressorGame_Results_Panel > ();
-        ui.addAndMakeVisible(*ui.results_panel);
-        ui.resized();
+        ui->compressor_widget.reset();
+        ui->results_panel = std::make_unique < CompressorGame_Results_Panel > ();
+        ui->addAndMakeVisible(*ui->results_panel);
+        ui->resized();
 #endif
     }
 }
 
-void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effect_UI &new_ui)
+void compressor_game_ui_update(CompressorGame_UI *ui, Compressor_Game_Effect_UI *new_ui)
 {
-    compressor_game_ui_transitions(ui, new_ui.transition);
+    compressor_game_ui_transitions(ui, new_ui->transition);
 
-	game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
+	game_ui_header_update(&ui->header, new_ui->header_center_text, new_ui->header_right_text);
     
-    auto threshold_text = [values = new_ui.comp_widget.threshold_values_db] (double new_pos) {
+    auto threshold_text = [values = new_ui->comp_widget.threshold_values_db] (double new_pos) {
         return juce::Decibels::toString(values[static_cast<size_t>(new_pos)], 0);
     };
 
-    auto ratio_text = [values = new_ui.comp_widget.ratio_values] (double new_pos) {
+    auto ratio_text = [values = new_ui->comp_widget.ratio_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]);
     };
 
-    auto attack_text = [values = new_ui.comp_widget.attack_values] (double new_pos) {
+    auto attack_text = [values = new_ui->comp_widget.attack_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
-    auto release_text = [values = new_ui.comp_widget.release_values] (double new_pos) {
+    auto release_text = [values = new_ui->comp_widget.release_values] (double new_pos) {
         return juce::String(values[static_cast<size_t>(new_pos)]) + " ms";
     };
 
     using bundle_t = std::tuple<TextSlider&, Widget_Interaction_Type, int, int, std::function < juce::String(double)> >;
 
     auto bundle = std::vector<bundle_t>{
-        { ui.compressor_widget.threshold_slider, new_ui.comp_widget.threshold_visibility, new_ui.comp_widget.threshold_pos, static_cast<int>(new_ui.comp_widget.threshold_values_db.size()), std::move(threshold_text) },
-        { ui.compressor_widget.ratio_slider, new_ui.comp_widget.ratio_visibility, new_ui.comp_widget.ratio_pos, static_cast<int>(new_ui.comp_widget.ratio_values.size()), std::move(ratio_text) },
-        { ui.compressor_widget.attack_slider, new_ui.comp_widget.attack_visibility,  new_ui.comp_widget.attack_pos, static_cast<int>(new_ui.comp_widget.attack_values.size()), std::move(attack_text) },
-        { ui.compressor_widget.release_slider, new_ui.comp_widget.release_visibility, new_ui.comp_widget.release_pos, static_cast<int>(new_ui.comp_widget.release_values.size()), std::move(release_text) }
+        { ui->compressor_widget.threshold_slider, new_ui->comp_widget.threshold_visibility, new_ui->comp_widget.threshold_pos, static_cast<int>(new_ui->comp_widget.threshold_values_db.size()), std::move(threshold_text) },
+        { ui->compressor_widget.ratio_slider, new_ui->comp_widget.ratio_visibility, new_ui->comp_widget.ratio_pos, static_cast<int>(new_ui->comp_widget.ratio_values.size()), std::move(ratio_text) },
+        { ui->compressor_widget.attack_slider, new_ui->comp_widget.attack_visibility,  new_ui->comp_widget.attack_pos, static_cast<int>(new_ui->comp_widget.attack_values.size()), std::move(attack_text) },
+        { ui->compressor_widget.release_slider, new_ui->comp_widget.release_visibility, new_ui->comp_widget.release_pos, static_cast<int>(new_ui->comp_widget.release_values.size()), std::move(release_text) }
     };
 
     //TODO rename range
@@ -131,7 +131,7 @@ void compressor_game_ui_update(CompressorGame_UI &ui, const Compressor_Game_Effe
         }
     }
 
-    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
+    game_ui_bottom_update(&ui->bottom, true, new_ui->bottom_button_text, new_ui->mix_toggles, new_ui->bottom_button_event);
 }
 
 void compressor_game_post_event(CompressorGame_IO *io, Event event)
@@ -143,8 +143,10 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event)
         io->game_state = effects.new_state;
     }
     assert(effects.error == 0);
-    for(auto &observer : io->observers)
-        observer(effects);
+    for (auto &observer : io->observers)
+    {
+        observer(&effects);
+    }
 
     if (effects.quit)
     {
@@ -153,11 +155,11 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event)
 }
 
 CompressorGame_State compressor_game_state_init(CompressorGame_Config config, 
-                                                std::vector<Audio_File> files)
+                                                std::vector<Audio_File> *files)
 {
-    assert(!files.empty());
+    assert(!files->empty());
     auto state = CompressorGame_State {
-        .files = std::move(files),
+        .files = std::move(*files),
         .config = config,
         .timestamp_start = -1
     };
@@ -711,18 +713,6 @@ void compressor_game_add_observer(CompressorGame_IO *io, compressor_game_observe
     io->observers.push_back(std::move(observer));
 }
 
-#if 0
-void compressor_widget_update(CompressorWidget *widget, const Compressor_Game_Effect_UI &new_ui)
-{
-    widget->display_target = new_ui.freq_widget.display_target;
-    widget->target_compressor = new_ui.freq_widget.target_compressor;
-    widget->is_cursor_locked = new_ui.freq_widget.is_cursor_locked;
-    widget->locked_cursor_compressor = new_ui.freq_widget.locked_cursor_compressor;
-    widget->display_window = new_ui.freq_widget.display_window;
-    widget->correct_answer_window = new_ui.freq_widget.correct_answer_window;
-    widget->repaint();
-}
-#endif
 static const juce::Identifier id_config_root = "configs";
 static const juce::Identifier id_config = "config";
 static const juce::Identifier id_config_title = "title";
@@ -756,10 +746,10 @@ static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
-juce::String compressor_game_serialize(const std::vector<CompressorGame_Config> &compressor_game_configs)
+juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs)
 { 
     juce::ValueTree root_node { id_config_root };
-    for (const CompressorGame_Config& config : compressor_game_configs)
+    for (const CompressorGame_Config& config : *compressor_game_configs)
     {
         juce::ValueTree node = { id_config, {
             { id_config_title,  config.title },
