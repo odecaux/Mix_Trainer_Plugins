@@ -577,26 +577,27 @@ static const juce::Identifier id_result_timestamp = "timestamp";
 juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs)
 {
     juce::ValueTree root_node { id_config_root };
-    for (const FrequencyGame_Config& config : *frequency_game_configs)
+    for (uint32_t i = 0; i < frequency_game_configs->size(); i++)
     {
+        auto *config = &frequency_game_configs->at(i);
         juce::ValueTree node = { id_config, {
-            { id_config_title,  config.title },
+            { id_config_title,  config->title },
 
-            { id_config_input, config.input },
-            { id_config_gain, config.eq_gain_db },
-            { id_config_quality, config.eq_quality },
-            { id_config_window, config.initial_correct_answer_window },
-            { id_config_min_f, config.min_f },
-            { id_config_num_octaves, config.num_octaves },
+            { id_config_input, config->input },
+            { id_config_gain, config->eq_gain_db },
+            { id_config_quality, config->eq_quality },
+            { id_config_window, config->initial_correct_answer_window },
+            { id_config_min_f, config->min_f },
+            { id_config_num_octaves, config->num_octaves },
 
-            { id_config_prelisten_type, config.prelisten_type },
-            { id_config_prelisten_timeout_ms, config.prelisten_timeout_ms },
+            { id_config_prelisten_type, config->prelisten_type },
+            { id_config_prelisten_timeout_ms, config->prelisten_timeout_ms },
 
-            { id_config_question_type, config.question_type },
-            { id_config_question_timeout_ms, config.question_timeout_ms },
+            { id_config_question_type, config->question_type },
+            { id_config_question_timeout_ms, config->question_timeout_ms },
 
-            { id_config_result_timeout_enabled, config.result_timeout_enabled },
-            { id_config_result_timeout_ms, config.result_timeout_ms },
+            { id_config_result_timeout_enabled, config->result_timeout_enabled },
+            { id_config_result_timeout_ms, config->result_timeout_ms },
         } };
         root_node.addChild(node, -1, nullptr);
     }

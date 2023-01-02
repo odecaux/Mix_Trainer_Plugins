@@ -20,7 +20,7 @@ public:
     void shutdown() override { mainWindow = nullptr; }
 
 private:
-    class MainWindow    : public juce::DocumentWindow
+    class MainWindow : public juce::DocumentWindow
     {
     public:
         MainWindow (juce::String* name, juce::Component* c, juce::JUCEApplication *a)

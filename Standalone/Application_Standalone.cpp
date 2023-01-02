@@ -369,10 +369,10 @@ Application_Standalone::~Application_Standalone()
         auto stream = get_file_stream_from_appdata("compressor_game_results.xml");
         if (!stream) return;
         juce::ValueTree root_node { id_results_root };
-        for (const CompressorGame_Results& result : compressor_game_results_history)
+        for (uint32_t i = 0; i < compressor_game_results_history.size(); i++)
         {
             juce::ValueTree node = { id_result, {
-                { id_result_score,  result.score }
+                { id_result_score,  compressor_game_results_history[i].score }
             }};
             root_node.addChild(node, -1, nullptr);
         }

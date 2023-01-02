@@ -35,9 +35,9 @@ void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition tra
             selection_changed(new_selection);
         };
         std::vector<juce::String> file_names{};
-        for (const Audio_File& file : fileList->files)
+        for (uint32_t i = 0; fileList->files.size(); i++)
         {
-            file_names.push_back(file.title);
+            file_names.push_back(fileList->files[i].title);
         }
         list_comp.set_rows(file_names, fileList->selected);
 #endif
@@ -143,9 +143,9 @@ void compressor_game_post_event(CompressorGame_IO *io, Event event)
         io->game_state = effects.new_state;
     }
     assert(effects.error == 0);
-    for (auto &observer : io->observers)
+    for (auto i = 0; i < io->observers.size(); i++)
     {
-        observer(&effects);
+        io->observers[i](&effects);
     }
 
     if (effects.quit)
@@ -749,25 +749,26 @@ static const juce::Identifier id_result_timestamp = "timestamp";
 juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs)
 { 
     juce::ValueTree root_node { id_config_root };
-    for (const CompressorGame_Config& config : *compressor_game_configs)
+    for (uint32_t i = 0; i < compressor_game_configs->size(); i++)
     {
+        auto *config = &compressor_game_configs->at(i);
         juce::ValueTree node = { id_config, {
-            { id_config_title,  config.title },
+            { id_config_title,  config->title },
                 
-            { id_config_threshold_active, config.threshold_active },
-            { id_config_ratio_active, config.ratio_active },
-            { id_config_attack_active, config.attack_active },
-            { id_config_release_active, config.release_active },
+            { id_config_threshold_active, config->threshold_active },
+            { id_config_ratio_active, config->ratio_active },
+            { id_config_attack_active, config->attack_active },
+            { id_config_release_active, config->release_active },
 
-            { id_config_thresholds, serialize_vector<float>(config.threshold_values_db) },
-            { id_config_ratios, serialize_vector<float>(config.ratio_values) },
-            { id_config_attacks, serialize_vector<float>(config.attack_values) },
-            { id_config_releases, serialize_vector<float>(config.release_values) },
+            { id_config_thresholds, serialize_vector<float>(config->threshold_values_db) },
+            { id_config_ratios, serialize_vector<float>(config->ratio_values) },
+            { id_config_attacks, serialize_vector<float>(config->attack_values) },
+            { id_config_releases, serialize_vector<float>(config->release_values) },
 
-            { id_config_variant, (int) config.variant },
-            { id_config_listen_count, config.listens },
-            { id_config_question_timeout_ms, config.timeout_ms },
-            { id_config_total_rounds, config.total_rounds }
+            { id_config_variant, (int) config->variant },
+            { id_config_listen_count, config->listens },
+            { id_config_question_timeout_ms, config->timeout_ms },
+            { id_config_total_rounds, config->total_rounds }
         }};
         root_node.addChild(node, -1, nullptr);
     }
