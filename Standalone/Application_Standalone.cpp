@@ -116,7 +116,7 @@ static const juce::Identifier id_file_max_level = "max_level";
 static const juce::Identifier id_file_length_samples = "length_samples";
 
 
-juce::String audio_file_list_serialize(Audio_File_List *audio_file_list)
+std::string audio_file_list_serialize(Audio_File_List *audio_file_list)
 {
     juce::ValueTree root_node { id_files_root };
     for (uint64_t hash : audio_file_list->order)
@@ -135,10 +135,10 @@ juce::String audio_file_list_serialize(Audio_File_List *audio_file_list)
         }};
         root_node.addChild(node, -1, nullptr);
     }
-    return root_node.toXmlString();
+    return root_node.toXmlString().toStdString();
 }
 
-std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string)
+std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string)
 {
     std::vector<Audio_File> audio_files{};
     juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
@@ -213,7 +213,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         auto stream = get_file_from_appdata("audio_files.xml");
         if (!stream) return;
         juce::String xml_string = stream->readString();
-        auto file_vec = audio_file_list_deserialize(xml_string);
+        auto file_vec = audio_file_list_deserialize(xml_string.toStdString());
         audio_file_list.files.reserve(file_vec.size());
         audio_file_list.selected.reserve(file_vec.size());
         audio_file_list.order.reserve(file_vec.size());
@@ -239,7 +239,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         auto stream = get_file_from_appdata("frequency_game_configs.xml");
         if (!stream) return;
         juce::String xml_string = stream->readString();
-        frequency_game_configs = frequency_game_deserialize(xml_string);
+        frequency_game_configs = frequency_game_deserialize(xml_string.toStdString());
     }();
     
     //load previous results
@@ -267,7 +267,7 @@ Application_Standalone::Application_Standalone(juce::AudioFormatManager *formatM
         auto stream = get_file_from_appdata("compressor_game_configs.xml");
         if (!stream) return;
         juce::String xml_string = stream->readString();
-        compressor_game_configs = compressor_game_deserialize(xml_string);
+        compressor_game_configs = compressor_game_deserialize(xml_string.toStdString());
     }();
     
 
@@ -326,15 +326,17 @@ Application_Standalone::~Application_Standalone()
 
     //save audio file list
     [&] {
-        auto stream = get_file_stream_from_appdata("audio_files.xml");
+        std::unique_ptr<juce::FileOutputStream> stream = get_file_stream_from_appdata("audio_files.xml");
         if (!stream) return;
-        *stream << audio_file_list_serialize(&audio_file_list);
+        std::string file_text = audio_file_list_serialize(&audio_file_list);
+        *stream << juce::StringRef(file_text);
     }();
 
     //save frequency config list
     [&] {
         auto stream = get_file_stream_from_appdata("frequency_game_configs.xml");
-        *stream << frequency_game_serlialize(&frequency_game_configs);
+        std::string file_text = frequency_game_serlialize(&frequency_game_configs);
+        *stream << juce::StringRef(file_text);
     }();
 
     
@@ -360,7 +362,8 @@ Application_Standalone::~Application_Standalone()
     [&] {
         auto stream = get_file_stream_from_appdata("compressor_game_configs.xml");
         if (!stream) return;
-        *stream << compressor_game_serialize(&compressor_game_configs);
+        std::string file_text = compressor_game_serialize(&compressor_game_configs);
+        *stream << juce::StringRef(file_text);
     }();
 
     

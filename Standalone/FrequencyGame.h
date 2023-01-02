@@ -37,11 +37,11 @@ struct Frequency_Game_Effect_UI {
         uint32_t num_octaves;
     } freq_widget;
     FrequencyGame_Results results;
-    juce::String header_center_text;
-    juce::String header_right_text;
+    std::string header_center_text;
+    std::string header_right_text;
     Mix mix;
     bool display_button;
-    juce::String button_text;
+    std::string button_text;
     Event_Type button_event;
 };
 
@@ -61,7 +61,7 @@ enum Frequency_Question_Type
 
 struct FrequencyGame_Config
 {
-    juce::String title;
+    std::string title;
     //frequency
     Frequency_Input input;
     float eq_gain_db;
@@ -123,11 +123,11 @@ struct FrequencyGame_IO
 
 struct FrequencyGame_UI;
 
-juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs);
-std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_string);
+std::string frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs);
+std::vector<FrequencyGame_Config> frequency_game_deserialize(std::string xml_string);
 
 
-FrequencyGame_Config frequency_game_config_default(juce::String name);
+FrequencyGame_Config frequency_game_config_default(std::string name);
 FrequencyGame_State frequency_game_state_init(FrequencyGame_Config config, std::vector<Audio_File> *files);
 std::unique_ptr<FrequencyGame_IO> frequency_game_io_init(FrequencyGame_State);
 void frequency_game_add_observer(FrequencyGame_IO *io, frequency_game_observer_t observer);
@@ -368,7 +368,7 @@ struct Frequency_Config_Panel : public juce::Component
         {
             
             auto configs_to_names = [] (std::vector<FrequencyGame_Config> *configs) {
-                std::vector<juce::String> config_names{};
+                std::vector<std::string> config_names{};
                 config_names.resize(configs->size());
                 auto projection = [] (const FrequencyGame_Config& config) { return config.title; };
                 std::transform(configs->begin(), configs->end(), config_names.begin(), projection);
@@ -378,7 +378,7 @@ struct Frequency_Config_Panel : public juce::Component
                 selectConfig(config_idx);
             };
         
-            config_list_comp.create_channel_callback = [&, configs_to_names](juce::String new_config_name) {
+            config_list_comp.create_channel_callback = [&, configs_to_names](std::string new_config_name) {
                 configs->push_back(frequency_game_config_default(new_config_name));
                 config_list_comp.update(configs_to_names(configs));
             };
@@ -388,7 +388,7 @@ struct Frequency_Config_Panel : public juce::Component
                 config_list_comp.update(configs_to_names(configs));
             };
 
-            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, juce::String new_config_name) {
+            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, std::string new_config_name) {
                 (*configs)[row_idx].title = new_config_name;
                 config_list_comp.update(configs_to_names(configs));
             };

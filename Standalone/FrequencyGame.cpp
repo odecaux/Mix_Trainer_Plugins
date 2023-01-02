@@ -5,7 +5,7 @@
 #include "FrequencyWidget.h"
 #include "FrequencyGame.h"
 
-FrequencyGame_Config frequency_game_config_default(juce::String name)
+FrequencyGame_Config frequency_game_config_default(std::string name)
 {
     return {
         .title = name,
@@ -86,7 +86,7 @@ void frequency_game_ui_update(FrequencyGame_UI *ui, Frequency_Game_Effect_UI *ne
             {
                 auto *result_panel = dynamic_cast<FrequencyGame_Results_Panel*>(ui->center_panel.get());
                 assert(result_panel);
-                result_panel->score_label.setText(juce::String("score : ") + juce::String(new_ui->results.score), juce::dontSendNotification);
+                result_panel->score_label.setText("score : " + std::to_string(new_ui->results.score), juce::dontSendNotification);
             } break;
             case 2 :
             {
@@ -462,19 +462,19 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             } break;
             case GameStep_Question :
             {
-                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_right_text = "Score : " + std::to_string(state.score);
                 effects.ui->ui_target = state.config.input == Frequency_Input_Widget ? 0 : 2;
                 effects.ui->freq_widget.display_target = false;
                 effects.ui->freq_widget.is_cursor_locked = false;
                 effects.ui->freq_widget.display_window = true;
                 effects.ui->freq_widget.correct_answer_window = state.correct_answer_window;
 
-                effects.ui->header_center_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->header_center_text = "Lives : " + std::to_string(state.lives);
                 effects.ui->display_button = false;
             } break;
             case GameStep_Result :
             {
-                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_right_text = "Score : " + std::to_string(state.score);
         
                 effects.ui->ui_target = state.config.input == Frequency_Input_Widget ? 0 : 2;
                 effects.ui->freq_widget.display_target = true;
@@ -497,7 +497,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 else 
                     jassertfalse;
 
-                effects.ui->header_center_text = juce::String("Lives : ") + juce::String(state.lives);
+                effects.ui->header_center_text = "Lives : " + std::to_string(state.lives);
                 effects.ui->display_button = true;
                 effects.ui->button_text = "Next";
                 effects.ui->button_event = Event_Click_Next;
@@ -573,14 +573,14 @@ static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
-juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs)
+std::string frequency_game_serlialize(std::vector<FrequencyGame_Config> *frequency_game_configs)
 {
     juce::ValueTree root_node { id_config_root };
     for (uint32_t i = 0; i < frequency_game_configs->size(); i++)
     {
         auto *config = &frequency_game_configs->at(i);
         juce::ValueTree node = { id_config, {
-            { id_config_title,  config->title },
+            { id_config_title,  juce::String(config->title) },
 
             { id_config_input, config->input },
             { id_config_gain, config->eq_gain_db },
@@ -600,11 +600,11 @@ juce::String frequency_game_serlialize(std::vector<FrequencyGame_Config> *freque
         } };
         root_node.addChild(node, -1, nullptr);
     }
-    return root_node.toXmlString();
+    return root_node.toXmlString().toStdString();
 }
 
 
-std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_string)
+std::vector<FrequencyGame_Config> frequency_game_deserialize(std::string xml_string)
 {
     std::vector<FrequencyGame_Config> frequency_game_configs{};
 
@@ -617,7 +617,7 @@ std::vector<FrequencyGame_Config> frequency_game_deserialize(juce::String xml_st
         if(node.getType() != id_config)
             continue;
         FrequencyGame_Config config = {
-            .title = node.getProperty(id_config_title, ""),
+            .title = node.getProperty(id_config_title, "").toString().toStdString(),
 
             .input = (Frequency_Input)(int)node.getProperty(id_config_input, (int)Frequency_Input_Widget),
             .eq_gain_db = node.getProperty(id_config_gain, 0.0f),

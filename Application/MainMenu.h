@@ -177,7 +177,7 @@ public :
         channel_list.insert_row_text = "Create new channel";
         
         auto multitrack_observer = [&](MuliTrack_Model *new_model) { 
-            std::vector<juce::String> channel_names{};
+            std::vector<std::string> channel_names{};
             channel_names.resize(new_model->game_channels.size());
             auto projection = [new_model] (int id) {
                 return new_model->game_channels.at(id).name;

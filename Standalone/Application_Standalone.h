@@ -11,8 +11,8 @@ void remove_files(Audio_File_List *audio_file_list, juce::SparseSet < int > * in
 std::vector<Audio_File> get_selected_list(Audio_File_List *audio_file_list);
 std::vector<Audio_File> get_ordered_audio_files(Audio_File_List *audio_file_list);
 
-juce::String audio_file_list_serialize(Audio_File_List *audio_file_list);
-std::vector<Audio_File> audio_file_list_deserialize(juce::String xml_string);
+std::string audio_file_list_serialize(Audio_File_List *audio_file_list);
+std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string);
 
 //------------------------------------------------------------------------
 struct File_Player : juce::ChangeListener 

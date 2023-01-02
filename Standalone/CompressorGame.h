@@ -25,8 +25,8 @@ struct CompressorGame_Results
 struct Compressor_Game_Effect_UI {
     Effect_Transition transition;
     CompressorGame_Results results;
-    juce::String header_center_text;
-    juce::String header_right_text;
+    std::string header_center_text;
+    std::string header_right_text;
     //int score;
     struct {
         Widget_Interaction_Type threshold_visibility;
@@ -45,7 +45,7 @@ struct Compressor_Game_Effect_UI {
         std::vector < float > release_values;
     } comp_widget;
     Mix mix_toggles;
-    juce::String bottom_button_text;
+    std::string bottom_button_text;
     Event_Type bottom_button_event;
 };
 
@@ -58,7 +58,7 @@ enum Compressor_Game_Variant
 
 struct CompressorGame_Config
 {
-    juce::String title;
+    std::string title;
     //compressor
     bool threshold_active;
     bool ratio_active;
@@ -156,10 +156,10 @@ struct CompressorGame_IO
 struct CompressorGame_UI;
 struct CompressorGame_Widget;
 
-juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs);
-std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_string);
+std::string compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs);
+std::vector<CompressorGame_Config> compressor_game_deserialize(std::string xml_string);
 
-CompressorGame_Config compressor_game_config_default(juce::String name);
+CompressorGame_Config compressor_game_config_default(std::string name);
 CompressorGame_State compressor_game_state_init(CompressorGame_Config config, std::vector<Audio_File> *files);
 std::unique_ptr<CompressorGame_IO> compressor_game_io_init(CompressorGame_State state);
 void compressor_game_add_observer(CompressorGame_IO *io, compressor_game_observer_t observer);
@@ -176,7 +176,7 @@ struct CompressorGame_Widget : public juce::Component
     CompressorGame_Widget(CompressorGame_IO *gameIO)
     : game_io(gameIO)
     {
-        auto setup_slider = [&] (TextSlider &slider, juce::Label &label, juce::String name, std::function<void(uint32_t)> onEdit) {
+        auto setup_slider = [&] (TextSlider &slider, juce::Label &label, std::string name, std::function<void(uint32_t)> onEdit) {
             label.setText(name, juce::NotificationType::dontSendNotification);
             label.setJustificationType(juce::Justification::centred);
             addAndMakeVisible(label);
@@ -434,7 +434,7 @@ struct Compressor_Config_Panel : public juce::Component
         {
             
             auto configs_to_names = [] (std::vector<CompressorGame_Config> *configs) {
-                std::vector<juce::String> config_names{};
+                std::vector<std::string> config_names{};
                 config_names.resize(configs->size());
                 auto projection = [] (const CompressorGame_Config& config) { 
                     return config.title; 
@@ -446,7 +446,7 @@ struct Compressor_Config_Panel : public juce::Component
                 selectConfig(config_idx);
             };
         
-            config_list_comp.create_channel_callback = [&, configs_to_names](juce::String new_config_name) {
+            config_list_comp.create_channel_callback = [&, configs_to_names](std::string new_config_name) {
                 configs->push_back(compressor_game_config_default(new_config_name));
                 config_list_comp.update(configs_to_names(configs));
             };
@@ -456,7 +456,7 @@ struct Compressor_Config_Panel : public juce::Component
                 config_list_comp.update(configs_to_names(configs));
             };
 
-            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, juce::String new_config_name) {
+            config_list_comp.rename_channel_callback = [&, configs_to_names](int row_idx, std::string new_config_name) {
                 configs->at(row_idx).title = new_config_name;
                 config_list_comp.update(configs_to_names(configs));
             };

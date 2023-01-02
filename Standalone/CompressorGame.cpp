@@ -5,7 +5,7 @@
 //#include "CompressorWidget.h"
 #include "CompressorGame.h"
 
-CompressorGame_Config compressor_game_config_default(juce::String name)
+CompressorGame_Config compressor_game_config_default(std::string name)
 {
     return {
         .title = name,
@@ -34,7 +34,7 @@ void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition tra
             fileList->selected = new_selection;
             selection_changed(new_selection);
         };
-        std::vector<juce::String> file_names{};
+        std::vector<std::string> file_names{};
         for (uint32_t i = 0; fileList->files.size(); i++)
         {
             file_names.push_back(fileList->files[i].title);
@@ -511,7 +511,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             update_ui = true;
         }break;
     }
-    
+
     uint32_t threshold_pos;
     uint32_t ratio_pos;
     uint32_t attack_pos;
@@ -636,7 +636,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             case GameStep_Question :
             {
                 effects.ui->header_center_text = "Listen and reproduce";
-                effects.ui->header_right_text = "Round " + juce::String(state.current_round) + " / " + juce::String(state.config.total_rounds);
+                effects.ui->header_right_text = "Round " + std::to_string(state.current_round) + " / " + std::to_string(state.config.total_rounds);
                 
                 switch (state.config.variant)
                 {
@@ -664,7 +664,7 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
                         if (state.mix == Mix_Target)
                         {
                             if (!state.can_still_listen) assert(false);
-                            effects.ui->header_center_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
+                            effects.ui->header_center_text = "remaining listens : " + std::to_string(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
                         {
@@ -678,8 +678,8 @@ Compressor_Game_Effects compressor_game_update(CompressorGame_State state, Event
             } break;
             case GameStep_Result :
             {
-                effects.ui->header_center_text = juce::String("Score : ") + juce::String(state.score);
-                effects.ui->header_right_text = "Round " + juce::String(state.current_round) + " / " + juce::String(state.config.total_rounds);
+                effects.ui->header_center_text = "Score : " + std::to_string(state.score);
+                effects.ui->header_right_text = "Round " + std::to_string(state.current_round) + " / " + std::to_string(state.config.total_rounds);
                 effects.ui->bottom_button_text = "Next";
                 effects.ui->bottom_button_event = Event_Click_Next;
             } break;
@@ -740,14 +740,14 @@ static const juce::Identifier id_result = "result";
 static const juce::Identifier id_result_score = "score";
 static const juce::Identifier id_result_timestamp = "timestamp";
 
-juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs)
+std::string compressor_game_serialize(std::vector<CompressorGame_Config> *compressor_game_configs)
 { 
     juce::ValueTree root_node { id_config_root };
     for (uint32_t i = 0; i < compressor_game_configs->size(); i++)
     {
         auto *config = &compressor_game_configs->at(i);
         juce::ValueTree node = { id_config, {
-            { id_config_title,  config->title },
+            { id_config_title,  juce::String(config->title) },
                 
             { id_config_threshold_active, config->threshold_active },
             { id_config_ratio_active, config->ratio_active },
@@ -766,10 +766,10 @@ juce::String compressor_game_serialize(std::vector<CompressorGame_Config> *compr
         }};
         root_node.addChild(node, -1, nullptr);
     }
-    return root_node.toXmlString();
+    return root_node.toXmlString().toStdString();
 }
 
-std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_string)
+std::vector<CompressorGame_Config> compressor_game_deserialize(std::string xml_string)
 {
     std::vector<CompressorGame_Config> compressor_game_configs{};
     juce::ValueTree root_node = juce::ValueTree::fromXml(xml_string);
@@ -782,7 +782,7 @@ std::vector<CompressorGame_Config> compressor_game_deserialize(juce::String xml_
             continue;
 
         CompressorGame_Config config = {
-            .title = node.getProperty(id_config_title, ""),
+            .title = node.getProperty(id_config_title, "").toString().toStdString(),
 
             .threshold_active = node.getProperty(id_config_threshold_active, true),
             .ratio_active = node.getProperty(id_config_ratio_active, true),

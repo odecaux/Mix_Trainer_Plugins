@@ -639,10 +639,10 @@ class List_Row_Label  : public juce::Label
 {
 public:
     List_Row_Label (
-        juce::String newRowText,
+        std::string newRowText,
         const std::function < void(int) > &onMouseDown,
-        const std::function < void(int, juce::String) > &onTextChanged,
-        const std::function < void(juce::String) > &onCreateRow
+        const std::function < void(int, std::string) > &onTextChanged,
+        const std::function < void(std::string) > &onCreateRow
     )
     : mouse_down_callback(onMouseDown),
       text_changed_callback(onTextChanged),
@@ -677,7 +677,7 @@ public:
                 setText(row_text, juce::dontSendNotification);
                 return;
             }
-            text_changed_callback(row, getText());
+            text_changed_callback(row, getText().toStdString());
         }
         //insert new track
         else 
@@ -689,11 +689,11 @@ public:
                 return;
             }
             is_last_row = false;
-            create_row_callback(getText());
+            create_row_callback(getText().toStdString());
         }
     }
 
-    void update(int new_row, juce::String new_text, bool new_is_last_row)
+    void update(int new_row, std::string new_text, bool new_is_last_row)
     {
         row = new_row;
         row_text = new_text;
@@ -722,14 +722,14 @@ public:
     }
 
     const std::function < void(int) > &mouse_down_callback;
-    const std::function < void(int, juce::String) > &text_changed_callback;
-    const std::function < void(juce::String) > &create_row_callback;
+    const std::function < void(int, std::string) > &text_changed_callback;
+    const std::function < void(std::string) > &create_row_callback;
 
     int row;
-    juce::String row_text;
+    std::string row_text;
     bool is_last_row;
 private:
-    juce::String new_row_text;
+    std::string new_row_text;
     juce::Colour textColour;
 };
 
@@ -747,12 +747,12 @@ public:
         editable_mouse_down_callback = [&] (int row_idx) {
             list_comp.selectRow(row_idx);
         };
-        editable_text_changed_callback = [&] (int row_idx, juce::String row_text) {
+        editable_text_changed_callback = [&] (int row_idx, std::string row_text) {
             assert(row_idx <= checked_cast<int>(rows_text.size()));
             assert(row_idx >= 0);
             rename_channel_callback(row_idx, row_text);
         };
-        editable_create_row_callback = [&] (juce::String new_row_text) {
+        editable_create_row_callback = [&] (std::string new_row_text) {
             create_channel_callback(new_row_text);
         };
     }
@@ -846,7 +846,7 @@ public:
                                            editable_text_changed_callback,
                                            editable_create_row_callback);
             }
-            juce::String row_text = row_number < num_rows
+            std::string row_text = row_number < num_rows
                 ? rows_text[row_number] 
                 : "";
             label->update(row_number, row_text, row_number == num_rows);
@@ -864,7 +864,7 @@ public:
             selected_channel_changed_callback(last_row_selected);
     }
 
-    void update(std::vector<juce::String> new_rows_text)
+    void update(std::vector<std::string> new_rows_text)
     {
         rows_text = new_rows_text;
         list_comp.updateContent();
@@ -877,19 +877,19 @@ public:
 
 
     std::function<void(int)> selected_channel_changed_callback = {};
-    std::function<void(juce::String)> create_channel_callback = {};
+    std::function<void(std::string)> create_channel_callback = {};
     std::function<void(int)> delete_channel_callback = {};
-    std::function<void(int, juce::String)> rename_channel_callback = {};
+    std::function<void(int, std::string)> rename_channel_callback = {};
     std::function<void(int, List_Row_Label*)> customization_point = {};
 
     juce::ListBox list_comp;
-    juce::String insert_row_text = {};
+    std::string insert_row_text = {};
 private:
     std::function<void(int)> editable_mouse_down_callback;
-    std::function<void(int, juce::String)> editable_text_changed_callback;
-    std::function<void(juce::String)> editable_create_row_callback;
+    std::function<void(int, std::string)> editable_text_changed_callback;
+    std::function<void(std::string)> editable_create_row_callback;
 
-    std::vector<juce::String> rows_text;
+    std::vector<std::string> rows_text;
 };
 
 #if 0
