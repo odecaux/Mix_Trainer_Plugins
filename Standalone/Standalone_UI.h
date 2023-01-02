@@ -1,15 +1,4 @@
 
-#pragma once
-#include "../shared/pch.h"
-#include "../shared/shared.h"
-#include "../Game/Game.h"
-#include "FrequencyWidget.h"
-#include "FrequencyGame.h"
-#include "CompressorGame.h"
-
-class Main_Component;
-
-#include "Application_Standalone.h"
 
 inline juce::Colour getUIColourIfAvailable (juce::LookAndFeel_V4::ColourScheme::UIColour uiColour, juce::Colour fallback = juce::Colour (0xff4d4d4d)) noexcept
 {
@@ -720,5 +709,3 @@ private :
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Main_Component)
 };
-
-#include "Application_Standalone.cpp"

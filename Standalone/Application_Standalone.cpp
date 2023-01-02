@@ -1,3 +1,12 @@
+#include "../shared/pch.h"
+#include "../shared/shared.h"
+#include "../Game/Game.h"
+#include "FrequencyGame.h"
+#include "CompressorGame.h"
+#include "Compressor_Game_UI.h"
+#include "Frequency_Game_UI.h"
+#include "Application_Standalone.h"
+#include "Standalone_UI.h"
 
 Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioFormatManager *format_manager)
 {

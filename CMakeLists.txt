@@ -138,6 +138,9 @@ target_sources(MixTrainer_Standalone
         Game/Game.cpp
         Standalone/FrequencyGame.cpp
         Standalone/CompressorGame.cpp
+        Standalone/Frequency_Game_UI.cpp
+        Standalone/Compressor_Game_UI.cpp
+        Standalone/Application_Standalone.cpp
         shared/shared.cpp)
 
 if(MSVC)

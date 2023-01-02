@@ -101,6 +101,18 @@
 			<File>
 				<Path>Standalone/Standalone_UI.h</Path>
 			</File>
+			<File>
+				<Path>Standalone/Frequency_Game_UI.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/Compressor_Game_UI.h</Path>
+			</File>
+			<File>
+				<Path>Standalone/Frequency_Game_UI.cpp</Path>
+			</File>
+			<File>
+				<Path>Standalone/Compressor_Game_UI.cpp</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>

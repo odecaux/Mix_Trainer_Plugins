@@ -50,6 +50,8 @@ File_Player_State file_player_post_command(File_Player *player, Audio_Command co
 void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state);
 File_Player_State file_player_query_state(File_Player *player);
 
+class Main_Component;
+
 class Application_Standalone
 {
     public :
