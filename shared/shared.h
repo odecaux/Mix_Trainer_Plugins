@@ -766,12 +766,17 @@ public:
 
     int getNumRows() override { return static_cast<int>(rows_text.size()) + 1; }
 
-    void paintListBoxItem (int row,
+    void paintListBoxItem (int rowNumber,
                            juce::Graphics& g,
                            int width, int height,
                            bool row_is_selected) override
     {
-        if (row_is_selected && row < getNumRows())
+        auto alternateColour = getLookAndFeel().findColour (juce::ListBox::backgroundColourId)
+            .interpolatedWith (getLookAndFeel().findColour (juce::ListBox::textColourId), 0.03f);
+        if (rowNumber % 2)
+            g.fillAll (alternateColour);
+
+        if (row_is_selected && rowNumber < getNumRows())
         {
             g.setColour(juce::Colours::white);
             auto bounds = juce::Rectangle { 0, 0, width, height };
@@ -973,8 +978,14 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
+
         if (rowNumber >= getNumRows()) 
             return;
+        
+        auto alternateColour = getLookAndFeel().findColour (juce::ListBox::backgroundColourId)
+            .interpolatedWith (getLookAndFeel().findColour (juce::ListBox::textColourId), 0.03f);
+        if (rowNumber % 2)
+            g.fillAll (alternateColour);
 
         auto bounds = juce::Rectangle { 0, 0, width, height };
         g.setColour(juce::Colours::white);

@@ -374,6 +374,11 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
+        auto alternateColour = getLookAndFeel().findColour (juce::ListBox::backgroundColourId)
+            .interpolatedWith (getLookAndFeel().findColour (juce::ListBox::textColourId), 0.03f);
+        if (rowNumber % 2)
+            g.fillAll (alternateColour);
+
         if (rowNumber < checked_cast<int>(files.size()))
         {
             g.setColour(juce::Colours::white);
