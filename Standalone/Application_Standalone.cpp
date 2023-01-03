@@ -71,15 +71,23 @@ bool insert_file(Audio_File_List *audio_file_list, juce::File file, juce::AudioF
 
 void remove_files(Audio_File_List *audio_file_list, juce::SparseSet<int>* indices)
 {
-    for (uint32_t i = static_cast<int>(audio_file_list->files.size()); --i >= 0;)
+    for (int i = checked_cast<int>(audio_file_list->files.size()) - 1; i >= 0; i--)
     {   
-        if (indices->contains(static_cast<int>(i)))
+        if (indices->contains(i))
         {
             //TODO assert
             uint64_t hash = audio_file_list->order[i];
-            audio_file_list->files.erase(hash);
-            audio_file_list->selected.erase(hash);
-            audio_file_list->order.erase(audio_file_list->order.begin() + i);
+            {
+                size_t count = audio_file_list->files.erase(hash);
+                assert(count == 1);
+            }
+            {
+                size_t count =  audio_file_list->selected.erase(hash);
+                assert(count == 1);
+            }
+            {
+                audio_file_list->order.erase(audio_file_list->order.begin() + i);
+            }
         }
     }
 }

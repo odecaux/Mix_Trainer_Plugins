@@ -403,16 +403,16 @@ public:
         if (num_selected == 0)
             return;
         
-        if (num_selected > 1)
-        {
-            file_list_component.deselectAllRows();
-        }
         
         auto selected_rows = file_list_component.getSelectedRows();
         remove_files_callback(&selected_rows);
         file_list_component.updateContent();
-
-        if (num_selected == 1)
+        
+        if (num_selected > 1)
+        {
+            file_list_component.deselectAllRows();
+        }
+        else if (num_selected == 1)
         {
             auto row_to_delete = selected_rows[0];
             if (row_to_delete == -1)

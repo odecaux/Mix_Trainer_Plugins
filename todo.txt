@@ -22,7 +22,6 @@ on doit pouvoir aussi avoir un mix toggle dans le frequency game
     drag bounds and push it to the audio_file
     async loading 
     test that change triggers rescan
-    BUG multiple delete is broken
     Les freq bounds d'un fichier audio doivent influer sur le score
         sigmoid score ?
 
