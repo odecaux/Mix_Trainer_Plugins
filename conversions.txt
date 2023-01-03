@@ -1,0 +1,113 @@
+shared/shared.h:270:78: 
+conversion int from ‘unsigned int’ sign
+  270 |         auto it = model->assigned_daw_track_count.find(checked_cast<uint32_t>(daw_channel.assigned_game_channel_id));
+conversion to size_type from int sign
+  855 |                 ? rows_text[row_number]
+      |                             ^~~~~~~~~~
+conversion to size_type from int sign
+  934 |         g.drawText(row_texts[rowNumber], bounds, juce::Justification::centredLeft);
+      |                              ^~~~~~~~~
+conversion to size_type from int sign
+  972 |         std::vector<bool> selection(getNumRows(), false);;
+      |                                     ~~~~~~~~~~^~
+conversion to size_type from int sign
+  976 |             selection[selected_idx] = true;
+      |                       ^~~~~~~~~~~~
+ conversion to int from uint32_t shadow  sign
+ 1008 |                 selected_set.addRange(juce::Range<int>(i, i + 1));
+      |                                                        ^
+conversion to int from uint32_t shadow  sign
+ 1008 |                 selected_set.addRange(juce::Range<int>(i, i + 1));
+      |                                                           ~~^~~
+
+Game/Compressor_Game_UI.h:270:77: 
+shadow ‘configs’ shadows a member of ‘Compressor_Config_Panel’ shadow 
+  270 |             auto configs_to_names = [] (std::vector<CompressorGame_Config> *configs) {
+      |                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+note: shadowed declaration is here
+  422 |     std::vector<CompressorGame_Config> *configs;
+      |                                         ^~~~~~~
+conversion to size_t from int sign
+  280 |                 selectConfig(config_idx);
+      |                              ^~~~~~~~~~
+conversion to size_type from int sign
+  296 |                 configs->at(row_idx).title = new_config_name;
+      |                             ^~~~~~~
+shadow ‘configs’ shadows a member of ‘Frequency_Config_Panel’ shadow 
+  238 |             auto configs_to_names = [] (std::vector<FrequencyGame_Config> *configs) {
+      |                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+
+Game/Frequency_Game_UI.h:417:40: 
+note: shadowed declaration is here
+  417 |     std::vector<FrequencyGame_Config> *configs;
+      |                                        ^~~~~~~
+conversion to size_t from int sign
+  246 |                 selectConfig(config_idx);
+      |                              ^~~~~~~~~~
+conversion to size_type from int sign
+  262 |                 (*configs)[row_idx].title = new_config_name;
+      |                            ^~~~~~~
+
+Standalone/Standalone_UI.h:140:34: 
+conversion to ‘long int’ from ‘uint64_t’ sign
+  140 |             loop_bounds.setStart(sample_position);
+      |                                  ^~~~~~~~~~~~~~~
+conversion to ‘long int’ from ‘uint64_t’ sign
+  145 |             loop_bounds.setEnd(sample_position);
+      |                                ^~~~~~~~~~~~~~~
+warning: unused parameter ‘e’ [-Wunused-parameter]
+  155 |     void mouseUp(const juce::MouseEvent& e) override
+      |                  ~~~~~~~~~~~~~~~~~~~~~~~~^
+conversion to uint32_t shadow  from int sign
+  429 |                 row_to_select = row_to_delete - 1;
+      |                                 ~~~~~~~~~~~~~~^~~
+conversion to uint32_t shadow  from int sign
+  431 |                 row_to_select = row_to_delete;
+      |                                 ^~~~~~~~~~~~~
+conversion to int from uint32_t shadow  sign
+  433 |             file_list_component.selectRow(row_to_select);
+      |                                           ^~~~~~~~~~~~~
+conversion to int from uint32_t shadow  sign
+  435 |                 selectedRowsChanged(row_to_select);
+      |                                     ^~~~~~~~~~~~~
+conversion to ‘uint64_t’ from ‘int64_t’ shadow  sign
+  518 |                     selected_file_hash = new_selected_file->hash;
+      |                                          ~~~~~~~~~~~~~~~~~~~^~~~
+
+Standalone/Application_Standalone.cpp:53:41: 
+conversion to ‘std::unordered_map<long unsigned int, Audio_File>::key_type’ from ‘int64_t’ shadow  sign
+   53 |     if (audio_file_list->files.contains(hash))
+      |                                         ^~~~
+conversion to size_type from int sign
+   79 |             uint64_t hash = audio_file_list->order[i];
+      |                                                    ^
+conversion to int from uint32_t shadow  sign
+  168 |         juce::ValueTree node = root_node.getChild(i);
+      |                                                   ^
+conversion to ‘uint64_t’ from ‘juce::int64’ {aka ‘long long int’} sign
+  240 |             uint64_t hash = audio_file.file.hashCode64();
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~^~
+conversion to ‘int64_t’ shadow  from ‘uint64_t’ sign
+  241 |             audio_file.hash = hash; HACK or is it ? It's a cached value, right ?
+      |                               ^~~~
+conversion to int from uint32_t shadow  sign
+  273 |             juce::ValueTree node = root_node.getChild(i);
+      |                                                       ^
+conversion to int from uint32_t shadow  sign
+  302 |             juce::ValueTree node = root_node.getChild(i);
+      |                                                       ^
+
+Game/Frequency_Widget.h:56:37: 
+conversion to uint32_t shadow  from int sign
+   56 |             auto x = frequency_to_x(line_freq, r, min_frequency, num_octaves);
+      |                                     ^~~~~~~~~
+
+Game/Frequency_Game.cpp:532:51: 
+conversion to int from uint32_t shadow  sign
+  532 |         juce::ValueTree node = root_node.getChild(i);
+      |                                                   ^
+
+Game/Compressor_Game.cpp:658:51: 
+conversion to int from uint32_t shadow  sign
+  658 |         juce::ValueTree node = root_node.getChild(i);
+      |                                                   ^
