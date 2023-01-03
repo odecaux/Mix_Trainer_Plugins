@@ -1,19 +1,4 @@
 
-struct CompressorGame_Results_Panel : public juce::Component
-{
-    CompressorGame_Results_Panel()
-    {
-        score_label.setSize(100, 50);
-        addAndMakeVisible(score_label);
-    }
-
-    void resized()
-    {
-        auto r = getLocalBounds();
-        score_label.setCentrePosition(r.getCentre());
-    }
-    juce::Label score_label;
-};
 
 struct CompressorGame_Results
 {

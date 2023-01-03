@@ -4,7 +4,23 @@ struct CompressorGame_Widget;
 void compressor_game_ui_transitions(CompressorGame_UI *ui, Effect_Transition transition);
 void compressor_game_ui_update(CompressorGame_UI *ui, Compressor_Game_Effect_UI *new_ui);
 void compressor_widget_update(CompressorGame_Widget *widget, Compressor_Game_Effect_UI *new_ui);
+ 
 
+struct CompressorGame_Results_Panel : public juce::Component
+{
+    CompressorGame_Results_Panel()
+    {
+        score_label.setSize(100, 50);
+        addAndMakeVisible(score_label);
+    }
+
+    void resized()
+    {
+        auto r = getLocalBounds();
+        score_label.setCentrePosition(r.getCentre());
+    }
+    juce::Label score_label;
+};
 
 struct CompressorGame_Widget : public juce::Component
 {

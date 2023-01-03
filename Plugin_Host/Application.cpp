@@ -1,9 +1,11 @@
 #include <juce_audio_processors/juce_audio_processors.h>
+#include "../shared/pch.h"
 #include "../shared/shared.h"
-
+#include "../shared/shared_ui.h"
 #include "../Game/Game.h"
 #include "../Game/Game_UI.h"
 #include "../Game/Game_Mixer.h"
+#include "../Game/Game_Mixer_UI.h"
 #include "Main_Menu.h"
 #include "Application.h"
 #include "Processor_Host.h"

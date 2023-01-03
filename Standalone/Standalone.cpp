@@ -1,6 +1,7 @@
 #pragma once
 #include "../shared/pch.h"
 #include "../shared/shared.h"
+#include "../shared/shared_ui.h"
 #include "../Game/Game.h"
 #include "../Game/Game_UI.h"
 #include "../Game/Frequency_Game.h"

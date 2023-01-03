@@ -1,6 +1,7 @@
 
 #include "../shared/pch.h"
 #include "../shared/shared.h"
+#include "../shared/shared_ui.h"
 #include "../Game/Game.h"
 #include "Compressor_Game.h"
 

@@ -1,39 +1,11 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "../shared/shared.h"
-
+#include "../shared/shared_ui.h"
 #include "Game.h"
 #include "Game_UI.h"
 #include "Game_Mixer.h"
 #include "../Plugin_Host/Main_Menu.h"
 #include "../Plugin_Host/Application.h"
-
-
-
-void mixer_game_ui_transitions(MixerGameUI &ui, Game_Mixer_Effect_Transition transition)
-{
-    juce::ignoreUnused(ui);
-    if (transition.out_transition == GameStep_Begin)
-    {
-    }
-    if (transition.in_transition == GameStep_EndResults)
-    {
-    }
-}
-
-void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
-{
-    game_ui_header_update(&ui.header, new_ui.header_center_text, new_ui.header_right_text);
-    if (new_ui.slider_pos_to_display)
-    {
-        assert(new_ui.slider_pos_to_display->size() == ui.faders.size());
-    }
-    for(auto& [id, fader] : ui.faders)
-    {
-        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
-        fader->update(new_ui.widget_visibility, pos);
-    }
-    game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
-}
 
 void mixer_game_post_event(MixerGame_IO *io, Event event)
 {
@@ -371,7 +343,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             } break;
             case GameStep_Question :
             {
-                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_right_text = "Score : " + std::to_string(state.score);
                 
                 switch (state.config.variant)
                 {
@@ -399,7 +371,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                         if (state.mix == Mix_Target)
                         {
                             if(!state.can_still_listen) return { .error = 1 };
-                            effects.ui->header_center_text = juce::String("remaining listens : ") + juce::String(state.remaining_listens);
+                            effects.ui->header_center_text = "remaining listens : " + std::to_string(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
                         {
@@ -413,7 +385,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             } break;
             case GameStep_Result :
             {
-                effects.ui->header_right_text = juce::String("Score : ") + juce::String(state.score);
+                effects.ui->header_right_text = "Score : " + std::to_string(state.score);
                 effects.ui->header_center_text = "Results";
                 effects.ui->bottom_button_text = "Next";
                 effects.ui->bottom_button_event = Event_Click_Next;

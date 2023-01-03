@@ -61,6 +61,7 @@ target_sources(MixTrainer_Host
         Game/Game.cpp
         Game/Game_UI.cpp
         Game/Game_Mixer.cpp
+        Game/Game_Mixer_UI.cpp
         shared/shared.cpp)
         
 if(MSVC)
