@@ -456,7 +456,7 @@ public:
         {
             assert(last_row_selected >= 0);
             assert(static_cast<size_t>(last_row_selected) < files.size());
-            selected_file_changed_callback(&files[last_row_selected]);
+            selected_file_changed_callback(&files[checked_cast<size_t>(last_row_selected)]);
         }
         else
         {

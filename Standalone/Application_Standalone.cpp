@@ -9,7 +9,7 @@
 #include "Application_Standalone.h"
 #include "Standalone_UI.h"
 
-Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioFormatManager *format_manager)
+static Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioFormatManager *format_manager)
 {
     //TODO sanity check ?
     assert(audio_file.file.existsAsFile());
@@ -23,7 +23,7 @@ Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::AudioForm
     std::vector<juce::Range < float> > max_by_channel{};
         
     max_by_channel.resize(reader->numChannels);
-    reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), reader->numChannels);
+    reader->readMaxLevels(0, reader->lengthInSamples, max_by_channel.data(), checked_cast<int>(reader->numChannels));
         
     float max_level = 0.0f;
     for (juce::Range < float > channel_range : max_by_channel)
@@ -149,7 +149,7 @@ std::string audio_file_list_serialize(Audio_File_List *audio_file_list)
             { id_file_loop_bounds, serialize_vector(loop_bounds) },
             { id_file_freq_bounds, serialize_vector(freq_bounds) },
             { id_file_max_level, audio_file.max_level },
-            { id_file_length_samples, audio_file.length_samples }
+            { id_file_length_samples, juce::int64(audio_file.length_samples) }
         }};
         root_node.addChild(node, -1, nullptr);
     }
@@ -187,7 +187,7 @@ std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string)
             .loop_bounds_samples = { loop_bounds[0], loop_bounds[1] },
             .freq_bounds = { freq_bounds[0], freq_bounds[1] },
             .max_level = node.getProperty(id_file_max_level, 1.0f),
-            .length_samples = node.getProperty(id_file_length_samples, 0),
+            .length_samples = (juce::int64)node.getProperty(id_file_length_samples, 0),
         };
         audio_files.push_back(audio_file);
     }
