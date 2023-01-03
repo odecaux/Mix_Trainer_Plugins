@@ -646,7 +646,7 @@ File_Player::~File_Player()
     device_manager.removeAudioCallback (&source_player);
 }
 
-bool file_player_load(File_Player *player, Audio_File *audio_file)
+bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_num_samples)
 {
     player->transport_source.stop();
     player->transport_source.setSource(nullptr);
@@ -673,9 +673,10 @@ bool file_player_load(File_Player *player, Audio_File *audio_file)
     player->dsp_callback.push_normalization_volume(1.0f / audio_file->max_level);
 
     player->transport_source.setSource(player->current_reader_source.get(),
-                               32768,
+                                       32768,
                                        &player->read_ahead_thread,
                                        player->current_reader_source->getAudioFormatReader()->sampleRate);
+    *out_num_samples = player->transport_source.getTotalLength();
     return true;
 }
 
@@ -702,13 +703,23 @@ File_Player_State file_player_post_command(File_Player *player, Audio_Command co
         } break;
         case Audio_Command_Seek :
         {
-            player->transport_source.setPosition(command.value_f);
+            assert(command.value_i64 >= 0 && command.value_i64 < player->player_state.num_samples);
+            player->transport_source.setNextReadPosition(command.value_i64);
+        } break;
+        case Audio_Command_Update_Loop :
+        {
+            //TODO loop can't be zero length
+            assert(command.start_sample >= 0 && command.start_sample < player->player_state.num_samples);
+            assert(command.end_sample >= 0 && command.end_sample < player->player_state.num_samples);
+            assert(command.start_sample <= command.end_sample);
         } break;
         case Audio_Command_Load :
         {
-            bool success = file_player_load(player, &command.value_file);
+            int64_t num_samples;
+            bool success = file_player_load(player, &command.value_file, &num_samples);
             if (success)
             {
+                player->player_state.num_samples = num_samples;
                 player->player_state.playing_file_hash = command.value_file.hash;
                 player->player_state.step = Transport_Stopped;
             }

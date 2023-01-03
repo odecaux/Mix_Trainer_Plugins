@@ -131,13 +131,17 @@ public:
     {
         if (file_length == -1) return;
         float ratio = e.x / (float)getWidth();
+        ratio = std::clamp(ratio, 0.0f, 1.0f);
         uint64_t sample_position = uint64_t(ratio * (float)file_length); //todo arithmetics
+        sample_position = std::min(sample_position, checked_cast<uint64_t>(file_length));
         if (e.mods.isLeftButtonDown())
         {
+            sample_position = std::min(sample_position, checked_cast<uint64_t>(loop_bounds.getEnd()));
             loop_bounds.setStart(sample_position);
         }
         else if (e.mods.isRightButtonDown())
         {
+            sample_position = std::max(sample_position, checked_cast<uint64_t>(loop_bounds.getStart()));
             loop_bounds.setEnd(sample_position);
         }
         else return;
@@ -540,6 +544,12 @@ public:
         
         thumbnail.loop_bounds_changed = [&, audio_file_list] (juce::Range < int64_t > new_loop_bounds){
             audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
+            Audio_Command command = {
+                .type = Audio_Command_Update_Loop,
+                .start_sample = new_loop_bounds.getStart(),
+                .end_sample = new_loop_bounds.getEnd()
+            };
+            file_player_post_command(player, command);
         };
         addAndMakeVisible(thumbnail);
         frequency_bounds_slider.on_mix_max_changed = 

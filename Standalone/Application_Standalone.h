@@ -18,6 +18,7 @@ struct File_Player_State
 {
     Transport_Step step;
     int64_t playing_file_hash;
+    int64_t num_samples;
 };
 
 //------------------------------------------------------------------------
@@ -45,7 +46,7 @@ private:
 };
 
 
-bool file_player_load(File_Player *player, Audio_File *audio_file);
+bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_num_samples);
 File_Player_State file_player_post_command(File_Player *player, Audio_Command command);
 void file_player_push_dsp(File_Player *player, Channel_DSP_State new_dsp_state);
 File_Player_State file_player_query_state(File_Player *player);

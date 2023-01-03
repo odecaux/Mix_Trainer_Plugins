@@ -534,6 +534,7 @@ enum Audio_Command_Type
     Audio_Command_Pause,
     Audio_Command_Stop,
     Audio_Command_Seek,
+    Audio_Command_Update_Loop,
     Audio_Command_Load,
 };
 
@@ -541,6 +542,9 @@ struct Audio_Command
 {
     Audio_Command_Type type;
     float value_f;
+    int64_t value_i64;
+    int64_t start_sample;
+    int64_t end_sample;
     Audio_File value_file;
 };
 
