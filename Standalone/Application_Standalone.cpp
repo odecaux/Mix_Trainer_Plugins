@@ -179,7 +179,7 @@ std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string)
         auto freq_bounds = deserialize_vector<uint32_t>(node.getProperty(id_file_freq_bounds, ""));
         if(freq_bounds.size() != 2)
             continue;
-        int64_t modification_time = node.getProperty(id_file_last_modification_time, 0);
+        int64_t modification_time = (juce::int64)node.getProperty(id_file_last_modification_time, 0);
         Audio_File audio_file = {
             .file = file,
             .last_modification_time = juce::Time(modification_time),
