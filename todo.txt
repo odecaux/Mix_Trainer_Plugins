@@ -1,8 +1,6 @@
 #Priority 1 :
 
-plugin verion of compressor et frequency games
 unifier les step sliders. au lieu d'un vec, un lambda index->value, value->index, void*
-loop implementation
 frequency game implement pre listen
 No lives mode
 Mixer game takes a vector of channels
@@ -16,16 +14,17 @@ validate audio_file_list at deserialization
 Results system ?
 on doit pouvoir aussi avoir un mix toggle dans le frequency game
     faire un diagramme de la FSM
+Les freq bounds d'un fichier audio doivent influer sur le score
+    sigmoid score ?
 
 #Priority 3 :
         
 #Audio Files
+plugin verion of compressor et frequency games
     max_level only refers to the selected part !
         Treat it as a cached value.
     async loading 
     test that change triggers rescan
-    Les freq bounds d'un fichier audio doivent influer sur le score
-        sigmoid score ?
 
 #Tracks vs Daw_Tracks
 message : bypass_all

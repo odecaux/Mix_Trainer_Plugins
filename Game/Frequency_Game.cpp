@@ -265,9 +265,10 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             state.target_frequency = denormalize_frequency(juce::Random::getSystemRandom().nextFloat(), state.config.min_f, state.config.num_octaves);
     
             state.current_file_idx = random_uint(checked_cast<uint32_t>(state.files.size()));
+            auto & file = state.files[static_cast<size_t>(state.current_file_idx)];
             effects.player = Effect_Player {
                 .commands = { 
-                    { .type = Audio_Command_Load, .value_file = state.files[static_cast<size_t>(state.current_file_idx)] },
+                    { .type = Audio_Command_Load, .value_file = file},
                     { .type = Audio_Command_Play },
                 }
             };

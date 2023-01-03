@@ -1,3 +1,5 @@
+#include <atomic>
+
 struct Audio_File_List 
 {   
     std::unordered_map<uint64_t, Audio_File> files;
@@ -19,6 +21,73 @@ struct File_Player_State
     Transport_Step step;
     int64_t playing_file_hash;
     int64_t num_samples;
+    int64_t start_sample;
+    int64_t end_sample;
+};
+
+class Looping_Transport_Source : public juce::AudioTransportSource
+{
+public:
+    void setLoopBounds(int64_t start_sample, int64_t end_sample)
+    {
+        temp_start = start_sample;
+        temp_end = end_sample;
+        write_flag = true;
+    }
+    void getNextAudioBlock (const juce::AudioSourceChannelInfo& buffer) override
+    {
+        bool expected = true;
+        if (write_flag.compare_exchange_strong(expected, false))
+        {
+            start_sample_position = temp_start;
+            end_sample_position = temp_end;
+        }
+
+        if (!isPlaying())
+        {
+            juce::AudioTransportSource::getNextAudioBlock(buffer);
+            return;
+        }
+        assert(start_sample_position >= 0);
+        assert(end_sample_position >= 0);
+        assert(end_sample_position <= getTotalLength());
+        assert(end_sample_position <= getTotalLength());
+        assert(start_sample_position <= end_sample_position);
+
+        int64_t current_position = getNextReadPosition();
+
+        if (current_position > end_sample_position)
+        {
+            setNextReadPosition(start_sample_position);
+            current_position = start_sample_position;
+        }
+            
+        if (current_position + buffer.numSamples <= end_sample_position)
+        {
+            juce::AudioTransportSource::getNextAudioBlock(buffer);
+            return;
+        }
+        int64_t pre_loop_samples = end_sample_position - current_position;
+        auto pre_loop_buffer = buffer;
+        pre_loop_buffer.numSamples = checked_cast<int>(pre_loop_samples);
+        juce::AudioTransportSource::getNextAudioBlock(pre_loop_buffer);
+
+        setNextReadPosition(start_sample_position);
+            
+        int64_t post_loop_samples = buffer.numSamples - pre_loop_samples;
+        auto post_loop_buffer = buffer;
+        post_loop_buffer.startSample = buffer.startSample + checked_cast<int>(pre_loop_samples);
+        post_loop_buffer.numSamples = buffer.numSamples - checked_cast<int>(pre_loop_samples);
+        juce::AudioTransportSource::getNextAudioBlock(post_loop_buffer);
+    }
+private:
+
+    int64_t start_sample_position = -1;
+    int64_t end_sample_position = -1;
+
+    int64_t temp_start;
+    int64_t temp_end;
+    std::atomic<bool> write_flag { false } ;
 };
 
 //------------------------------------------------------------------------
@@ -37,7 +106,7 @@ struct File_Player : juce::ChangeListener
     
     //juce::URL currentAudioFile;
     juce::AudioSourcePlayer source_player;
-    juce::AudioTransportSource transport_source;
+    Looping_Transport_Source transport_source;
     std::unique_ptr<juce::AudioFormatReaderSource> current_reader_source;
     Channel_DSP_Callback dsp_callback;
 

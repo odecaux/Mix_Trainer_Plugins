@@ -667,15 +667,18 @@ bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_
     if (reader == nullptr)
         return false;
 
-    player->current_reader_source = std::make_unique<juce::AudioFormatReaderSource>(reader.release(), true);
-    player->current_reader_source->setLooping(true);
-
     player->dsp_callback.push_normalization_volume(1.0f / audio_file->max_level);
+
+    player->current_reader_source = std::make_unique<juce::AudioFormatReaderSource>(reader.release(), true);
+    player->current_reader_source->setLooping(false);
 
     player->transport_source.setSource(player->current_reader_source.get(),
                                        32768,
                                        &player->read_ahead_thread,
                                        player->current_reader_source->getAudioFormatReader()->sampleRate);
+    player->transport_source.setLoopBounds(audio_file->loop_bounds_samples.getStart(), audio_file->loop_bounds_samples.getEnd());
+    player->transport_source.setNextReadPosition(audio_file->loop_bounds_samples.getStart());
+
     *out_num_samples = player->transport_source.getTotalLength();
     return true;
 }
@@ -709,9 +712,13 @@ File_Player_State file_player_post_command(File_Player *player, Audio_Command co
         case Audio_Command_Update_Loop :
         {
             //TODO loop can't be zero length
-            assert(command.start_sample >= 0 && command.start_sample < player->player_state.num_samples);
-            assert(command.end_sample >= 0 && command.end_sample < player->player_state.num_samples);
+            assert(command.start_sample >= 0 && command.start_sample <= player->player_state.num_samples);
+            assert(command.end_sample >= 0 && command.end_sample <= player->player_state.num_samples);
             assert(command.start_sample <= command.end_sample);
+            player->player_state.start_sample = command.start_sample;
+            player->player_state.end_sample = command.end_sample;
+            player->transport_source.setLoopBounds(command.start_sample, command.end_sample);
+
         } break;
         case Audio_Command_Load :
         {
@@ -722,6 +729,8 @@ File_Player_State file_player_post_command(File_Player *player, Audio_Command co
                 player->player_state.num_samples = num_samples;
                 player->player_state.playing_file_hash = command.value_file.hash;
                 player->player_state.step = Transport_Stopped;
+                player->player_state.start_sample = command.value_file.loop_bounds_samples.getStart();
+                player->player_state.end_sample = command.value_file.loop_bounds_samples.getEnd();
             }
             else
             {
