@@ -675,60 +675,21 @@ class Add_Delete_Move_Column : public juce::Component
 public:
     Add_Delete_Move_Column()
     {
-        auto arrowColour = findColour (juce::ListBox::textColourId);
-        {
-            juce::Path plus_path;
-            juce::DrawablePath plus_image {}; 
-            plus_path.addRectangle( 40, 0, 20, 100 );
-            plus_path.addRectangle( 0, 40, 100, 20 );
-            plus_image.setFill (arrowColour);
-            plus_image.setPath(plus_path);
-            new_buton.setImages(&plus_image);
-            new_buton.onClick = [&] {
-                click_plus();
-            };
-        }
-        {
-            juce::Path delete_path;
-            juce::DrawablePath delete_image {}; 
-            juce::AffineTransform transform;
-            transform = transform.rotated(juce::degreesToRadians(45.0f));
-            delete_path.addRectangle( 40, 0, 20, 100 );
-            delete_path.addRectangle( 0, 40, 100, 20 );
-            delete_path.applyTransform(transform);
-            delete_image.setFill (arrowColour);
-            delete_image.setPath(delete_path);
-            delete_button.setImages(&delete_image);
-            delete_button.onClick = [&] {
-                click_delete();
-            };
-        }
-        {
-            juce::Path up_arrow;
-            up_arrow.addArrow ( { 50.0f, 100.0f, 50.0f, 0.0f }, 40.0f, 100.0f, 50.0f);
-            juce::DrawablePath up_arrow_image {};
-            up_arrow_image.setFill (arrowColour);
-            up_arrow_image.setPath(up_arrow);
-            move_up_button.setImages(&up_arrow_image);
-            move_up_button.onClick = [&] {
-                click_up();
-            };
-        }
-        {
-            juce::Path down_arrow;
-            down_arrow.addArrow ( { 50.0f, 0.0f, 50.0f, 100.0f }, 40.0f, 100.0f, 50.0f);
-            juce::DrawablePath down_arrow_image {};
-            down_arrow_image.setFill (arrowColour);
-            down_arrow_image.setPath(down_arrow);
-            move_down_button.setImages(&down_arrow_image);
-            move_down_button.onClick = [&] {
-                click_down();
-            };
-        }
-        addAndMakeVisible(new_buton);
-        addAndMakeVisible(delete_button);
-        addAndMakeVisible(move_up_button);
-        addAndMakeVisible(move_down_button);
+    }
+
+        void add_button(juce::Path path, std::function<void()> && on_click = []{})
+    {        
+        auto button_colour = findColour (juce::ListBox::textColourId);
+        auto new_button = std::make_unique<juce::DrawableButton>( juce::String{}, juce::DrawableButton::ButtonStyle::ImageOnButtonBackground);
+        juce::DrawablePath image {};
+        image.setFill (button_colour);
+        image.setPath(path);
+        new_button->setImages(&image);
+        new_button->onClick = [on_click = std::move(on_click)] {
+            on_click();
+        };
+        addAndMakeVisible(*new_button);
+        buttons.emplace_back(std::move(new_button));
     }
 
     void paint(juce::Graphics &g) override
@@ -740,21 +701,14 @@ public:
         auto r = getLocalBounds();
         auto width = getWidth();
         auto rect = juce::Rectangle<int> { width, width };
-        new_buton.setBounds(rect);
-        delete_button.setBounds(rect.translated(0, width));
-        move_up_button.setBounds(rect.translated(0, width * 2));
-        move_down_button.setBounds(rect.translated(0, width * 3));
+        for (auto i = 0; i < buttons.size(); i++)
+        {
+            buttons[i]->setBounds(rect.translated(0, width * i));
+
+        }
 
     }
 
-    std::function<void()> click_plus = []{};
-    std::function<void()> click_delete = []{};
-    std::function<void()> click_up = []{};
-    std::function<void()> click_down = []{};
-
 private:
-    juce::DrawableButton new_buton { {}, juce::DrawableButton::ButtonStyle::ImageOnButtonBackground };
-    juce::DrawableButton delete_button { {}, juce::DrawableButton::ButtonStyle::ImageOnButtonBackground };
-    juce::DrawableButton move_up_button { {}, juce::DrawableButton::ButtonStyle::ImageOnButtonBackground };
-    juce::DrawableButton move_down_button { {}, juce::DrawableButton::ButtonStyle::ImageOnButtonBackground} ;
+    std::vector<std::unique_ptr<juce::DrawableButton>> buttons;
 };

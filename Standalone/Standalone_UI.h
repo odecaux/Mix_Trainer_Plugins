@@ -565,6 +565,41 @@ public:
                 audio_file_list->files.at(hash).freq_bounds = { (uint32_t)begin, (uint32_t)end };
         };
         addAndMakeVisible(frequency_bounds_slider);
+        
+        {
+            {
+                juce::Path plus_path;
+                plus_path.addRectangle( 40, 0, 20, 100 );
+                plus_path.addRectangle( 0, 40, 100, 20 ); 
+                column.add_button(plus_path);
+            }
+            {
+                juce::Path delete_path;
+                juce::AffineTransform transform;
+                transform = transform.rotated(juce::degreesToRadians(45.0f));
+                delete_path.addRectangle( 40, 0, 20, 100 );
+                delete_path.addRectangle( 0, 40, 100, 20 );
+                delete_path.applyTransform(transform);
+                auto click_delete = [file_list_component = &this->file_list_component, audio_file_list] ()
+                {
+                    auto set = file_list_component->getSelectedRows();
+                    remove_files(audio_file_list, &set);
+                    file_list_component->updateFileList(get_ordered_audio_files(audio_file_list));
+                };
+                column.add_button(delete_path, std::move(click_delete));
+            }
+            {
+                juce::Path up_arrow;
+                up_arrow.addArrow ( { 50.0f, 100.0f, 50.0f, 0.0f }, 40.0f, 100.0f, 50.0f);
+                column.add_button(up_arrow);
+            }
+            {
+                juce::Path down_arrow;
+                down_arrow.addArrow ( { 50.0f, 0.0f, 50.0f, 100.0f }, 40.0f, 100.0f, 50.0f);
+                column.add_button(down_arrow);
+            }
+            addAndMakeVisible(column);
+        }
     }
 
     void resized() override
