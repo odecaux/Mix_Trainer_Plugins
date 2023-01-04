@@ -644,17 +644,6 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };
 
-class Empty : public juce::Component {
-public :
-    void paint(juce::Graphics &g)
-    {
-        g.setColour(juce::Colours::red);
-        g.fillAll();
-    }
-};
-
-
-
 
 //------------------------------------------------------------------------
 class MainMenu_Panel : public juce::Component
