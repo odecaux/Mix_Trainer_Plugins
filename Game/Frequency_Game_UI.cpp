@@ -4,7 +4,6 @@
 #include "../Game/Game.h"
 #include "../Game/Game_UI.h"
 #include "Frequency_Game.h"
-#include "Frequency_Widget.h"
 #include "Frequency_Game_UI.h"
 
 void frequency_game_ui_transitions(FrequencyGame_UI *ui, Effect_Transition transition, int ui_target)
