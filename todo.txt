@@ -1,5 +1,9 @@
 #Priority 1 :
 
+ne pouvoir éditer les bounds que quand on a un seul fichier sélectionné
+
+
+
 unifier les step sliders. au lieu d'un vec, un lambda index->value, value->index, void*
 frequency game implement pre listen
 No lives mode

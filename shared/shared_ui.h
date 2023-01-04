@@ -544,7 +544,6 @@ public juce::ListBoxModel
 public:
     explicit Selection_List(bool multiple_selection_enabled)
     {
-        list_comp.setModel(this);
         list_comp.setMultipleSelectionEnabled(multiple_selection_enabled);
         list_comp.setClickingTogglesRowSelection(true);
         addAndMakeVisible(list_comp);
@@ -560,15 +559,14 @@ public:
                            int width, int height,
                            bool rowIsSelected) override
     {
-
-        if (rowNumber >= getNumRows()) 
-            return;
         
         auto alternateColour = getLookAndFeel().findColour (juce::ListBox::backgroundColourId)
             .interpolatedWith (getLookAndFeel().findColour (juce::ListBox::textColourId), 0.03f);
         if (rowNumber % 2)
             g.fillAll (alternateColour);
-
+        
+        if (rowNumber >= getNumRows()) 
+            return;
         auto bounds = juce::Rectangle { 0, 0, width, height };
         g.setColour(juce::Colours::white);
         g.drawText(row_texts[rowNumber], bounds, juce::Justification::centredLeft);
@@ -577,46 +575,18 @@ public:
             g.drawRect(bounds);
         }
     }
-#if 0
-    juce::Component *refreshComponentForRow (int row_number, bool, juce::Component *existing_component) override
-    {
-        //assert (existingComponentToUpdate == nullptr || dynamic_cast<EditableTextCustomComponent*> (existingComponentToUpdate) != nullptr);
-        //unused row            
-        if (row_number >= row_texts.size())
-        {
-            if (existing_component != nullptr)
-                delete existing_component;
-            return nullptr;
-        }
-        else
-        {
-            DumbRow *row;
-            if (existing_component != nullptr)
-            {
-                row = dynamic_cast<DumbRow*>(existing_component);
-                assert(row != nullptr);
-            }
-            else
-            {
-                row = new DumbRow(row_on_mouse_down);
-            }
-            row->update(row_texts[row_number], row_number);
-            return row;
-        } 
-    }
-#endif
 
     void selectedRowsChanged(int) override
     {
-        auto selected_rows = list_comp.getSelectedRows();
-        std::vector<bool> selection(getNumRows(), false);;
-        for (auto i = 0; i < selected_rows.size(); i++)
+        auto juce_selection = list_comp.getSelectedRows();
+        std::vector<bool> std_selection(getNumRows(), false);;
+        for (auto i = 0; i < juce_selection.size(); i++)
         {
-            int selected_idx = selected_rows[i];
-            selection[selected_idx] = true;
+            int selected_idx = juce_selection[i];
+            std_selection[selected_idx] = true;
         }
         //TODO slow ??? who cares ?
-        selection_changed_callback(&selection);
+        selection_changed_callback(&std_selection);
     }
 
     
@@ -641,18 +611,14 @@ public:
         assert(selection.size() == rowTexts.size());
         row_texts = std::move(rowTexts);
 
-        juce::SparseSet < int > selected_set{};
+        juce::SparseSet < int > selected_juce{};
         for (uint32_t i = 0; i < selection.size(); i++)
         {
             if(selection[i])
-                selected_set.addRange(juce::Range<int>(i, i + 1));
-        }
-        for (int i = 0; i < selected_set.size(); i++)
-        {
-            DBG(" " << i << " " << int(selected_set[i]));
+                selected_juce.addRange(juce::Range<int>(i, i + 1));
         }
         list_comp.updateContent();
-        list_comp.setSelectedRows (selected_set, juce::dontSendNotification);
+        list_comp.setSelectedRows (selected_juce, juce::dontSendNotification);
     }
 
     
@@ -665,8 +631,10 @@ public:
 
 private:
     std::vector<juce::String> row_texts;
-    juce::ListBox list_comp;
+    juce::ListBox list_comp = { {}, this };;
     std::function<void(int)> row_on_mouse_down;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Selection_List)
 };
 
 

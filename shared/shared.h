@@ -80,7 +80,7 @@ struct Audio_File
     juce::File file;
     //juce::int64 hash_code;
     juce::Time last_modification_time;
-    juce::String title;
+    std::string title;
     juce::Range<int64_t> loop_bounds_samples;
     juce::Range<uint32_t> freq_bounds;
     float max_level;

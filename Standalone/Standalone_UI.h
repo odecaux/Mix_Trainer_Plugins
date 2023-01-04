@@ -334,25 +334,24 @@ public juce::ListBoxModel,
 public juce::FileDragAndDropTarget
 {
 public:
-    Audio_Files_ListBox(std::vector<Audio_File> audioFiles) :
-        files(std::move(audioFiles))
+    Audio_Files_ListBox()
     {
-        file_list_component.setMultipleSelectionEnabled(true);
-        file_list_component.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
-        file_list_component.setOutlineThickness (2);
-        addAndMakeVisible(file_list_component);
+        list_comp.setMultipleSelectionEnabled(true);
+        list_comp.setColour (juce::ListBox::outlineColourId, juce::Colours::grey);      // [2]
+        list_comp.setOutlineThickness (2);
+        addAndMakeVisible(list_comp);
     }
 
     virtual ~Audio_Files_ListBox() override = default;
 
     void resized() override
     {
-        file_list_component.setBounds(getLocalBounds());
+        list_comp.setBounds(getLocalBounds());
     }
 
     void paintOverChildren(juce::Graphics& g) override
     {
-        if (files.empty())
+        if (getNumRows() == 0)
         {
             auto r = getLocalBounds();
             g.setColour(juce::Colours::white);
@@ -360,7 +359,7 @@ public:
         }
     }
 
-    int getNumRows() override { return (int)files.size(); }
+    int getNumRows() override { return (int)row_texts.size(); }
 
     void paintListBoxItem (int rowNumber,
                            juce::Graphics& g,
@@ -371,16 +370,15 @@ public:
             .interpolatedWith (getLookAndFeel().findColour (juce::ListBox::textColourId), 0.03f);
         if (rowNumber % 2)
             g.fillAll (alternateColour);
-
-        if (rowNumber < checked_cast<int>(files.size()))
+        
+        if (rowNumber >= getNumRows()) 
+            return;
+        auto bounds = juce::Rectangle { 0, 0, width, height };
+        g.setColour(juce::Colours::white);
+        g.drawText(row_texts[checked_cast<size_t>(rowNumber)], bounds.reduced(2), juce::Justification::centredLeft);
+        if (rowIsSelected)
         {
-            g.setColour(juce::Colours::white);
-            auto bounds = juce::Rectangle { 0, 0, width, height };
-            g.drawText(files[checked_cast<size_t>(rowNumber)].title, bounds.reduced(2), juce::Justification::centredLeft);
-            if (rowIsSelected)
-            {
-                g.drawRect(bounds);
-            }
+            g.drawRect(bounds);
         }
     }
 
@@ -390,9 +388,9 @@ public:
     {
         for (const auto &filename : dropped_files_names)
         {
-            insert_file_callback(juce::File(filename));
+            file_dropped_callback(juce::File(filename));
         }
-        file_list_component.updateContent();
+        list_comp.updateContent();
     }
 
     
@@ -403,18 +401,17 @@ public:
     void deleteKeyPressed (int) override
     {
         auto num_rows = getNumRows();
-        auto num_selected = file_list_component.getNumSelectedRows();
+        auto num_selected = list_comp.getNumSelectedRows();
         if (num_selected == 0)
             return;
         
-        
-        auto selected_rows = getSelectedRows();
-        remove_files_callback(&selected_rows);
-        file_list_component.updateContent();
+        delete_pressed_callback();
+#if 0
+        list_comp.updateContent();
         
         if (num_selected > 1)
         {
-            file_list_component.deselectAllRows();
+            list_comp.deselectAllRows();
         }
         else if (num_selected == 1)
         {
@@ -429,59 +426,67 @@ public:
                 row_to_select = row_to_delete - 1;
             else
                 row_to_select = row_to_delete;
-            bool should_trigger_manually = row_to_select == checked_cast<uint32_t>(file_list_component.getSelectedRow());
-            file_list_component.selectRow(row_to_select);
+            bool should_trigger_manually = row_to_select == checked_cast<uint32_t>(list_comp.getSelectedRow());
+            list_comp.selectRow(row_to_select);
             if (should_trigger_manually)
                 selectedRowsChanged(row_to_select);
         }
+#endif
     }
 
     bool keyPressed (const juce::KeyPress &key) override
     {
         if (key == key.escapeKey)
         {
-            file_list_component.deselectAllRows();
+            list_comp.deselectAllRows();
             return true;
         }
-        else
-        {
-            return false;
-        }
+        return false;
     }
-
    
     void selectedRowsChanged (int last_row_selected) override
     {
-        if (last_row_selected != -1)
-        {
-            assert(last_row_selected >= 0);
-            assert(static_cast<size_t>(last_row_selected) < files.size());
-            selected_file_changed_callback(&files[checked_cast<size_t>(last_row_selected)]);
-        }
-        else
-        {
-            selected_file_changed_callback(nullptr);
-        }
+        //selection_changed_callback();
+        row_clicked_callback(last_row_selected);
     }
 
-    void updateFileList(std::vector<Audio_File> new_files)
+    std::vector<int> getSelectedRows()
     {
-        files = std::move(new_files);
-    }  
+        auto juce_selection = list_comp.getSelectedRows();
+        std::vector<int> std_selection{};
+        for (auto i = 0; i < juce_selection.size(); i++)
+        {
+            int selected_idx = juce_selection[i];
+            std_selection.emplace_back(selected_idx);
+        }
+        return std_selection;
+    }
 
-    juce::SparseSet<int> getSelectedRows() const
+    void set_rows(const std::vector<std::string> &rowTexts,
+                  const std::vector<bool> &selection)
     {
-        return file_list_component.getSelectedRows();
+        assert(selection.size() == rowTexts.size());
+        row_texts = std::move(rowTexts);
+
+        juce::SparseSet < int > selected_juce{};
+        for (uint32_t i = 0; i < selection.size(); i++)
+        {
+            if(selection[i])
+                selected_juce.addRange(juce::Range<int>(i, i + 1));
+        }
+        list_comp.updateContent();
+        list_comp.setSelectedRows(selected_juce, juce::dontSendNotification);
     }
     
 
-    std::function<bool(juce::File file)> insert_file_callback;
-    std::function<void(juce::SparseSet < int>*) > remove_files_callback;
-    std::function<void(Audio_File*) > selected_file_changed_callback;
+    std::function<bool(juce::File file)> file_dropped_callback;
+    std::function<void()> delete_pressed_callback;
+    //std::function<void()> selection_changed_callback;
+    std::function<void(int)> row_clicked_callback;
 
 private:
-    std::vector<Audio_File> files;
-    juce::ListBox file_list_component = { {}, this };
+    std::vector<std::string> row_texts;
+    juce::ListBox list_comp = { {}, this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_Files_ListBox)
 };
@@ -498,7 +503,7 @@ public:
                               Audio_File_List *audio_file_list,
                               std::function<void()> onClickBack)
     :  player(filePlayer),
-       file_list_component(get_ordered_audio_files(audio_file_list))
+       file_list_component()
     {
         {
             header.onBackClicked = [click = std::move(onClickBack)] {
@@ -509,20 +514,22 @@ public:
         }
 
         {
-            file_list_component.selected_file_changed_callback =
-                [&] (Audio_File *new_selected_file)
+            file_list_component.row_clicked_callback = [&, audio_file_list] (int row_idx)
             {
-                if (new_selected_file)
+                if (row_idx != -1)
                 {
-                    auto player_state = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = *new_selected_file });
+                    auto hash = audio_file_list->order[row_idx];
+                    auto &selected_file = audio_file_list->files.at(hash);
+                    assert(hash == selected_file.hash);
+                    auto player_state = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = selected_file });
                     if(player_state.step == Transport_Loading_Failed)
                         return;
                     //TODO file does not exist anymore ?
                     file_player_post_command(player, { .type = Audio_Command_Play });
-                    thumbnail.setFile(new_selected_file);
+                    thumbnail.setFile(&selected_file);
                     file_is_selected = true;
-                    selected_file_hash = new_selected_file->hash;
-                    frequency_bounds_slider.setMinAndMaxValues((float)new_selected_file->freq_bounds.getStart(), (float)new_selected_file->freq_bounds.getEnd());
+                    selected_file_hash = selected_file.hash;
+                    frequency_bounds_slider.setMinAndMaxValues((float)selected_file.freq_bounds.getStart(), (float)selected_file.freq_bounds.getEnd());
                 }
                 else
                 {
@@ -532,19 +539,25 @@ public:
                     frequency_bounds_slider.setMinAndMaxValues(20.0f, 20000.0f);
                 }
             };
-            file_list_component.insert_file_callback =
+            file_list_component.file_dropped_callback =
                 [&file_list_component = this->file_list_component,  audio_file_list, &format_manager = filePlayer->format_manager]
                 (auto new_file)
             {
                 bool succeeded = insert_file(audio_file_list, new_file, format_manager);
-                file_list_component.updateFileList(get_ordered_audio_files(audio_file_list));
+                auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                file_list_component.set_rows(titles, selection);
                 return succeeded;
             };
-            file_list_component.remove_files_callback = [file_list_component = &this->file_list_component, audio_file_list] (auto *files_to_remove)
+
+            file_list_component.delete_pressed_callback = [file_list_component = &this->file_list_component, audio_file_list] ()
             {
+                auto files_to_remove = file_list_component->getSelectedRows();
                 remove_files(audio_file_list, files_to_remove);
-                file_list_component->updateFileList(get_ordered_audio_files(audio_file_list));
+                auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                file_list_component->set_rows(titles, selection);
             };
+            auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+            file_list_component.set_rows(titles, selection);
             addAndMakeVisible(file_list_component);
         }
         
@@ -582,9 +595,10 @@ public:
                 delete_path.applyTransform(transform);
                 auto click_delete = [file_list_component = &this->file_list_component, audio_file_list] ()
                 {
-                    auto set = file_list_component->getSelectedRows();
-                    remove_files(audio_file_list, &set);
-                    file_list_component->updateFileList(get_ordered_audio_files(audio_file_list));
+                    auto files_to_remove = file_list_component->getSelectedRows();
+                    remove_files(audio_file_list, files_to_remove);
+                    auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                    file_list_component->set_rows(titles, selection);
                 };
                 column.add_button(delete_path, std::move(click_delete));
             }
