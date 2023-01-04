@@ -408,7 +408,7 @@ public:
             return;
         
         
-        auto selected_rows = file_list_component.getSelectedRows();
+        auto selected_rows = getSelectedRows();
         remove_files_callback(&selected_rows);
         file_list_component.updateContent();
         
@@ -467,7 +467,13 @@ public:
     void updateFileList(std::vector<Audio_File> new_files)
     {
         files = std::move(new_files);
+    }  
+
+    juce::SparseSet<int> getSelectedRows() const
+    {
+        return file_list_component.getSelectedRows();
     }
+    
 
     std::function<bool(juce::File file)> insert_file_callback;
     std::function<void(juce::SparseSet < int>*) > remove_files_callback;
@@ -568,8 +574,11 @@ public:
         header.setBounds(header_bounds);
 
         auto bottom_bounds = r.removeFromBottom(100);
-
-        file_list_component.setBounds (r);
+        
+        auto file_list_bounds = r.withTrimmedRight(30);
+        auto column_bounds = r.withTrimmedLeft(r.getWidth() - 30);
+        file_list_component.setBounds (file_list_bounds); 
+        column.setBounds(column_bounds);
         
         frequency_bounds_slider.setBounds(bottom_bounds.removeFromBottom(20).reduced(50, 0));
         thumbnail.setBounds(bottom_bounds);
@@ -595,6 +604,7 @@ private:
     Frequency_Bounds_Widget frequency_bounds_slider;
     bool file_is_selected = false;
     uint64_t selected_file_hash;
+    Add_Delete_Move_Column column;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };
@@ -648,7 +658,7 @@ public :
         stats_button.onClick = [click = std::move(toStats)] {
             click();
         };
-        addAndMakeVisible(stats_button);
+        addAndMakeVisible(stats_button); 
     }
     
     void paint(juce::Graphics &g) override
