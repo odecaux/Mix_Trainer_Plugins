@@ -386,11 +386,12 @@ public:
     
     void filesDropped (const juce::StringArray& dropped_files_names, int, int) override
     {
+        std::vector<juce::File> files{};
         for (const auto &filename : dropped_files_names)
         {
-            file_dropped_callback(juce::File(filename));
+            files.emplace_back(filename);
         }
-        list_comp.updateContent();
+        file_dropped_callback(files);
     }
 
     
@@ -479,7 +480,7 @@ public:
     }
     
 
-    std::function<bool(juce::File file)> file_dropped_callback;
+    std::function<void(std::vector<juce::File> files)> file_dropped_callback;
     std::function<void()> delete_pressed_callback;
     //std::function<void()> selection_changed_callback;
     std::function<void(int)> row_clicked_callback;
@@ -500,9 +501,10 @@ public juce::DragAndDropContainer
 public:
     
     Audio_File_Settings_Panel(File_Player *filePlayer,
-                              Audio_File_List *audio_file_list,
+                              Audio_File_List *audioFileList,
                               std::function<void()> onClickBack)
     :  player(filePlayer),
+       audio_file_list(audioFileList),
        file_list_component()
     {
         {
@@ -514,7 +516,7 @@ public:
         }
 
         {
-            file_list_component.row_clicked_callback = [&, audio_file_list] (int row_idx)
+            file_list_component.row_clicked_callback = [&] (int row_idx)
             {
                 if (row_idx != -1)
                 {
@@ -540,28 +542,28 @@ public:
                 }
             };
             file_list_component.file_dropped_callback =
-                [&file_list_component = this->file_list_component,  audio_file_list, &format_manager = filePlayer->format_manager]
-                (auto new_file)
+                [&, &format_manager = filePlayer->format_manager]
+                (auto files_dropped)
             {
-                bool succeeded = insert_file(audio_file_list, new_file, format_manager);
+                for(auto &file : files_dropped)
+                    insert_file(audio_file_list, file, format_manager);
                 auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
                 file_list_component.set_rows(titles, selection);
-                return succeeded;
             };
 
-            file_list_component.delete_pressed_callback = [file_list_component = &this->file_list_component, audio_file_list] ()
+            file_list_component.delete_pressed_callback = [&] ()
             {
-                auto files_to_remove = file_list_component->getSelectedRows();
+                auto files_to_remove = file_list_component.getSelectedRows();
                 remove_files(audio_file_list, files_to_remove);
                 auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
-                file_list_component->set_rows(titles, selection);
+                file_list_component.set_rows(titles, selection);
             };
             auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
             file_list_component.set_rows(titles, selection);
             addAndMakeVisible(file_list_component);
         }
         
-        thumbnail.loop_bounds_changed = [&, audio_file_list] (juce::Range < int64_t > new_loop_bounds){
+        thumbnail.loop_bounds_changed = [&] (juce::Range < int64_t > new_loop_bounds){
             audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
             Audio_Command command = {
                 .type = Audio_Command_Update_Loop,
@@ -572,10 +574,9 @@ public:
         };
         addAndMakeVisible(thumbnail);
         frequency_bounds_slider.on_mix_max_changed = 
-            [&hash = this->selected_file_hash, &is_selected = this->file_is_selected, audio_file_list] 
-            (float begin, float end, float) {
-            if(is_selected)
-                audio_file_list->files.at(hash).freq_bounds = { (uint32_t)begin, (uint32_t)end };
+            [&] (float begin, float end, float) {
+            if(file_is_selected)
+                audio_file_list->files.at(selected_file_hash).freq_bounds = { (uint32_t)begin, (uint32_t)end };
         };
         addAndMakeVisible(frequency_bounds_slider);
         
@@ -584,7 +585,21 @@ public:
                 juce::Path plus_path;
                 plus_path.addRectangle( 40, 0, 20, 100 );
                 plus_path.addRectangle( 0, 40, 100, 20 ); 
-                column.add_button(plus_path);
+                auto click_plus = [&]
+                {
+                    open_file_dialog = std::make_unique < juce::FileChooser > ("Select audio files", juce::File::getSpecialLocation (juce::File::userHomeDirectory), "*.wav");
+                    auto flag = juce::FileBrowserComponent::openMode;
+                    auto callback = [this] (const juce::FileChooser& chooser)
+                    {
+                        auto files_chosen = chooser.getResults();
+                        for(auto &file : files_chosen)
+                            insert_file(audio_file_list, file, player->format_manager);
+                        auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                        file_list_component.set_rows(titles, selection);
+                    };
+                    open_file_dialog->launchAsync (flag, std::move(callback));
+                };
+                column.add_button(plus_path, click_plus);
             }
             {
                 juce::Path delete_path;
@@ -593,12 +608,12 @@ public:
                 delete_path.addRectangle( 40, 0, 20, 100 );
                 delete_path.addRectangle( 0, 40, 100, 20 );
                 delete_path.applyTransform(transform);
-                auto click_delete = [file_list_component = &this->file_list_component, audio_file_list] ()
+                auto click_delete = [&] ()
                 {
-                    auto files_to_remove = file_list_component->getSelectedRows();
+                    auto files_to_remove = file_list_component.getSelectedRows();
                     remove_files(audio_file_list, files_to_remove);
                     auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
-                    file_list_component->set_rows(titles, selection);
+                    file_list_component.set_rows(titles, selection);
                 };
                 column.add_button(delete_path, std::move(click_delete));
             }
@@ -646,6 +661,7 @@ public:
 
 private:
     File_Player *player;
+    Audio_File_List *audio_file_list;
     GameUI_Header header;
     Audio_Files_ListBox file_list_component;
 
@@ -654,6 +670,8 @@ private:
     bool file_is_selected = false;
     uint64_t selected_file_hash;
     Add_Delete_Move_Column column;
+
+    std::unique_ptr<juce::FileChooser> open_file_dialog;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Audio_File_Settings_Panel)
 };
