@@ -61,6 +61,12 @@
 			<File>
 				<Path>ray/raygui.h</Path>
 			</File>
+			<File>
+				<Path>ray/miniaudio.h</Path>
+			</File>
+			<File>
+				<Path>ray/miniaudio.c</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>

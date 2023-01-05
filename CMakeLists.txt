@@ -180,6 +180,6 @@ set(RAYLIB_VERSION 4.2.0)
 find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
 # Our Project
 
-add_executable(ray ray/main.c)
-#set(raylib_VERBOSE 1)
+add_executable(ray ray/main.c ray/miniaudio.c)
+set(raylib_VERBOSE 1)
 target_link_libraries(ray raylib)
