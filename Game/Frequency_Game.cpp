@@ -73,19 +73,20 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
     bool update_audio = false;
     bool update_ui = false;
 
-    Frequency_Game_Effects effects = { 
+    Frequency_Game_Effects effects = {
         .error = 0,
         .transition = std::nullopt,
-        .dsp = std::nullopt, 
-        .player = std::nullopt, 
-        .ui = std::nullopt, 
-        .quit = false, 
+        .dsp = std::nullopt,
+        .player = std::nullopt,
+        .ui = std::nullopt,
+        .quit = false,
     };
 
     bool check_answer = false;
     uint32_t TEMP_answer_frequency = 0;
+    bool done_prelistening = false;
 
-    switch (event.type) 
+    switch (event.type)
     {
         case Event_Init :
         {
@@ -100,19 +101,19 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         {
 #if 0
             if (state.step != GameStep_Begin) return { .error = 1 };
-            if(event.value_b && step == GameStep_Question)
+            if (event.value_b && step == GameStep_Question)
             {
                 step = GameStep_Listening;
             }
-            else if(event.value_b && step == GameStep_ShowingAnswer)
+            else if (event.value_b && step == GameStep_ShowingAnswer)
             {
                 step = GameStep_ShowingTruth;
             }
-            else if(!event.value_b && step == GameStep_Listening)
+            else if (!event.value_b && step == GameStep_Listening)
             {
                 step = GameStep_Editing;
             }
-            else if(!event.value_b && step == GameStep_ShowingTruth){
+            else if (!event.value_b && step == GameStep_ShowingTruth) {
                 step = GameStep_ShowingAnswer;
             }
             update_audio = true;
@@ -123,7 +124,15 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         case Event_Timer_Tick :
         {
             state.current_timestamp = event.value_i64;
-            if (state.step == GameStep_Question && state.config.question_type != Frequency_Question_Free)
+            if (state.step == GameStep_Question && state.is_prelistening == true && state.config.prelisten_type == PreListen_Timeout)
+            {
+                if (state.current_timestamp >=
+                    state.timestamp_start + state.config.prelisten_timeout_ms)
+                {
+                    done_prelistening = true;
+                }
+            }
+            if (state.step == GameStep_Question && state.is_prelistening == false && state.config.question_type != Frequency_Question_Free)
             {
                 if (state.current_timestamp >=
                     state.timestamp_start + state.config.question_timeout_ms)
@@ -141,15 +150,11 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 {
                     
                     out_transition = GameStep_Result;
-                    if(state.lives > 0)
+                    if (state.lives > 0)
                         in_transition = GameStep_Question;
                     else
                         in_transition = GameStep_EndResults;
                 }
-            }
-            else
-            {
-                if (state.timestamp_start != -1) return { .error = 1 };
             }
             if (state.step == GameStep_Question && state.config.question_type == Frequency_Question_Rising)
                 update_audio = true;
@@ -164,7 +169,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         {
             if (state.step != GameStep_Result) return { .error = 1 };
             out_transition = GameStep_Result;
-            if(state.lives > 0)
+            if (state.lives > 0)
                 in_transition = GameStep_Question;
             else
                 in_transition = GameStep_EndResults;
@@ -183,7 +188,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         } break;
         case Event_Destroy_UI :
         {
-        } break; 
+        } break;
         case Event_Click_Track :
         case Event_Toggle_Track :
         case Event_Slider :
@@ -214,6 +219,14 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         in_transition = GameStep_Result;
         out_transition = GameStep_Question;
     }
+
+    if (done_prelistening)
+    {
+        assert(state.is_prelistening == true);
+        state.is_prelistening = false;
+        update_audio = true;
+        update_ui = true;
+    }
     
     if (in_transition != GameStep_None || out_transition != GameStep_None)
     {
@@ -230,6 +243,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
         } break;
         case GameStep_Begin :
         {
+            state.timestamp_start = -1;
         } break;
         case GameStep_Question :
         {
@@ -244,7 +258,7 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             jassertfalse;
         } break;
     }
-    
+     
     switch (in_transition)
     {
         case GameStep_None : 
@@ -273,28 +287,18 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
                 }
             };
             
-            if (state.config.question_type != Frequency_Question_Free)
-            {
-                state.timestamp_start = state.current_timestamp;
-            }
-            else
-            {
-                if (state.timestamp_start != -1) return { .error = 1 };
-            }
+            if(state.config.prelisten_type == PreListen_Timeout)
+                state.is_prelistening = true;
+            else 
+                state.is_prelistening = false;
+            state.timestamp_start = state.current_timestamp;
             update_audio = true;
             update_ui = true;
         }break;
         case GameStep_Result : 
         {
             state.step = GameStep_Result;
-            if (state.config.result_timeout_enabled)
-            {
-                state.timestamp_start = state.current_timestamp;
-            }
-            else
-            {
-                if (state.timestamp_start != -1) return { .error = 1 };
-            }
+            state.timestamp_start = state.current_timestamp;
             update_audio = true;
             update_ui = true;
         }break;
@@ -332,14 +336,21 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             } break;
             case GameStep_Question :
             {
-                float ratio = 1.0f;
-                if (state.config.question_type == Frequency_Question_Rising)
+                if (state.is_prelistening)
                 {
-                    ratio = float(state.current_timestamp - state.timestamp_start) / float(state.config.question_timeout_ms);
-                    assert(ratio >= 0.0f && ratio < 1.0f);
-                    DBG("ratio " << ratio);
+                    dsp.eq_bands[0] = DSP_EQ_Band { .type = Filter_None };
                 }
-                dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, juce::Decibels::decibelsToGain(state.config.eq_gain_db * ratio));
+                else
+                {
+                    float ratio = 1.0f;
+                    if (state.config.question_type == Frequency_Question_Rising)
+                    {
+                        ratio = float(state.current_timestamp - state.timestamp_start) / float(state.config.question_timeout_ms);
+                        assert(ratio >= 0.0f && ratio < 1.0f);
+                        DBG("ratio " << ratio);
+                    }
+                    dsp.eq_bands[0] = eq_band_peak((float)state.target_frequency, state.config.eq_quality, juce::Decibels::decibelsToGain(state.config.eq_gain_db * ratio));
+                }
             } break;
             case GameStep_Result :
             {
@@ -380,10 +391,20 @@ Frequency_Game_Effects frequency_game_update(FrequencyGame_State state, Event ev
             {
                 effects.ui->header_right_text = "Score : " + std::to_string(state.score);
                 effects.ui->ui_target = state.config.input == Frequency_Input_Widget ? 0 : 2;
+
                 effects.ui->freq_widget.display_target = false;
-                effects.ui->freq_widget.is_cursor_locked = false;
-                effects.ui->freq_widget.display_window = true;
-                effects.ui->freq_widget.correct_answer_window = state.correct_answer_window;
+                if (state.is_prelistening)
+                {
+                    effects.ui->freq_widget.is_cursor_locked = true;
+                    effects.ui->freq_widget.display_window = false;
+                    effects.ui->freq_widget.locked_cursor_frequency = 0;
+                }
+                else
+                {
+                    effects.ui->freq_widget.is_cursor_locked = false;
+                    effects.ui->freq_widget.display_window = true;
+                    effects.ui->freq_widget.correct_answer_window = state.correct_answer_window;
+                }
 
                 effects.ui->header_center_text = "Lives : " + std::to_string(state.lives);
                 effects.ui->display_button = false;

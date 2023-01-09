@@ -28,10 +28,13 @@ struct Frequency_Game_Effect_UI {
     struct {
         bool display_target;
         uint32_t target_frequency;
+
         bool is_cursor_locked;
         uint32_t locked_cursor_frequency;
+        
         bool display_window;
         float correct_answer_window;
+        
         uint32_t min_f;
         uint32_t num_octaves;
     } freq_widget;
@@ -86,7 +89,8 @@ struct FrequencyGame_State
     int lives;
     //frequency
     uint32_t target_frequency;
-    float correct_answer_window;
+    float correct_answer_window; 
+    bool is_prelistening;
     //
     uint32_t current_file_idx;
     std::vector<Audio_File> files;
