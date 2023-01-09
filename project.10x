@@ -82,6 +82,9 @@
 				<Path>Standalone.10x</Path>
 			</WorkspaceReference>
 			<WorkspaceReference>
+				<Path>ray.10x</Path>
+			</WorkspaceReference>
+			<WorkspaceReference>
 				<Path>../JUCE/juce.10x</Path>
 			</WorkspaceReference>
 			<Folder>

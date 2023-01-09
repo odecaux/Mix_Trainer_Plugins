@@ -171,3 +171,15 @@ target_link_libraries(MixTrainer_Standalone
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+# Generate compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Dependencies
+set(RAYLIB_VERSION 4.2.0)
+find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
+# Our Project
+
+add_executable(ray ray/main.c ray/miniaudio.c)
+set(raylib_VERBOSE 1)
+target_link_libraries(ray raylib)

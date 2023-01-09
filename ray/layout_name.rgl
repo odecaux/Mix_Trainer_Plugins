@@ -1,0 +1,52 @@
+#
+# rgl layout text file (v3.0) - raygui layout file generated using rGuiLayout
+#
+# Number of controls:     26
+#
+# Ref. window:    r <x> <y> <width> <height>
+# Anchor info:    a <id> <name> <posx> <posy> <enabled>
+# Control info:   c <id> <type> <name> <rectangle> <anchor_id> <text>
+#
+r 0 0 -1 -1
+a 000 anchorMain 0 0 0
+a 001 anchor01 312 144 1
+a 002 anchor02 456 144 1
+a 003 anchor03 168 144 1
+a 004 anchor04 0 0 0
+a 005 anchor05 0 0 0
+a 006 anchor06 0 0 0
+a 007 anchor07 0 0 0
+a 008 anchor08 0 0 0
+a 009 anchor09 0 0 0
+a 010 anchor10 0 0 0
+a 011 anchor11 0 0 0
+a 012 anchor12 0 0 0
+a 013 anchor13 0 0 0
+a 014 anchor14 0 0 0
+a 015 anchor15 0 0 0
+c 000 11 mode_drop 0 24 120 24 1 ONE;TWO;THREE
+c 001 4 mode_label 0 24 120 24 3 Mode
+c 002 4 input_label 0 48 120 24 3 Input
+c 003 11 input_drop 0 48 120 24 1 ONE;TWO;THREE
+c 004 4 gain_label 0 72 120 24 3 Gain
+c 005 4 q_label 0 96 120 24 3 Q
+c 006 16 gain_slider 0 72 120 24 1 
+c 007 16 q_slider 0 96 120 24 1 
+c 008 4 gain_value_label 0 80 32 16 2 SAMPLE TEXT
+c 009 4 q_value_label 0 96 48 24 2 SAMPLE TEXT
+c 010 6 initial_window_label 0 120 120 24 3 Initial Window
+c 011 6 pre_listen_label 0 144 88 24 3 Pre Listen
+c 012 6 question_label 0 168 80 24 3 Question
+c 013 6 post_answer_timeout_label 0 192 80 24 3 Post Answer Timeout
+c 014 16 initial_window_slider 0 120 120 24 1 
+c 015 16 pre_listen_slider 0 144 120 24 1 
+c 016 16 question_slider 0 168 120 24 1 
+c 017 16 post_answer_slider 0 192 120 24 1 
+c 018 4 initial_window_value_label 0 120 120 24 2 SAMPLE TEXT
+c 019 4 pre_listen_value_label 0 144 120 24 2 SAMPLE TEXT
+c 020 4 question_value_label 0 168 120 24 2 SAMPLE TEXT
+c 021 4 post_answer_timeout_label 0 192 120 24 2 SAMPLE TEXT
+c 022 7 post_answer_checkbox -32 192 24 24 1 
+c 023 11 initial_window_drop -56 120 48 24 1 ONE;TWO;THREE
+c 024 11 pre_listen_drop -56 144 48 24 1 ONE;TWO;THREE
+c 025 11 question_drop -56 168 48 24 1 ONE;TWO;THREE

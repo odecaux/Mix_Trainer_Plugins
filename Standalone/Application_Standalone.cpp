@@ -105,6 +105,7 @@ std::vector<Audio_File> generate_list_of_selected_files(Audio_File_List *audio_f
     return selected_files;
 }
 
+#if 0
 std::vector<Audio_File> generate_ordered_list_of_files(Audio_File_List *audio_file_list)
 {
     std::vector<Audio_File> files{};
@@ -116,6 +117,7 @@ std::vector<Audio_File> generate_ordered_list_of_files(Audio_File_List *audio_fi
     }
     return files;
 }
+#endif  
 
 std::pair<std::vector<std::string>, std::vector<bool>> generate_titles_and_selection_lists(Audio_File_List *audio_file_list)
 {
@@ -388,8 +390,6 @@ Application_Standalone::~Application_Standalone()
         *stream << xml_string;
     }();
 
-
-    
     //save compressor config list
     [&] {
         auto stream = get_file_stream_from_appdata("compressor_game_configs.xml");
@@ -397,7 +397,6 @@ Application_Standalone::~Application_Standalone()
         std::string file_text = compressor_game_serialize(&compressor_game_configs);
         *stream << juce::StringRef(file_text);
     }();
-
     
     //save previous results
     [&] {
