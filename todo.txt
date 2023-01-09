@@ -1,7 +1,7 @@
 #Priority 1 :
 
 ne pouvoir éditer les bounds que quand on a un seul fichier sélectionné
-
+BUG conversion de sample rate, faut prendre les loops points et les length en double
 
 
 unifier les step sliders. au lieu d'un vec, un lambda index->value, value->index, void*

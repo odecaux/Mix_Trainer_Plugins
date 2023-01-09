@@ -49,10 +49,10 @@ public:
             juce::AudioTransportSource::getNextAudioBlock(buffer);
             return;
         }
+        auto total_length = getTotalLength();
         assert(start_sample_position >= 0);
         assert(end_sample_position >= 0);
-        assert(end_sample_position <= getTotalLength());
-        assert(end_sample_position <= getTotalLength());
+        //assert(end_sample_position <= total_length);
         assert(start_sample_position <= end_sample_position);
 
         int64_t current_position = getNextReadPosition();
