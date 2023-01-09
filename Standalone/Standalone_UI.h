@@ -56,8 +56,8 @@ public:
 
             juce::Range < double > newVisibleRange (0.0, thumbnail.getTotalLength());
             scrollbar.setRangeLimits (newVisibleRange);
-            loop_bounds = audio_file->loop_bounds_samples;
-            file_length = audio_file->length_samples;
+            loop_bounds_ms = audio_file->loop_bounds_ms;
+            file_length_ms = audio_file->file_length_ms;
             setVisibleRange (newVisibleRange);
             startTimerHz (40);
         }
@@ -67,8 +67,8 @@ public:
     {
         thumbnail.setSource(nullptr);
         //triggers changed
-        loop_bounds = { -1, -1 };
-        file_length = -1;
+        loop_bounds_ms = { -1, -1 };
+        file_length_ms = -1;
     }
 
     void setZoomFactor (double amount)
@@ -129,24 +129,24 @@ public:
 
     void mouseDrag(const juce::MouseEvent& e) override
     {
-        if (file_length == -1) return;
+        if (file_length_ms == -1) return;
         float ratio = e.x / (float)getWidth();
         ratio = std::clamp(ratio, 0.0f, 1.0f);
-        uint64_t sample_position = uint64_t(ratio * (float)file_length); //todo arithmetics
-        sample_position = std::min(sample_position, checked_cast<uint64_t>(file_length));
+        uint64_t position_ms = uint64_t(ratio * (float)file_length_ms); //todo arithmetics
+        position_ms = std::min(position_ms, checked_cast<uint64_t>(file_length_ms));
         if (e.mods.isLeftButtonDown())
         {
-            sample_position = std::min(sample_position, checked_cast<uint64_t>(loop_bounds.getEnd()));
-            loop_bounds.setStart(sample_position);
+            position_ms = std::min(position_ms, checked_cast<uint64_t>(loop_bounds_ms.getEnd()));
+            loop_bounds_ms.setStart(position_ms);
         }
         else if (e.mods.isRightButtonDown())
         {
-            sample_position = std::max(sample_position, checked_cast<uint64_t>(loop_bounds.getStart()));
-            loop_bounds.setEnd(sample_position);
+            position_ms = std::max(position_ms, checked_cast<uint64_t>(loop_bounds_ms.getStart()));
+            loop_bounds_ms.setEnd(position_ms);
         }
         else return;
 
-        loop_bounds_changed(loop_bounds);
+        loop_bounds_changed(loop_bounds_ms);
         updateLoopBoundsPosition();
         repaint();
         //transport_source.setPosition(std::max (0.0, xToTime((float) e.x)));
@@ -183,8 +183,8 @@ private:
     float zoom_value = 0.0F;
     juce::AudioTransportSource *transport_source;
     juce::ScrollBar scrollbar { false };
-    juce::Range < int64_t > loop_bounds = { -1, -1 };
-    int64_t file_length = -1;
+    juce::Range < int64_t > loop_bounds_ms = { -1, -1 };
+    int64_t file_length_ms = -1;
 
     juce::AudioThumbnailCache thumbnail_cache { 5 };
     juce::AudioThumbnail thumbnail;
@@ -235,10 +235,10 @@ private:
 
     void updateLoopBoundsPosition()
     {
-        auto start_sample = loop_bounds.getStart();
-        auto end_sample = loop_bounds.getEnd();
-        auto start_ratio = (double)start_sample / (double)file_length;
-        auto end_ratio = (double)end_sample / (double)file_length;
+        auto start_time_ms = loop_bounds_ms.getStart();
+        auto end_time_ms = loop_bounds_ms.getEnd();
+        auto start_ratio = (double)start_time_ms / (double)file_length_ms;
+        auto end_ratio = (double)end_time_ms / (double)file_length_ms;
         double start_x = start_ratio * (double)getWidth() - 0.75;
         double end_x = end_ratio * (double)getWidth() + 0.75;
         start_x = std::max(0.0, start_x);
@@ -563,12 +563,12 @@ public:
             addAndMakeVisible(file_list_component);
         }
         
-        thumbnail.loop_bounds_changed = [&] (juce::Range < int64_t > new_loop_bounds){
-            audio_file_list->files.at(selected_file_hash).loop_bounds_samples = new_loop_bounds;
+        thumbnail.loop_bounds_changed = [&] (juce::Range < int64_t > new_loop_bounds_ms){
+            audio_file_list->files.at(selected_file_hash).loop_bounds_ms = new_loop_bounds_ms;
             Audio_Command command = {
                 .type = Audio_Command_Update_Loop,
-                .start_sample = new_loop_bounds.getStart(),
-                .end_sample = new_loop_bounds.getEnd()
+                .loop_start_ms = new_loop_bounds_ms.getStart(),
+                .loop_end_ms = new_loop_bounds_ms.getEnd()
             };
             file_player_post_command(player, command);
         };

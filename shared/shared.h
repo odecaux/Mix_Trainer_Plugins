@@ -81,10 +81,10 @@ struct Audio_File
     //juce::int64 hash_code;
     juce::Time last_modification_time;
     std::string title;
-    juce::Range<int64_t> loop_bounds_samples;
+    juce::Range<int64_t> loop_bounds_ms;
     juce::Range<uint32_t> freq_bounds;
     float max_level;
-    int64_t length_samples;
+    int64_t file_length_ms;
     int64_t hash;
 };
 
@@ -341,8 +341,8 @@ struct Audio_Command
     Audio_Command_Type type;
     float value_f;
     int64_t value_i64;
-    int64_t start_sample;
-    int64_t end_sample;
+    int64_t loop_start_ms;
+    int64_t loop_end_ms;
     Audio_File value_file;
 };
 

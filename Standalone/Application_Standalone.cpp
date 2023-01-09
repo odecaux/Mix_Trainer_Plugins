@@ -36,9 +36,11 @@ static Audio_File audio_file_scan_length_and_max(Audio_File audio_file, juce::Au
     if (max_level <= 0.0F)
         return audio_file;
 
-    audio_file.loop_bounds_samples = { 0, reader->lengthInSamples };
     audio_file.max_level = max_level;
-    audio_file.length_samples = reader->lengthInSamples;
+    double sample_rate = reader->sampleRate;
+    int64_t file_length_ms = (int64_t)(reader->lengthInSamples * 1000.0 / sample_rate);
+    audio_file.loop_bounds_ms = { 0, file_length_ms};
+    audio_file.file_length_ms = file_length_ms;
     return audio_file;
 }
 
@@ -144,10 +146,10 @@ static const juce::Identifier id_file = "file";
 static const juce::Identifier id_file_name = "filename";
 static const juce::Identifier id_file_last_modification_time = "last_modification_time";
 static const juce::Identifier id_file_title = "title";
-static const juce::Identifier id_file_loop_bounds = "loop_bounds";
+static const juce::Identifier id_file_loop_bounds_ms = "loop_bounds_ms";
 static const juce::Identifier id_file_freq_bounds = "freq_bounds";
 static const juce::Identifier id_file_max_level = "max_level";
-static const juce::Identifier id_file_length_samples = "length_samples";
+static const juce::Identifier id_file_length_ms = "length_ms";
 
 
 std::string audio_file_list_serialize(Audio_File_List *audio_file_list)
@@ -156,16 +158,16 @@ std::string audio_file_list_serialize(Audio_File_List *audio_file_list)
     for (uint64_t hash : audio_file_list->order)
     {
         const auto& audio_file = audio_file_list->files.at(hash);
-        std::vector<int64_t> loop_bounds { audio_file.loop_bounds_samples.getStart(), audio_file.loop_bounds_samples.getEnd() };
+        std::vector<int64_t> loop_bounds { audio_file.loop_bounds_ms.getStart(), audio_file.loop_bounds_ms.getEnd() };
         std::vector<uint32_t> freq_bounds { audio_file.freq_bounds.getStart(), audio_file.freq_bounds.getEnd() };
         juce::ValueTree node = { id_file, {
             { id_file_name,  audio_file.file.getFullPathName() },
             { id_file_last_modification_time, audio_file.last_modification_time.toMilliseconds() },
             { id_file_title, juce::String(audio_file.title) },
-            { id_file_loop_bounds, serialize_vector(loop_bounds) },
+            { id_file_loop_bounds_ms, serialize_vector(loop_bounds) },
             { id_file_freq_bounds, serialize_vector(freq_bounds) },
             { id_file_max_level, audio_file.max_level },
-            { id_file_length_samples, juce::int64(audio_file.length_samples) }
+            { id_file_length_ms, juce::int64(audio_file.file_length_ms) }
         }};
         root_node.addChild(node, -1, nullptr);
     }
@@ -189,8 +191,8 @@ std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string)
         auto file = juce::File{ file_name };
         if(!file.existsAsFile())
             continue;
-        auto loop_bounds = deserialize_vector<int64_t>(node.getProperty(id_file_loop_bounds, ""));
-        if(loop_bounds.size() != 2)
+        auto loop_bounds_ms = deserialize_vector<int64_t>(node.getProperty(id_file_loop_bounds_ms, ""));
+        if(loop_bounds_ms.size() != 2)
             continue;
         auto freq_bounds = deserialize_vector<uint32_t>(node.getProperty(id_file_freq_bounds, ""));
         if(freq_bounds.size() != 2)
@@ -200,10 +202,10 @@ std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string)
             .file = file,
             .last_modification_time = juce::Time(modification_time),
             .title = node.getProperty(id_file_title, "").toString().toStdString(),
-            .loop_bounds_samples = { loop_bounds[0], loop_bounds[1] },
+            .loop_bounds_ms = { loop_bounds_ms[0], loop_bounds_ms[1] },
             .freq_bounds = { freq_bounds[0], freq_bounds[1] },
             .max_level = node.getProperty(id_file_max_level, 1.0f),
-            .length_samples = (juce::int64)node.getProperty(id_file_length_samples, 0),
+            .file_length_ms = (juce::int64)node.getProperty(id_file_length_ms, 0),
         };
         audio_files.push_back(audio_file);
     }
@@ -659,7 +661,7 @@ File_Player::~File_Player()
     device_manager.removeAudioCallback (&source_player);
 }
 
-bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_num_samples)
+bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_file_length_ms)
 {
     player->transport_source.stop();
     player->transport_source.setSource(nullptr);
@@ -689,10 +691,10 @@ bool file_player_load(File_Player *player, Audio_File *audio_file, int64_t *out_
                                        32768,
                                        &player->read_ahead_thread,
                                        player->current_reader_source->getAudioFormatReader()->sampleRate);
-    player->transport_source.setLoopBounds(audio_file->loop_bounds_samples.getStart(), audio_file->loop_bounds_samples.getEnd());
-    player->transport_source.setNextReadPosition(audio_file->loop_bounds_samples.getStart());
+    player->transport_source.setLoopBounds(audio_file->loop_bounds_ms.getStart(), audio_file->loop_bounds_ms.getEnd());
+    player->transport_source.setPosition((double)audio_file->loop_bounds_ms.getStart() / 1000.0);
 
-    *out_num_samples = player->transport_source.getTotalLength();
+    *out_file_length_ms = (int64_t)(player->transport_source.getLengthInSeconds() * 1000.0);
     return true;
 }
 
@@ -719,31 +721,31 @@ File_Player_State file_player_post_command(File_Player *player, Audio_Command co
         } break;
         case Audio_Command_Seek :
         {
-            assert(command.value_i64 >= 0 && command.value_i64 < player->player_state.num_samples);
-            player->transport_source.setNextReadPosition(command.value_i64);
+            assert(command.value_i64 >= 0 && command.value_i64 < player->player_state.file_length_ms);
+            player->transport_source.setPosition((double)command.value_i64 / 1000.0);
         } break;
         case Audio_Command_Update_Loop :
         {
             //TODO loop can't be zero length
-            assert(command.start_sample >= 0 && command.start_sample <= player->player_state.num_samples);
-            assert(command.end_sample >= 0 && command.end_sample <= player->player_state.num_samples);
-            assert(command.start_sample <= command.end_sample);
-            player->player_state.start_sample = command.start_sample;
-            player->player_state.end_sample = command.end_sample;
-            player->transport_source.setLoopBounds(command.start_sample, command.end_sample);
+            assert(command.loop_start_ms >= 0 && command.loop_start_ms <= player->player_state.file_length_ms);
+            assert(command.loop_end_ms >= 0 && command.loop_end_ms <= player->player_state.file_length_ms);
+            assert(command.loop_start_ms <= command.loop_end_ms);
+            player->player_state.loop_start_ms = command.loop_start_ms;
+            player->player_state.loop_end_ms = command.loop_end_ms;
+            player->transport_source.setLoopBounds(command.loop_start_ms, command.loop_end_ms);
 
         } break;
         case Audio_Command_Load :
         {
-            int64_t num_samples;
-            bool success = file_player_load(player, &command.value_file, &num_samples);
+            int64_t file_lentgh_ms;
+            bool success = file_player_load(player, &command.value_file, &file_lentgh_ms);
             if (success)
             {
-                player->player_state.num_samples = num_samples;
+                player->player_state.file_length_ms = file_lentgh_ms;
                 player->player_state.playing_file_hash = command.value_file.hash;
                 player->player_state.step = Transport_Stopped;
-                player->player_state.start_sample = command.value_file.loop_bounds_samples.getStart();
-                player->player_state.end_sample = command.value_file.loop_bounds_samples.getEnd();
+                player->player_state.loop_start_ms = command.value_file.loop_bounds_ms.getStart();
+                player->player_state.loop_end_ms = command.value_file.loop_bounds_ms.getEnd();
             }
             else
             {

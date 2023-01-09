@@ -21,27 +21,35 @@ struct File_Player_State
 {
     Transport_Step step;
     int64_t playing_file_hash;
-    int64_t num_samples;
-    int64_t start_sample;
-    int64_t end_sample;
+    int64_t file_length_ms;
+    int64_t loop_start_ms;
+    int64_t loop_end_ms;
 };
 
 class Looping_Transport_Source : public juce::AudioTransportSource
 {
 public:
-    void setLoopBounds(int64_t start_sample, int64_t end_sample)
+    void setLoopBounds(int64_t loop_start_ms, int64_t loop_end_ms)
     {
-        temp_start = start_sample;
-        temp_end = end_sample;
+        temp_start = loop_start_ms;
+        temp_end = loop_end_ms;
         write_flag = true;
     }
+
+    
+    void prepareToPlay (int samplesPerBlockExpected, double newSampleRate) override
+    {
+        playback_sample_rate = newSampleRate;
+        juce::AudioTransportSource::prepareToPlay(samplesPerBlockExpected, newSampleRate);
+    }
+
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& buffer) override
     {
         bool expected = true;
         if (write_flag.compare_exchange_strong(expected, false))
         {
-            start_sample_position = temp_start;
-            end_sample_position = temp_end;
+            internal_start = temp_start;
+            internal_end = temp_end;
         }
 
         if (!isPlaying())
@@ -49,45 +57,47 @@ public:
             juce::AudioTransportSource::getNextAudioBlock(buffer);
             return;
         }
-        auto total_length = getTotalLength();
-        assert(start_sample_position >= 0);
-        assert(end_sample_position >= 0);
-        //assert(end_sample_position <= total_length);
-        assert(start_sample_position <= end_sample_position);
+        int64_t length_ms = (int64_t)(getLengthInSeconds() * 1000.0);
+        assert(internal_start >= 0);
+        assert(internal_end >= 0);
+        assert(internal_end <= length_ms);
+        assert(internal_start <= internal_end);
 
-        int64_t current_position = getNextReadPosition();
-
-        if (current_position > end_sample_position)
+        int64_t current_position_ms = (int64_t)(getCurrentPosition() * 1000.0);
+        
+        if (current_position_ms > internal_end)
         {
-            setNextReadPosition(start_sample_position);
-            current_position = start_sample_position;
-        }
             
-        if (current_position + buffer.numSamples <= end_sample_position)
+            setPosition(1000.0 * double(internal_start));
+            current_position_ms = internal_start;
+        }
+        
+        if (current_position_ms + ((double)buffer.numSamples * 1000.0 / playback_sample_rate) <= internal_end)
         {
             juce::AudioTransportSource::getNextAudioBlock(buffer);
             return;
         }
-        int64_t pre_loop_samples = end_sample_position - current_position;
-        auto pre_loop_buffer = buffer;
-        pre_loop_buffer.numSamples = checked_cast<int>(pre_loop_samples);
-        juce::AudioTransportSource::getNextAudioBlock(pre_loop_buffer);
 
-        setNextReadPosition(start_sample_position);
+        int64_t end_of_loop_samples = (int64_t)((internal_end - current_position_ms) * playback_sample_rate / 1000.0);
+        auto temp_buffer = buffer;
+        temp_buffer.numSamples = checked_cast<int>(end_of_loop_samples);
+        juce::AudioTransportSource::getNextAudioBlock(temp_buffer);
+
+        setPosition(1000.0 * (double)internal_start);
             
-        int64_t post_loop_samples = buffer.numSamples - pre_loop_samples;
-        auto post_loop_buffer = buffer;
-        post_loop_buffer.startSample = buffer.startSample + checked_cast<int>(pre_loop_samples);
-        post_loop_buffer.numSamples = buffer.numSamples - checked_cast<int>(pre_loop_samples);
-        juce::AudioTransportSource::getNextAudioBlock(post_loop_buffer);
+        int64_t beginning_of_loop_samples = buffer.numSamples - end_of_loop_samples;
+        temp_buffer.startSample = buffer.startSample + checked_cast<int>(beginning_of_loop_samples);
+        temp_buffer.numSamples = buffer.numSamples - checked_cast<int>(beginning_of_loop_samples);
+        juce::AudioTransportSource::getNextAudioBlock(temp_buffer);
     }
 private:
 
-    int64_t start_sample_position = -1;
-    int64_t end_sample_position = -1;
+    int64_t internal_start = -1;
+    int64_t internal_end = -1;
 
     int64_t temp_start;
     int64_t temp_end;
+    double playback_sample_rate;
     std::atomic<bool> write_flag { false } ;
 };
 
