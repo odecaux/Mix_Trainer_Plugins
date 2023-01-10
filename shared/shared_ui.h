@@ -568,12 +568,11 @@ public:
         if (rowNumber >= getNumRows()) 
             return;
         auto bounds = juce::Rectangle { 0, 0, width, height };
-        g.setColour(juce::Colours::white);
-        g.drawText(row_texts[rowNumber], bounds, juce::Justification::centredLeft);
         if (rowIsSelected)
-        {
-            g.drawRect(bounds);
-        }
+            g.setColour(juce::Colours::white);
+        else
+            g.setColour(juce::Colours::grey);
+        g.drawText(row_texts[rowNumber], bounds.withTrimmedLeft(5), juce::Justification::centredLeft);
     }
 
     void selectedRowsChanged(int) override
