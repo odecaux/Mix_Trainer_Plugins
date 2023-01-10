@@ -1,13 +1,11 @@
 #Priority 1 :
 
+bug config creation
 ne pouvoir éditer les bounds que quand on a un seul fichier sélectionné
-BUG conversion de sample rate, faut prendre les loops points et les length en double
-
-
+zoom
 unifier les step sliders. au lieu d'un vec, un lambda index->value, value->index, void*
 frequency game implement pre listen
 No lives mode
-Mixer game takes a vector of channels
 look and feel
 bug si les sliders on une seule valeur !
 pouvoir selectionner aucune track !

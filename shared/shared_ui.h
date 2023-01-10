@@ -163,7 +163,7 @@ private:
 class FaderRowComponent : public juce::Component
 {
 public:
-    FaderRowComponent(std::unordered_map<int, std::unique_ptr<FaderComponent>>& mixerFaders)
+    FaderRowComponent(std::vector<std::unique_ptr<FaderComponent>>& mixerFaders)
     : faders(mixerFaders)
     {
     }
@@ -186,8 +186,7 @@ public:
         int x_offset = 0;
         auto bounds = getLocalBounds();
         auto top_left = bounds.getTopLeft();
-        //draw in order
-        for (auto& [_, fader] : faders)
+        for (auto& fader : faders)
         {
             fader->setTopLeftPosition(top_left + juce::Point<int>(x_offset, 0));
             fader->setSize(fader_width, bounds.getHeight());
@@ -198,7 +197,7 @@ public:
     
 private:
     const static int fader_width = 60;
-    std::unordered_map<int, std::unique_ptr<FaderComponent>> &faders;
+    std::vector<std::unique_ptr<FaderComponent>> &faders;
 };
 
 

@@ -55,16 +55,16 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         {
             if (state.step == GameStep_Question)
             {
-                if(state.config.variant == MixerGame_Timer) return { .error = 1 };
-                if (!state.can_still_listen) return { .error = 1 };
+                if(state.config.variant == MixerGame_Timer) assert(false);
+                if (!state.can_still_listen) assert(false);
                 if (state.mix == Mix_User)
                 {
-                    if(!event.value_b) return { .error = 1 };
+                    if(!event.value_b) assert(false);
                     state.mix = Mix_Target;
                 }
                 else if (state.mix == Mix_Target)
                 {
-                    if(event.value_b) return { .error = 1 };
+                    if(event.value_b) assert(false);
                     switch (state.config.variant)
                     {
                         case MixerGame_Normal : 
@@ -91,12 +91,12 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             {
                 if (state.mix == Mix_User)
                 {
-                    if(!event.value_b) return { .error = 1 };
+                    if(!event.value_b) assert(false);
                     state.mix = Mix_Target;
                 }
                 else if (state.mix == Mix_Target)
                 {
-                    if(event.value_b) return { .error = 1 };
+                    if(event.value_b) assert(false);
                     state.mix = Mix_User;
                 }
                 else jassertfalse;
@@ -110,9 +110,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         } break;
         case Event_Click_Begin : 
         {
-            if(state.step != GameStep_Begin) return { .error = 1 };
-            if(state.mix != Mix_Hidden) return { .error = 1 };
-            if(state.target_slider_pos.size() != 0) return { .error = 1 };
+            if(state.step != GameStep_Begin) assert(false);
+            if(state.mix != Mix_Hidden) assert(false);
             out_transition = GameStep_Begin;
             in_transition = GameStep_Question;
         } break;
@@ -131,12 +130,12 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             }
             else
             {
-                if(state.timestamp_start != -1) return { .error = 1 };
+                if(state.timestamp_start != -1) assert(false);
             }
         } break;
         case Event_Click_Done_Listening : 
         {
-            if(state.step != GameStep_Question || state.config.variant != MixerGame_Timer) return { .error = 1 };
+            if(state.step != GameStep_Question || state.config.variant != MixerGame_Timer) assert(false);
             done_listening = true;
         } break;
         case Event_Click_Answer : 
@@ -170,12 +169,13 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     
     if (check_answer)
     {
-        if(state.step != GameStep_Question) return { .error = 1 };
+        if(state.step != GameStep_Question) assert(false);
         
         int points_awarded = 0;
-        for (auto& [id, edited] : state.edited_slider_pos)
+        assert(state.edited_slider_pos.size() == state.target_slider_pos.size());
+        for (auto i = 0; i < state.edited_slider_pos.size(); i++)
         {
-            if(edited == state.target_slider_pos[id])
+            if(state.edited_slider_pos[i] == state.target_slider_pos[i])
             {
                 points_awarded++;
             }
@@ -187,8 +187,8 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     
     if (done_listening)
     {
-        if(state.step != GameStep_Question) return { .error = 1 };
-        if(state.mix != Mix_Target) return { .error = 1 };
+        if(state.step != GameStep_Question) assert(false);
+        if(state.mix != Mix_Target) assert(false);
         state.mix = Mix_User;
         state.timestamp_start = -1;
         
@@ -234,11 +234,12 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             state.step = GameStep_Begin;
             state.score = 0;
             state.mix = Mix_Hidden;
-            std::transform(state.config.channel_infos.begin(), state.config.channel_infos.end(), 
-                           std::inserter(state.edited_slider_pos, state.edited_slider_pos.end()), 
-                           [&](const auto &a) -> std::pair<int, int> {
-                               return { a.first, (int)state.config.db_slider_values.size() - 2};
-                           });
+            state.target_slider_pos = std::vector<uint32_t>(state.config.channel_infos.size());
+            state.edited_slider_pos = std::vector<uint32_t>(state.config.channel_infos.size());
+            for (auto i = 0; i < state.config.channel_infos.size(); i++)
+            {
+                state.edited_slider_pos[i] = checked_cast<uint32_t>(state.config.db_slider_values.size()) - 2;
+            }
             update_audio = true;
             update_ui = true;
         }break;
@@ -247,15 +248,13 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
             state.step = GameStep_Question;
             state.mix = Mix_Target;
             state.can_still_listen = true;
-            for (auto& [_, channel] : state.config.channel_infos)
+            for (auto i = 0; i < state.config.channel_infos.size(); i++)
             {
-                auto target_pos = random_uint(static_cast<int>(state.config.db_slider_values.size()));
-                state.target_slider_pos[channel.id] = target_pos;
-                auto edited_pos = static_cast<int>(state.config.db_slider_values.size()) - 2;
-                state.edited_slider_pos[channel.id] = edited_pos;
+                state.target_slider_pos[i] = random_uint(checked_cast<uint32_t>(state.config.db_slider_values.size()));
+                state.edited_slider_pos[i] = checked_cast<uint32_t>(state.config.db_slider_values.size()) - 2;
             }
-            if(state.target_slider_pos.size() != state.config.channel_infos.size()) return { .error = 1 };
-            if(state.edited_slider_pos.size() != state.config.channel_infos.size()) return { .error = 1 };
+            if(state.target_slider_pos.size() != state.config.channel_infos.size()) assert(false);
+            if(state.edited_slider_pos.size() != state.config.channel_infos.size()) assert(false);
             
             switch (state.config.variant)
             {
@@ -285,7 +284,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
         }break;
     }
     
-    std::unordered_map<uint32_t, uint32_t>* slider_pos;
+    std::vector<uint32_t>* slider_pos;
     if(state.step == GameStep_Begin || state.mix == Mix_User)
         slider_pos = &state.edited_slider_pos;
     else
@@ -293,19 +292,20 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
     
     if (update_audio)
     {
-        std::unordered_map < uint32_t, Channel_DSP_State > dsp;
-        std::transform(slider_pos->begin(), slider_pos->end(), 
-                       std::inserter(dsp, dsp.end()), 
-                       [state](const auto &a) -> std::pair<uint32_t, Channel_DSP_State> {
-                           double gain_db = state.config.db_slider_values[static_cast<size_t>(a.second)];
-                           return { a.first, ChannelDSP_gain_db(gain_db) };
-                       });
+        std::unordered_map<uint32_t, Channel_DSP_State> dsp{};
+        for (auto i = 0; i < state.config.channel_infos.size(); i++)
+        {
+            uint32_t id = state.config.channel_infos[i].id;
+            uint32_t pos = slider_pos->at(i);
+            double gain_db = state.config.db_slider_values[pos];
+            dsp.emplace(id, ChannelDSP_gain_db(gain_db));
+        }
         effects.dsp = Game_Mixer_Effect_DSP { std::move(dsp) };
     }
     
     if (update_ui)
     {
-        std::optional < std::unordered_map<uint32_t, uint32_t> > slider_pos_to_display;
+        std::optional<std::vector<uint32_t>> slider_pos_to_display;
         
         if(state.step == GameStep_Question && state.mix == Mix_Target)
             slider_pos_to_display = std::nullopt; 
@@ -369,7 +369,7 @@ Game_Mixer_Effects mixer_game_update(MixerGame_State state, Event event)
                     case MixerGame_Tries : {
                         if (state.mix == Mix_Target)
                         {
-                            if(!state.can_still_listen) return { .error = 1 };
+                            if(!state.can_still_listen) assert(false);
                             effects.ui->header_center_text = "remaining listens : " + std::to_string(state.remaining_listens);
                         }
                         else if (state.mix == Mix_User)
@@ -407,7 +407,7 @@ void mixer_game_add_observer(MixerGame_IO *io, mixer_game_observer_t new_observe
 }
 
 
-MixerGame_State mixer_game_state_init(std::unordered_map<uint32_t, Game_Channel> &channel_infos,
+MixerGame_State mixer_game_state_init(std::vector<Game_Channel> channel_infos,
                                       MixerGame_Variant variant,
                                       int listens,
                                       int timeout_ms,

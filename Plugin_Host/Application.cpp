@@ -75,16 +75,25 @@ void Application::toGame(MixerGame_Variant variant)
     assert(!game_io);
     
     MixerGame_State new_game_state = [&] {
+        std::vector<Game_Channel> ordered_channels;
+        {
+            ordered_channels.reserve(multitrack_model.game_channels.size());
+            assert(multitrack_model.game_channels.size() == multitrack_model.order.size());
+            for (uint32_t id : multitrack_model.order)
+            {
+                ordered_channels.push_back(multitrack_model.game_channels.at(id));
+            }
+        }
         switch (variant)
         {
             case MixerGame_Normal : {
-                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Normal, -1, -1, db_slider_values);
+                return mixer_game_state_init(std::move(ordered_channels), MixerGame_Normal, -1, -1, db_slider_values);
             } break;
             case MixerGame_Timer : {
-                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Timer, -1, 2000, db_slider_values);
+                return mixer_game_state_init(std::move(ordered_channels), MixerGame_Timer, -1, 2000, db_slider_values);
             } break;
             case MixerGame_Tries : {
-                return mixer_game_state_init(multitrack_model.game_channels, MixerGame_Tries, 5, -1, db_slider_values);
+                return mixer_game_state_init(std::move(ordered_channels), MixerGame_Tries, 5, -1, db_slider_values);
             } break;
         }
         assert(false);
@@ -99,8 +108,18 @@ void Application::toGame(MixerGame_Variant variant)
         {
             if (effects.transition->in_transition == GameStep_Begin)
             {
+                std::vector<Game_Channel> ordered_channels;
+                {
+                    ordered_channels.reserve(multitrack_model.game_channels.size());
+                    assert(multitrack_model.game_channels.size() == multitrack_model.order.size());
+                    for (uint32_t id : multitrack_model.order)
+                    {
+                        ordered_channels.push_back(multitrack_model.game_channels.at(id));
+                    }
+                }
+
                 auto new_game_ui = std::make_unique < MixerGameUI > (
-                    multitrack_model.game_channels,
+                    ordered_channels,
                     db_slider_values,
                     game_io.get()
                 );
@@ -130,7 +149,7 @@ void Application::toGame(MixerGame_Variant variant)
         }
     };
 
-    assert(game_io = nullptr);
+    assert(game_io == nullptr);
     game_io = mixer_game_io_init(new_game_state);
     
     auto on_quit = [this] { 
@@ -235,8 +254,18 @@ void Application::initialiseEditorUI(EditorHost *new_editor)
         case Panel_Game :
         {
             assert(game_io); 
+            
+            std::vector<Game_Channel> ordered_channels;
+            {
+                ordered_channels.reserve(multitrack_model.game_channels.size());
+                assert(multitrack_model.game_channels.size() == multitrack_model.order.size());
+                for (uint32_t id : multitrack_model.order)
+                {
+                    ordered_channels.push_back(multitrack_model.game_channels.at(id));
+                }
+            }
             panel = std::make_unique<MixerGameUI>(
-                multitrack_model.game_channels,
+                ordered_channels,
                 db_slider_values, //TODO ??
                 game_io.get()
             );

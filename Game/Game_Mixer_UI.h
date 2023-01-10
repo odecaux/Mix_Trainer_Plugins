@@ -4,37 +4,31 @@ void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui);
 
 struct MixerGameUI : public juce::Component
 {
-    MixerGameUI(const std::unordered_map<uint32_t, Game_Channel>& channelInfo,
+    MixerGameUI(const std::vector<Game_Channel>& channelInfo,
                 const std::vector<double> &SliderValuesdB,
                 MixerGame_IO *gameIO) 
     :
     fader_row(faders),
     db_slider_values(SliderValuesdB),
     io(gameIO)
-    {
-        auto f =
-            [io = io, &fader_row = fader_row, &db_slider_values = db_slider_values] (const auto &a)->std::pair < int, std::unique_ptr<FaderComponent> > {
-            const int id = a.first;
-            
-            auto onFaderMoved = [id, io] (int new_pos) {
+    {   
+        faders.reserve(channelInfo.size());
+        for (auto i = 0; i < channelInfo.size(); i++)
+        {
+            auto& channel = channelInfo[i];
+            auto onFaderMoved = [i, io = io] (int new_pos) {
                 Event event = {
                     .type = Event_Slider,
-                    .id = id,
+                    .id = i,
                     .value_i = new_pos
                 };
                 mixer_game_post_event(io, event);
             };
             
-            auto new_fader = std::make_unique < FaderComponent > (db_slider_values,
-                a.second.name,
-                std::move(onFaderMoved));
+            auto new_fader = std::make_unique < FaderComponent > (db_slider_values, channel.name, std::move(onFaderMoved));
             fader_row.addAndMakeVisible(new_fader.get());
-            return { id, std::move(new_fader)};
-        };
-        
-        std::transform(channelInfo.begin(), channelInfo.end(), 
-                       std::inserter(faders, faders.end()), 
-                       f);
+            faders.push_back(std::move(new_fader));
+        }
         fader_row.adjustWidth();
         fader_viewport.setScrollBarsShown(false, true);
         fader_viewport.setViewedComponent(&fader_row, false);
@@ -85,10 +79,10 @@ struct MixerGameUI : public juce::Component
                           fader_viewport.getHeight() - fader_viewport.getScrollBarThickness());
     }
     
-    std::unordered_map < int, std::unique_ptr<FaderComponent>> faders;
+    std::vector<std::unique_ptr<FaderComponent>> faders;
     FaderRowComponent fader_row;
     juce::Viewport fader_viewport;
-    const std::vector < double > &db_slider_values;
+    const std::vector<double> &db_slider_values;
     GameUI_Header header;
     GameUI_Bottom bottom;
     MixerGame_IO *io;

@@ -24,10 +24,10 @@ void game_ui_update(const Game_Mixer_Effect_UI &new_ui, MixerGameUI &ui)
     {
         assert(new_ui.slider_pos_to_display->size() == ui.faders.size());
     }
-    for(auto& [id, fader] : ui.faders)
+    for (auto i = 0; i < ui.faders.size(); i++)
     {
-        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(id) : -1;
-        fader->update(new_ui.widget_visibility, pos);
+        int pos = new_ui.slider_pos_to_display ? new_ui.slider_pos_to_display->at(i) : -1;
+        ui.faders[i]->update(new_ui.widget_visibility, pos);
     }
     game_ui_bottom_update(&ui.bottom, true, new_ui.bottom_button_text, new_ui.mix_toggles, new_ui.bottom_button_event);
 }
