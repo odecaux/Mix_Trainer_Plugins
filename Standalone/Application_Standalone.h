@@ -68,7 +68,7 @@ public:
         if (current_position_ms > internal_end)
         {
             
-            setPosition(1000.0 * double(internal_start));
+            setPosition(double(internal_start) / 1000.0);
             current_position_ms = internal_start;
         }
         
@@ -83,7 +83,7 @@ public:
         temp_buffer.numSamples = checked_cast<int>(end_of_loop_samples);
         juce::AudioTransportSource::getNextAudioBlock(temp_buffer);
 
-        setPosition(1000.0 * (double)internal_start);
+        setPosition((double)internal_start / 1000.0);
             
         int64_t beginning_of_loop_samples = buffer.numSamples - end_of_loop_samples;
         temp_buffer.startSample = buffer.startSample + checked_cast<int>(beginning_of_loop_samples);
