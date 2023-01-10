@@ -1,5 +1,6 @@
 #Priority 1 :
 
+
 bug config creation
 ne pouvoir éditer les bounds que quand on a un seul fichier sélectionné
 zoom
