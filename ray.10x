@@ -59,13 +59,28 @@
 				<Path>ray/main.c</Path>
 			</File>
 			<File>
-				<Path>ray/raygui.h</Path>
+				<Path>ray/main.cpp</Path>
+			</File>
+			<File>
+				<Path>ray/miniaudio.c</Path>
 			</File>
 			<File>
 				<Path>ray/miniaudio.h</Path>
 			</File>
 			<File>
-				<Path>ray/miniaudio.c</Path>
+				<Path>ray/raygui.c</Path>
+			</File>
+			<File>
+				<Path>ray/raygui.h</Path>
+			</File>
+			<File>
+				<Path>ray/raylib.h</Path>
+			</File>
+			<File>
+				<Path>ray/config_layout.rgl</Path>
+			</File>
+			<File>
+				<Path>ray/em_example.c</Path>
 			</File>
 		</Children>
 	</Workspace>

@@ -135,6 +135,9 @@
 			<File>
 				<Path>.github/workflows/juce_cli.yml</Path>
 			</File>
+			<File>
+				<Path>build_web.bat</Path>
+			</File>
 		</Children>
 	</Workspace>
 </N10X>

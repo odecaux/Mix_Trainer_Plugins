@@ -1,11 +1,15 @@
+#if 0
 #include <juce_dsp/juce_dsp.h>
 #include "../shared/shared.h"
 #include "../Game/Game.h"
 #include "../Game/Frequency_Game.h"
+#endif
 #include "miniaudio.h"
 #include "raylib.h" 
 #include "raygui.h"
 
+#include "stdio.h"
+#include "stdlib.h"
 #include <string.h>             // Required for: strcpy()
 #include <assert.h>
 
