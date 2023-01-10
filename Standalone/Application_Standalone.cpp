@@ -121,19 +121,16 @@ std::vector<Audio_File> generate_ordered_list_of_files(Audio_File_List *audio_fi
 }
 #endif  
 
-std::pair<std::vector<std::string>, std::vector<bool>> generate_titles_and_selection_lists(Audio_File_List *audio_file_list)
+std::vector<std::string> generate_titles(Audio_File_List *audio_file_list)
 {
     std::vector<std::string> titles{};
-    std::vector<bool> selection{};
     titles.reserve(audio_file_list->order.size());
-    selection.reserve(audio_file_list->order.size());
     for (uint32_t i = 0; i < audio_file_list->order.size(); i++)
     {
         uint64_t hash = audio_file_list->order[i];
         titles.push_back(audio_file_list->files.at(hash).title);
-        selection.push_back(audio_file_list->selected.at(hash));
     }
-    return { titles, selection };
+    return titles;
 }
 
 static const juce::Identifier id_results_root = "results_history";

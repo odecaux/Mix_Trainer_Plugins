@@ -447,7 +447,6 @@ public:
    
     void selectedRowsChanged (int last_row_selected) override
     {
-        //selection_changed_callback();
         row_clicked_callback(last_row_selected);
     }
 
@@ -459,6 +458,18 @@ public:
         {
             int selected_idx = juce_selection[i];
             std_selection.emplace_back(selected_idx);
+        }
+        return std_selection;
+    }
+
+    std::vector<bool> getSelection()
+    {
+        auto juce_selection = list_comp.getSelectedRows();
+        std::vector<bool> std_selection(getNumRows(), false);
+        for (auto i = 0; i < juce_selection.size(); i++)
+        {
+            int selected_idx = juce_selection[i];
+            std_selection[selected_idx] = true;
         }
         return std_selection;
     }
@@ -518,28 +529,27 @@ public:
         {
             file_list_component.row_clicked_callback = [&] (int row_idx)
             {
-                if (row_idx != -1)
-                {
-                    auto hash = audio_file_list->order[row_idx];
-                    auto &selected_file = audio_file_list->files.at(hash);
-                    assert(hash == selected_file.hash);
-                    auto player_state = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = selected_file });
-                    if(player_state.step == Transport_Loading_Failed)
-                        return;
-                    //TODO file does not exist anymore ?
-                    file_player_post_command(player, { .type = Audio_Command_Play });
-                    thumbnail.setFile(&selected_file);
-                    file_is_selected = true;
-                    selected_file_hash = selected_file.hash;
-                    frequency_bounds_slider.setMinAndMaxValues((float)selected_file.freq_bounds.getStart(), (float)selected_file.freq_bounds.getEnd());
-                }
-                else
+                if (row_idx == -1)
                 {
                     file_player_post_command(player, { .type = Audio_Command_Stop });
                     thumbnail.removeFile();
                     file_is_selected = false;
                     frequency_bounds_slider.setMinAndMaxValues(20.0f, 20000.0f);
+                    return;
                 }
+
+                auto hash = audio_file_list->order[row_idx];
+                auto &selected_file = audio_file_list->files.at(hash);
+                assert(hash == selected_file.hash);
+                auto player_state = file_player_post_command(player, { .type = Audio_Command_Load, .value_file = selected_file });
+                if (player_state.step == Transport_Loading_Failed)
+                    return;
+                //TODO file does not exist anymore ?
+                file_player_post_command(player, { .type = Audio_Command_Play });
+                thumbnail.setFile(&selected_file);
+                file_is_selected = true;
+                selected_file_hash = selected_file.hash;
+                frequency_bounds_slider.setMinAndMaxValues((float)selected_file.freq_bounds.getStart(), (float)selected_file.freq_bounds.getEnd());
             };
             file_list_component.file_dropped_callback =
                 [&, &format_manager = filePlayer->format_manager]
@@ -547,7 +557,10 @@ public:
             {
                 for(auto &file : files_dropped)
                     insert_file(audio_file_list, file, format_manager);
-                auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                auto titles = generate_titles(audio_file_list);
+                auto selection = std::vector(titles.size(), false);
+                if(files_dropped.size() == 1)
+                    selection.back() = true;
                 file_list_component.set_rows(titles, selection);
             };
 
@@ -555,10 +568,12 @@ public:
             {
                 auto files_to_remove = file_list_component.getSelectedRows();
                 remove_files(audio_file_list, files_to_remove);
-                auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                auto titles = generate_titles(audio_file_list);
+                auto selection = std::vector(titles.size(), false);
                 file_list_component.set_rows(titles, selection);
             };
-            auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+            auto titles = generate_titles(audio_file_list);
+            auto selection = std::vector(titles.size(), false);
             file_list_component.set_rows(titles, selection);
             addAndMakeVisible(file_list_component);
         }
@@ -594,7 +609,10 @@ public:
                         auto files_chosen = chooser.getResults();
                         for(auto &file : files_chosen)
                             insert_file(audio_file_list, file, player->format_manager);
-                        auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                        auto titles = generate_titles(audio_file_list);
+                        auto selection = std::vector(titles.size(), false);
+                        if(files_chosen.size() == 1)
+                            selection.back() = true;
                         file_list_component.set_rows(titles, selection);
                     };
                     open_file_dialog->launchAsync (flag, std::move(callback));
@@ -612,7 +630,8 @@ public:
                 {
                     auto files_to_remove = file_list_component.getSelectedRows();
                     remove_files(audio_file_list, files_to_remove);
-                    auto [titles, selection] = generate_titles_and_selection_lists(audio_file_list);
+                    auto titles = generate_titles(audio_file_list);
+                    auto selection = std::vector(titles.size(), false);
                     file_list_component.set_rows(titles, selection);
                 };
                 column.add_button(delete_path, std::move(click_delete));

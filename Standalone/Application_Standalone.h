@@ -12,7 +12,7 @@ bool insert_file(Audio_File_List *audio_file_list, juce::File file, juce::AudioF
 void remove_files(Audio_File_List *audio_file_list, std::vector<int> indices);
 std::vector<Audio_File> generate_list_of_selected_files(Audio_File_List *audio_file_list);
 std::vector<Audio_File> generate_ordered_list_of_files(Audio_File_List *audio_file_list);
-std::pair<std::vector<std::string>, std::vector<bool>> generate_titles_and_selection_lists(Audio_File_List *audio_file_list);
+std::vector<std::string> generate_titles(Audio_File_List *audio_file_list);
 
 std::string audio_file_list_serialize(Audio_File_List *audio_file_list);
 std::vector<Audio_File> audio_file_list_deserialize(std::string xml_string);
