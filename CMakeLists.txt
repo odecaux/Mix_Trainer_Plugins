@@ -183,3 +183,8 @@ find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
 add_executable(ray ray/main.c ray/miniaudio.c)
 set(raylib_VERBOSE 1)
 target_link_libraries(ray raylib)
+
+if (EMSCRIPTEN)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_GLFW=3 -s ASSERTIONS=1 -s WASM=1 -s ASYNCIFY")
+  set(CMAKE_EXECUTABLE_SUFFIX ".html") # This line is used to set your executable to build with the emscripten html template so taht you can directly open it.
+endif ()
