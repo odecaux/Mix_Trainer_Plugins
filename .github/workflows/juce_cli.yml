@@ -137,16 +137,16 @@ jobs:
         mkdir -p packaging/dmg
         
         # Create directories for the dmg symlinks
-        sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/Components && sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/VST3
-        ln -s /Library/Audio/Plug-Ins/Components "packaging/dmg/Your Mac's Component folder"
-        ln -s /Library/Audio/Plug-Ins/VST3 "packaging/dmg/Your Mac's VST3 folder"
+        #sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/Components && sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/VST3
+        #ln -s /Library/Audio/Plug-Ins/Components "packaging/dmg/Your Mac's Component folder"
+        #ln -s /Library/Audio/Plug-Ins/VST3 "packaging/dmg/Your Mac's VST3 folder"
         ln -s /Applications "packaging/dmg/Your Mac's Application folder"
         
-        mv "${{ env.HOST_ARTIFACTS_PATH }}/VST3/${{ env.HOST_PROJECT_NAME }}.vst3" packaging/dmg
-        mv "${{ env.HOST_ARTIFACTS_PATH }}/AU/${{ env.HOST_PROJECT_NAME }}.component" packaging/dmg
+        #mv "${{ env.HOST_ARTIFACTS_PATH }}/VST3/${{ env.HOST_PROJECT_NAME }}.vst3" packaging/dmg
+        #mv "${{ env.HOST_ARTIFACTS_PATH }}/AU/${{ env.HOST_PROJECT_NAME }}.component" packaging/dmg
         
-        mv "${{ env.TRACK_ARTIFACTS_PATH }}/VST3/${{ env.TRACK_PROJECT_NAME }}.vst3" packaging/dmg
-        mv "${{ env.TRACK_ARTIFACTS_PATH }}/AU/${{ env.TRACK_PROJECT_NAME }}.component" packaging/dmg
+        #mv "${{ env.TRACK_ARTIFACTS_PATH }}/VST3/${{ env.TRACK_PROJECT_NAME }}.vst3" packaging/dmg
+        #mv "${{ env.TRACK_ARTIFACTS_PATH }}/AU/${{ env.TRACK_PROJECT_NAME }}.component" packaging/dmg
         
         mv "${{ env.STANDALONE_ARTIFACTS_PATH }}"/* packaging/dmg
         
